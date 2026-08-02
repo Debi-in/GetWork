@@ -243,26 +243,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                   ),
 
-            // ── Top Glassmorphism Dark Shading Backdrop ────────────────
+            // ── Ultra-Soft Seamless Top Ambient Shade (No hard border/box) ──
             Positioned(
               top: 0,
               left: 0,
               right: 0,
-              height: 154,
-              child: ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.55),
-                          Colors.black.withValues(alpha: 0.25),
-                          Colors.transparent,
-                        ],
-                      ),
+              height: 180,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.18),
+                        Colors.black.withValues(alpha: 0.08),
+                        Colors.black.withValues(alpha: 0.02),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.4, 0.7, 1.0],
                     ),
                   ),
                 ),
