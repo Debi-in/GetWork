@@ -3,10 +3,27 @@
 -- Comprehensive PostgreSQL Schema for Local Hiring Platform
 -- ============================================================
 
--- 1. EXTENSIONS
+-- 1. CLEANUP PREVIOUS SCHEMA VERSIONS (RE-RUN SAFETY)
+DROP TABLE IF EXISTS public.job_reports CASCADE;
+DROP TABLE IF EXISTS public.job_templates CASCADE;
+DROP TABLE IF EXISTS public.worker_documents CASCADE;
+DROP TABLE IF EXISTS public.business_reviews CASCADE;
+DROP TABLE IF EXISTS public.worker_reviews CASCADE;
+DROP TABLE IF EXISTS public.notifications CASCADE;
+DROP TABLE IF EXISTS public.messages CASCADE;
+DROP TABLE IF EXISTS public.conversation_members CASCADE;
+DROP TABLE IF EXISTS public.conversations CASCADE;
+DROP TABLE IF EXISTS public.saved_jobs CASCADE;
+DROP TABLE IF EXISTS public.job_views CASCADE;
+DROP TABLE IF EXISTS public.applications CASCADE;
+DROP TABLE IF EXISTS public.jobs CASCADE;
+DROP TABLE IF EXISTS public.businesses CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- 2. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. ENUM TYPES (SAFE CREATION & MIGRATION)
+-- 3. ENUM TYPES (SAFE CREATION & MIGRATION)
 DO $$ BEGIN
     CREATE TYPE user_type_enum AS ENUM ('worker', 'business', 'admin');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
@@ -23,7 +40,6 @@ DO $$ BEGIN
     CREATE TYPE job_category_enum AS ENUM ('all', 'delivery', 'retail', 'food', 'construction', 'cleaning', 'tech', 'events', 'hospitality', 'security', 'other');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- Safely add newly introduced category values if enum already exists
 ALTER TYPE job_category_enum ADD VALUE IF NOT EXISTS 'hospitality';
 ALTER TYPE job_category_enum ADD VALUE IF NOT EXISTS 'security';
 ALTER TYPE job_category_enum ADD VALUE IF NOT EXISTS 'other';
@@ -45,10 +61,10 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- ============================================================
--- 3. PROFILES TABLE
+-- 4. PROFILES TABLE
 -- Stores worker and business user master profiles
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.profiles (
+CREATE TABLE public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255),
@@ -74,10 +90,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 -- ============================================================
--- 4. BUSINESSES TABLE
+-- 5. BUSINESSES TABLE
 -- Comprehensive business details and branches
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.businesses (
+CREATE TABLE public.businesses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -101,10 +117,10 @@ CREATE TABLE IF NOT EXISTS public.businesses (
 );
 
 -- ============================================================
--- 5. JOBS TABLE (EXPANDED PRODUCTION SCHEMA)
+-- 6. JOBS TABLE (EXPANDED PRODUCTION SCHEMA)
 -- Stores detailed map-based job postings
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.jobs (
+CREATE TABLE public.jobs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
     business_id UUID REFERENCES public.businesses(id) ON DELETE CASCADE,
@@ -192,10 +208,10 @@ CREATE TABLE IF NOT EXISTS public.jobs (
 );
 
 -- ============================================================
--- 6. APPLICATIONS TABLE
+-- 7. APPLICATIONS TABLE
 -- Connects workers with job postings
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.applications (
+CREATE TABLE public.applications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_id UUID NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
     worker_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -214,10 +230,10 @@ CREATE TABLE IF NOT EXISTS public.applications (
 );
 
 -- ============================================================
--- 7. JOB VIEWS TABLE (Analytics & Fraud Prevention)
+-- 8. JOB VIEWS TABLE (Analytics & Fraud Prevention)
 -- Tracks views without fake duplication
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.job_views (
+CREATE TABLE public.job_views (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_id UUID NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
     viewer_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -226,9 +242,9 @@ CREATE TABLE IF NOT EXISTS public.job_views (
 );
 
 -- ============================================================
--- 8. SAVED JOBS TABLE (Bookmarks)
+-- 9. SAVED JOBS TABLE (Bookmarks)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.saved_jobs (
+CREATE TABLE public.saved_jobs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     worker_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     job_id UUID NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
@@ -237,22 +253,22 @@ CREATE TABLE IF NOT EXISTS public.saved_jobs (
 );
 
 -- ============================================================
--- 9. CONVERSATIONS & MESSAGES (Real-Time In-App Chat)
+-- 10. CONVERSATIONS & MESSAGES (Real-Time In-App Chat)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.conversations (
+CREATE TABLE public.conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_id UUID REFERENCES public.jobs(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS public.conversation_members (
+CREATE TABLE public.conversation_members (
     conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     PRIMARY KEY (conversation_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS public.messages (
+CREATE TABLE public.messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
     sender_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -262,9 +278,9 @@ CREATE TABLE IF NOT EXISTS public.messages (
 );
 
 -- ============================================================
--- 10. NOTIFICATIONS TABLE
+-- 11. NOTIFICATIONS TABLE
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.notifications (
+CREATE TABLE public.notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     receiver_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -276,10 +292,10 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 );
 
 -- ============================================================
--- 11. WORKER & BUSINESS REVIEWS TABLE
+-- 12. WORKER & BUSINESS REVIEWS TABLE
 -- 2-Way Rating System
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.worker_reviews (
+CREATE TABLE public.worker_reviews (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_id UUID NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
     worker_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -289,7 +305,7 @@ CREATE TABLE IF NOT EXISTS public.worker_reviews (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS public.business_reviews (
+CREATE TABLE public.business_reviews (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_id UUID NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
     business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
@@ -300,10 +316,10 @@ CREATE TABLE IF NOT EXISTS public.business_reviews (
 );
 
 -- ============================================================
--- 12. WORKER DOCUMENTS TABLE
+-- 13. WORKER DOCUMENTS TABLE
 -- Citizenship, License, CV
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.worker_documents (
+CREATE TABLE public.worker_documents (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     worker_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     document_type document_type_enum NOT NULL,
@@ -313,10 +329,10 @@ CREATE TABLE IF NOT EXISTS public.worker_documents (
 );
 
 -- ============================================================
--- 13. JOB TEMPLATES TABLE
+-- 14. JOB TEMPLATES TABLE
 -- Rapid 1-Click Reusable Job Postings for Employers
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.job_templates (
+CREATE TABLE public.job_templates (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
     template_name VARCHAR(255) NOT NULL,
@@ -333,9 +349,9 @@ CREATE TABLE IF NOT EXISTS public.job_templates (
 );
 
 -- ============================================================
--- 14. SPAM & SAFETY REPORTS TABLE
+-- 15. SPAM & SAFETY REPORTS TABLE
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.job_reports (
+CREATE TABLE public.job_reports (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_id UUID NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
     reporter_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -345,20 +361,20 @@ CREATE TABLE IF NOT EXISTS public.job_reports (
 );
 
 -- ============================================================
--- 15. INDEXES FOR HIGH-PERFORMANCE MAP & SEARCH
+-- 16. INDEXES FOR HIGH-PERFORMANCE MAP & SEARCH
 -- ============================================================
-CREATE INDEX IF NOT EXISTS idx_jobs_coords ON public.jobs(latitude, longitude);
-CREATE INDEX IF NOT EXISTS idx_jobs_category ON public.jobs(category);
-CREATE INDEX IF NOT EXISTS idx_jobs_status ON public.jobs(status);
-CREATE INDEX IF NOT EXISTS idx_jobs_urgent ON public.jobs(is_urgent) WHERE is_urgent = TRUE;
-CREATE INDEX IF NOT EXISTS idx_applications_job ON public.applications(job_id);
-CREATE INDEX IF NOT EXISTS idx_applications_worker ON public.applications(worker_id);
-CREATE INDEX IF NOT EXISTS idx_job_views_job ON public.job_views(job_id);
-CREATE INDEX IF NOT EXISTS idx_saved_jobs_worker ON public.saved_jobs(worker_id);
-CREATE INDEX IF NOT EXISTS idx_messages_conversation ON public.messages(conversation_id);
+CREATE INDEX idx_jobs_coords ON public.jobs(latitude, longitude);
+CREATE INDEX idx_jobs_category ON public.jobs(category);
+CREATE INDEX idx_jobs_status ON public.jobs(status);
+CREATE INDEX idx_jobs_urgent ON public.jobs(is_urgent) WHERE is_urgent = TRUE;
+CREATE INDEX idx_applications_job ON public.applications(job_id);
+CREATE INDEX idx_applications_worker ON public.applications(worker_id);
+CREATE INDEX idx_job_views_job ON public.job_views(job_id);
+CREATE INDEX idx_saved_jobs_worker ON public.saved_jobs(worker_id);
+CREATE INDEX idx_messages_conversation ON public.messages(conversation_id);
 
 -- ============================================================
--- 16. ROW LEVEL SECURITY (RLS) POLICIES ON ALL 14 TABLES
+-- 17. ROW LEVEL SECURITY (RLS) POLICIES ON ALL 14 TABLES
 -- ============================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.businesses ENABLE ROW LEVEL SECURITY;
@@ -402,7 +418,7 @@ DO $$ BEGIN CREATE POLICY "Job templates manageability" ON public.job_templates 
 DO $$ BEGIN CREATE POLICY "Job reports manageability" ON public.job_reports FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- ============================================================
--- 17. RICH KATHMANDU SEED DATA (v2.0)
+-- 18. RICH KATHMANDU SEED DATA (v2.0)
 -- ============================================================
 INSERT INTO public.jobs (
     id, title, business_name, latitude, longitude, address, landmark, category, description,
