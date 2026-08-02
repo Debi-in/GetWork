@@ -52,7 +52,9 @@ class _JobFilterModalState extends ConsumerState<JobFilterModal> {
     final matchingJobs = ref.watch(filteredJobsProvider);
 
     return Container(
-      maxHeight: MediaQuery.of(context).size.height * 0.88,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
