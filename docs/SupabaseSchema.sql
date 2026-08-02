@@ -353,7 +353,7 @@ CREATE INDEX IF NOT EXISTS idx_saved_jobs_worker ON public.saved_jobs(worker_id)
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON public.messages(conversation_id);
 
 -- ============================================================
--- 16. ROW LEVEL SECURITY (RLS) POLICIES
+-- 16. ROW LEVEL SECURITY (RLS) POLICIES ON ALL 14 TABLES
 -- ============================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.businesses ENABLE ROW LEVEL SECURITY;
@@ -362,28 +362,39 @@ ALTER TABLE public.applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.job_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.saved_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.conversation_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.worker_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.business_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.worker_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.job_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.job_reports ENABLE ROW LEVEL SECURITY;
 
--- Permissive policies for MVP development
-CREATE POLICY "Profiles viewable by everyone" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Profiles updateable by owner" ON public.profiles FOR ALL USING (true);
+-- Permissive development policies
+DO $$ BEGIN CREATE POLICY "Profiles viewable by everyone" ON public.profiles FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Profiles manageability" ON public.profiles FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-CREATE POLICY "Businesses viewable by everyone" ON public.businesses FOR SELECT USING (true);
-CREATE POLICY "Businesses updateable by owner" ON public.businesses FOR ALL USING (true);
+DO $$ BEGIN CREATE POLICY "Businesses viewable by everyone" ON public.businesses FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Businesses manageability" ON public.businesses FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-CREATE POLICY "Jobs viewable by everyone" ON public.jobs FOR SELECT USING (true);
-CREATE POLICY "Jobs manageability" ON public.jobs FOR ALL USING (true);
+DO $$ BEGIN CREATE POLICY "Jobs viewable by everyone" ON public.jobs FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Jobs manageability" ON public.jobs FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-CREATE POLICY "Applications viewable by everyone" ON public.applications FOR SELECT USING (true);
-CREATE POLICY "Applications insertable by everyone" ON public.applications FOR INSERT WITH CHECK (true);
-CREATE POLICY "Applications updateable by applicant/employer" ON public.applications FOR UPDATE USING (true);
+DO $$ BEGIN CREATE POLICY "Applications viewable by everyone" ON public.applications FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Applications manageability" ON public.applications FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-CREATE POLICY "Saved jobs manageability" ON public.saved_jobs FOR ALL USING (true);
-CREATE POLICY "Job views insertable" ON public.job_views FOR INSERT WITH CHECK (true);
-CREATE POLICY "Notifications viewable by receiver" ON public.notifications FOR ALL USING (true);
-CREATE POLICY "Messages manageability" ON public.messages FOR ALL USING (true);
-CREATE POLICY "Conversations manageability" ON public.conversations FOR ALL USING (true);
+DO $$ BEGIN CREATE POLICY "Saved jobs manageability" ON public.saved_jobs FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Job views manageability" ON public.job_views FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Notifications manageability" ON public.notifications FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Conversations manageability" ON public.conversations FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Conversation members manageability" ON public.conversation_members FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Messages manageability" ON public.messages FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Worker reviews manageability" ON public.worker_reviews FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Business reviews manageability" ON public.business_reviews FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Worker documents manageability" ON public.worker_documents FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Job templates manageability" ON public.job_templates FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE POLICY "Job reports manageability" ON public.job_reports FOR ALL USING (true); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- ============================================================
 -- 17. RICH KATHMANDU SEED DATA (v2.0)
