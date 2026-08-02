@@ -15,12 +15,11 @@ class SupabaseConfig {
   SupabaseConfig._(); // Prevent instantiation
 
   // ── Project URL ──────────────────────────────────────────────
-  // Example: https://xyzabc.supabase.co
-  static const String supabaseUrl = 'YOUR_SUPABASE_URL_HERE';
+  static const String supabaseUrl = 'https://umoyvhkzsomfyjriexcn.supabase.co';
 
   // ── Anon/Public Key ──────────────────────────────────────────
-  // Safe to use in mobile apps with Row Level Security enabled
-  static const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY_HERE';
+  static const String supabaseAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtb3l2aGt6c29tZnlqcmlleGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NzAyODAsImV4cCI6MjEwMTI0NjI4MH0.vw8xTnzSlkx7adpXaWX-DxCFb1xi_bP3v5EQLLaiq-Q';
 
   // ── Storage Bucket Names ─────────────────────────────────────
   static const String avatarsBucket = 'avatars';

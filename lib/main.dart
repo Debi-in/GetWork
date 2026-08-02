@@ -9,6 +9,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/constants/supabase_config.dart';
 import 'app.dart';
 
 void main() async {
@@ -31,10 +33,10 @@ void main() async {
   ]);
 
   // ── Phase 2: Init Supabase ───────────────────────────────────
-  // await Supabase.initialize(
-  //   url: SupabaseConfig.supabaseUrl,
-  //   anonKey: SupabaseConfig.supabaseAnonKey,
-  // );
+  await Supabase.initialize(
+    url: SupabaseConfig.supabaseUrl,
+    anonKey: SupabaseConfig.supabaseAnonKey,
+  );
 
   // ── Phase 3: Init Firebase ───────────────────────────────────
   // await Firebase.initializeApp(
