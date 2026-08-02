@@ -658,9 +658,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ── Jobs List Tab (kept for potential reuse) ──────────────────────────────
-  Widget _buildListView(List<JobModel> jobs) => _buildJobsTab(jobs);
-
   // ── Premium Jobs Tab ──────────────────────────────────────────────────────
   Widget _buildJobsTab(List<JobModel> jobs) {
     if (jobs.isEmpty) {
