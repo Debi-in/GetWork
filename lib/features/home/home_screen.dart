@@ -243,9 +243,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                   ),
 
+            // ── Top Glassmorphism Dark Shading Backdrop ────────────────
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 154,
+              child: ClipRRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.55),
+                          Colors.black.withValues(alpha: 0.25),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
             // ── Top Bar Header (Profile Avatar, Search Bar, Notification Bell) ──
             Positioned(
-              top: 12,
+              top: 16,
               left: 14,
               right: 14,
               child: Column(

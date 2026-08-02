@@ -43,7 +43,7 @@ class OpenStreetMapWidget extends StatelessWidget {
       case MapStyleType.terrain:
         return 'https://a.tile.opentopomap.org/{z}/{x}/{y}.png';
       case MapStyleType.street:
-        return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+        return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
     }
   }
 
