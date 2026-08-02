@@ -3,9 +3,93 @@
 // Riverpod 3.x Notifier state management for filtering, searching & applying
 // ============================================================
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:getwork/core/services/dummy_data_service.dart';
-import 'package:getwork/models/job_model.dart';
+import '../../core/services/dummy_data_service.dart';
+import '../../models/job_model.dart';
+
+// ── Job Filter State ─────────────────────────────────────────
+class JobFilterState extends Equatable {
+  final JobCategory category;
+  final SalaryType? salaryType;
+  final double minSalary;
+  final double maxSalary;
+  final double maxDistanceKm;
+  final bool isUrgentOnly;
+  final bool isTodayOnly;
+
+  const JobFilterState({
+    this.category = JobCategory.all,
+    this.salaryType,
+    this.minSalary = 0,
+    this.maxSalary = 5000,
+    this.maxDistanceKm = 25,
+    this.isUrgentOnly = false,
+    this.isTodayOnly = false,
+  });
+
+  bool get isDefault =>
+      category == JobCategory.all &&
+      salaryType == null &&
+      minSalary == 0 &&
+      maxSalary == 5000 &&
+      maxDistanceKm == 25 &&
+      !isUrgentOnly &&
+      !isTodayOnly;
+
+  JobFilterState copyWith({
+    JobCategory? category,
+    SalaryType? salaryType,
+    double? minSalary,
+    double? maxSalary,
+    double? maxDistanceKm,
+    bool? isUrgentOnly,
+    bool? isTodayOnly,
+    bool clearSalaryType = false,
+  }) {
+    return JobFilterState(
+      category: category ?? this.category,
+      salaryType: clearSalaryType ? null : (salaryType ?? this.salaryType),
+      minSalary: minSalary ?? this.minSalary,
+      maxSalary: maxSalary ?? this.maxSalary,
+      maxDistanceKm: maxDistanceKm ?? this.maxDistanceKm,
+      isUrgentOnly: isUrgentOnly ?? this.isUrgentOnly,
+      isTodayOnly: isTodayOnly ?? this.isTodayOnly,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        category,
+        salaryType,
+        minSalary,
+        maxSalary,
+        maxDistanceKm,
+        isUrgentOnly,
+        isTodayOnly,
+      ];
+}
+
+class JobFilterNotifier extends Notifier<JobFilterState> {
+  @override
+  JobFilterState build() => const JobFilterState();
+
+  void updateFilter(JobFilterState newFilter) {
+    state = newFilter;
+  }
+
+  void setCategory(JobCategory category) {
+    state = state.copyWith(category: category);
+  }
+
+  void reset() {
+    state = const JobFilterState();
+  }
+}
+
+final jobFilterProvider = NotifierProvider<JobFilterNotifier, JobFilterState>(
+  JobFilterNotifier.new,
+);
 
 // ── Selected Category Notifier ──────────────────────────────
 class SelectedCategoryNotifier extends Notifier<JobCategory> {
@@ -96,18 +180,46 @@ final allJobsProvider = NotifierProvider<JobsListNotifier, List<JobModel>>(
 // ── Filtered Jobs Provider ──────────────────────────────────
 final filteredJobsProvider = Provider<List<JobModel>>((ref) {
   final jobs = ref.watch(allJobsProvider);
-  final category = ref.watch(selectedCategoryProvider);
+  final topCategory = ref.watch(selectedCategoryProvider);
+  final filter = ref.watch(jobFilterProvider);
   final query = ref.watch(searchQueryProvider).toLowerCase().trim();
 
   return jobs.where((job) {
-    final matchesCategory =
-        category == JobCategory.all || job.category == category;
+    // 1. Top Category Pill or Modal Category
+    final matchesCategory = (topCategory == JobCategory.all && filter.category == JobCategory.all) ||
+        (topCategory != JobCategory.all && job.category == topCategory) ||
+        (filter.category != JobCategory.all && job.category == filter.category);
 
+    // 2. Search Query
     final matchesQuery = query.isEmpty ||
         job.title.toLowerCase().contains(query) ||
         job.businessName.toLowerCase().contains(query) ||
         job.address.toLowerCase().contains(query);
 
-    return matchesCategory && matchesQuery;
+    // 3. Salary Type
+    final matchesSalaryType =
+        filter.salaryType == null || job.salaryType == filter.salaryType;
+
+    // 4. Salary Range
+    final matchesSalaryRange =
+        job.salary >= filter.minSalary && job.salary <= filter.maxSalary;
+
+    // 5. Distance Radius
+    final matchesDistance =
+        job.distanceKm == null || job.distanceKm! <= filter.maxDistanceKm;
+
+    // 6. Urgent Filter
+    final matchesUrgent = !filter.isUrgentOnly || job.isUrgent;
+
+    // 7. Today Filter
+    final matchesToday = !filter.isTodayOnly || job.isToday;
+
+    return matchesCategory &&
+        matchesQuery &&
+        matchesSalaryType &&
+        matchesSalaryRange &&
+        matchesDistance &&
+        matchesUrgent &&
+        matchesToday;
   }).toList();
 });

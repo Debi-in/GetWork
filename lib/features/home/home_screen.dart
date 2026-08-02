@@ -15,6 +15,7 @@ import '../../models/job_model.dart';
 import '../jobs/jobs_provider.dart';
 import 'widgets/category_filter_bar.dart';
 import 'widgets/job_bottom_sheet.dart';
+import 'widgets/job_filter_modal.dart';
 import 'widgets/open_street_map_widget.dart';
 
 // ── Category color helper ─────────────────────────────────────
@@ -247,7 +248,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           color: Colors.white,
                           bgColor: AppColors.primary,
                           size: 48,
-                          onTap: () {},
+                          onTap: () => JobFilterModal.show(context),
                         ),
                       ],
                     ),
@@ -565,7 +566,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           color: AppColors.textSecondary,
                           size: 18,
                         ),
-                        onPressed: () {},
+                        onPressed: () => JobFilterModal.show(context),
                       ),
                       border: InputBorder.none,
                       contentPadding:

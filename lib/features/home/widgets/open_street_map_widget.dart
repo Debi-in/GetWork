@@ -37,6 +37,9 @@ class _AnimatedMarkerWidgetState extends State<_AnimatedMarkerWidget>
   late Animation<double> _scaleAnim;
   late Animation<double> _fadeAnim;
 
+  // Track already animated job IDs so panning/zooming map doesn't re-play animation
+  static final Set<String> _animatedJobIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -59,10 +62,15 @@ class _AnimatedMarkerWidgetState extends State<_AnimatedMarkerWidget>
       ),
     );
 
-    // Stagger each marker by 80ms per index
-    Future.delayed(Duration(milliseconds: widget.index * 80), () {
-      if (mounted) _controller.forward();
-    });
+    // If marker already animated, set to 1.0 instantly so dragging map doesn't re-trigger
+    if (_animatedJobIds.contains(widget.job.id)) {
+      _controller.value = 1.0;
+    } else {
+      _animatedJobIds.add(widget.job.id);
+      Future.delayed(Duration(milliseconds: widget.index * 60), () {
+        if (mounted) _controller.forward();
+      });
+    }
   }
 
   @override
