@@ -1,12 +1,13 @@
 // ============================================================
 // OPEN STREET MAP WIDGET — GetWork App
-// Renders Kathmandu map via flutter_map + OpenStreetMap tiles
-// with floating salary markers for discovered nearby jobs
+// Renders Kathmandu map via flutter_map + OpenStreetMap / CartoDB tiles
+// Features map pin callout bubbles with downward pointer arrows,
+// dual map themes (Light vs Dark mode), and interactive job markers
 // ============================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/constants/app_colors.dart';
 import '../../../models/job_model.dart';
 
@@ -14,6 +15,7 @@ class OpenStreetMapWidget extends StatelessWidget {
   final List<JobModel> jobs;
   final JobModel? selectedJob;
   final MapController? mapController;
+  final bool isDarkMode;
   final void Function(JobModel job) onMarkerTap;
   final VoidCallback onMapTap;
 
@@ -22,6 +24,7 @@ class OpenStreetMapWidget extends StatelessWidget {
     required this.jobs,
     required this.selectedJob,
     this.mapController,
+    this.isDarkMode = false,
     required this.onMarkerTap,
     required this.onMapTap,
   });
@@ -41,69 +44,30 @@ class OpenStreetMapWidget extends StatelessWidget {
         onTap: (_, _) => onMapTap(),
       ),
       children: [
-        // ── OpenStreetMap Tile Layer ────────────────────────────
+        // ── Map Tile Layer (Light vs Sleek Dark Mode) ───────────
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          urlTemplate: isDarkMode
+              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+              : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          subdomains: const ['a', 'b', 'c', 'd'],
           userAgentPackageName: 'com.getwork.app',
           maxZoom: 19,
         ),
 
-        // ── Job Salary Markers ──────────────────────────────────
+        // ── Job Salary Pins with Downward Arrow ──────────────────
         MarkerLayer(
           markers: jobs.map((job) {
             final isSelected = selectedJob?.id == job.id;
             return Marker(
               point: LatLng(job.latitude, job.longitude),
-              width: 120,
-              height: 40,
+              width: 140,
+              height: 64,
+              alignment: Alignment.topCenter,
               child: GestureDetector(
                 onTap: () => onMarkerTap(job),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accent : AppColors.primary,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: isSelected ? 2.5 : 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isSelected ? AppColors.accent : AppColors.primary)
-                            .withValues(alpha: 0.4),
-                        blurRadius: isSelected ? 12 : 6,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (job.isUrgent)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 3),
-                          child: Icon(
-                            Icons.bolt_rounded,
-                            size: 11,
-                            color: Colors.white,
-                          ),
-                        ),
-                      Flexible(
-                        child: Text(
-                          job.salaryDisplay,
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: _MarkerCalloutPin(
+                  job: job,
+                  isSelected: isSelected,
                 ),
               ),
             );
@@ -111,5 +75,125 @@ class OpenStreetMapWidget extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+// ── Callout Pin Bubble with Downward Arrow Tip ────────────────
+class _MarkerCalloutPin extends StatelessWidget {
+  final JobModel job;
+  final bool isSelected;
+
+  const _MarkerCalloutPin({
+    required this.job,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isSelected
+        ? AppColors.accent
+        : job.isUrgent
+            ? AppColors.accent
+            : AppColors.primary;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Bubble Body
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Colors.white,
+              width: isSelected ? 2.5 : 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: bgColor.withValues(alpha: 0.45),
+                blurRadius: isSelected ? 14 : 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                job.salaryDisplay,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                job.title,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                  height: 1.1,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+
+        // Downward Triangle Arrow Pointer Tip
+        CustomPaint(
+          size: const Size(12, 7),
+          painter: _TrianglePointerPainter(color: bgColor),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Triangle Pointer Painter for Pin Tip ─────────────────────
+class _TrianglePointerPainter extends CustomPainter {
+  final Color color;
+
+  _TrianglePointerPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width, 0)
+      ..close();
+
+    canvas.drawPath(path, paint);
+
+    // Draw white border outline on sides
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    final borderPath = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width, 0);
+
+    canvas.drawPath(borderPath, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrianglePointerPainter oldDelegate) {
+    return oldDelegate.color != color;
   }
 }

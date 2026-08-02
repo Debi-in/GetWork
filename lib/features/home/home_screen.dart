@@ -1,9 +1,11 @@
 // ============================================================
 // HOME SCREEN — GetWork App
 // Interactive Map-First Local Job Discovery Interface
-// Matching exact reference design (crisp green, pill search, bottom bar)
+// Matching exact reference design with glassmorphism blur background focus,
+// map pins with downward pointers, and sleek map dark mode toggle
 // ============================================================
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -26,6 +28,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final MapController _mapController = MapController();
   int _currentNavIndex = 0; // 0: Map, 1: Jobs, 2: Messages, 3: Notifications, 4: Profile
+  bool _isDarkMode = false;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -47,7 +50,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: AppColors.background,
       resizeToAvoidBottomInset: false,
 
-      // ── Crisp Bottom Navigation Bar (Matching Target UI) ──────
+      // ── Crisp Bottom Navigation Bar ───────────────────────────
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -145,6 +148,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     jobs: jobs,
                     selectedJob: selectedJob,
                     mapController: _mapController,
+                    isDarkMode: _isDarkMode,
                     onMarkerTap: (job) {
                       ref.read(selectedJobProvider.notifier).selectJob(job);
                       _flyToJob(job);
@@ -154,7 +158,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                   ),
 
-            // ── Top Bar (Pill Search + Profile Avatar + Notification Bell) ──
+            // ── Top Bar Header (Profile Avatar, Search Bar, Notification Bell) ──
             Positioned(
               top: 12,
               left: 14,
@@ -163,7 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      // Left: Profile Circle Avatar
+                      // Left: Profile Avatar
                       GestureDetector(
                         onTap: () => context.push('/profile'),
                         child: Container(
@@ -228,7 +232,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   size: 18,
                                 ),
                                 onPressed: () {
-                                  // Open filter bottom sheet
+                                  // Open filter
                                 },
                               ),
                               border: InputBorder.none,
@@ -239,7 +243,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(width: 10),
 
-                      // Right: Notification Bell Circle
+                      // Right: Notification Bell
                       GestureDetector(
                         onTap: () => context.push('/notifications'),
                         child: Container(
@@ -285,17 +289,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Category Filter Pills Bar
+                  // Category Filter Bar
                   const CategoryFilterBar(),
                 ],
               ),
             ),
 
-            // ── Right Floating Map Controls (Location, Layers, Filter FAB) ──
-            if (_currentNavIndex == 0)
+            // ── Right Floating Map Controls (Location, Dark Mode, Filter) ──
+            if (_currentNavIndex == 0 && selectedJob == null)
               Positioned(
                 right: 14,
-                bottom: selectedJob != null ? 180 : 135,
+                bottom: 135,
                 child: Column(
                   children: [
                     // Location Button
@@ -326,14 +330,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Layers Button
+                    // Map Theme Toggle Button (Light / Dark Mode)
                     Container(
                       width: 42,
                       height: 42,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      decoration: BoxDecoration(
+                        color: _isDarkMode ? const Color(0xFF1E222A) : Colors.white,
                         shape: BoxShape.circle,
-                        boxShadow: [
+                        boxShadow: const [
                           BoxShadow(
                             color: AppColors.shadowMedium,
                             blurRadius: 10,
@@ -342,13 +346,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ],
                       ),
                       child: IconButton(
-                        icon: const Icon(
-                          Icons.layers_outlined,
-                          color: AppColors.textPrimary,
+                        icon: Icon(
+                          _isDarkMode ? Icons.dark_mode_rounded : Icons.wb_sunny_outlined,
+                          color: _isDarkMode ? Colors.amber : AppColors.textPrimary,
                           size: 20,
                         ),
                         onPressed: () {
-                          // Toggle map style
+                          setState(() {
+                            _isDarkMode = !_isDarkMode;
+                          });
                         },
                       ),
                     ),
@@ -384,21 +390,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
-            // ── Bottom Sheet for Selected Job ────────────────────
-            if (selectedJob != null && _currentNavIndex == 0)
-              Positioned(
-                bottom: 12,
-                left: 0,
-                right: 0,
-                child: JobBottomSheet(
-                  job: selectedJob,
-                  onClose: () {
-                    ref.read(selectedJobProvider.notifier).selectJob(null);
-                  },
-                ),
-              ),
-
-            // ── Bottom Horizontal Job Carousel (When no single job selected) ──
+            // ── Bottom Horizontal Job Carousel (When no job selected) ──
             if (selectedJob == null && _currentNavIndex == 0 && jobs.isNotEmpty)
               Positioned(
                 bottom: 16,
@@ -501,6 +493,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       );
                     },
                   ),
+                ),
+              ),
+
+            // ── GLASSMORPHISM BLUR OVERLAY (Focus mode when Job is selected) ──
+            if (selectedJob != null && _currentNavIndex == 0)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {
+                    ref.read(selectedJobProvider.notifier).selectJob(null);
+                  },
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.35),
+                    ),
+                  ),
+                ),
+              ),
+
+            // ── Job Popup Bottom Sheet (Focus Layer) ────────────────────────
+            if (selectedJob != null && _currentNavIndex == 0)
+              Positioned(
+                bottom: 12,
+                left: 0,
+                right: 0,
+                child: JobBottomSheet(
+                  job: selectedJob,
+                  onClose: () {
+                    ref.read(selectedJobProvider.notifier).selectJob(null);
+                  },
                 ),
               ),
           ],
