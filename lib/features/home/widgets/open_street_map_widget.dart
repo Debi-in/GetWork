@@ -20,6 +20,7 @@ class _AnimatedMarkerWidget extends StatefulWidget {
   final int index;
 
   const _AnimatedMarkerWidget({
+    super.key,
     required this.job,
     required this.isSelected,
     required this.onTap,
