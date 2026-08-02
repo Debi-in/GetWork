@@ -6,7 +6,7 @@
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. ENUM TYPES
+-- 2. ENUM TYPES (SAFE CREATION & MIGRATION)
 DO $$ BEGIN
     CREATE TYPE user_type_enum AS ENUM ('worker', 'business', 'admin');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
@@ -22,6 +22,11 @@ EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN
     CREATE TYPE job_category_enum AS ENUM ('all', 'delivery', 'retail', 'food', 'construction', 'cleaning', 'tech', 'events', 'hospitality', 'security', 'other');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+-- Safely add newly introduced category values if enum already exists
+ALTER TYPE job_category_enum ADD VALUE IF NOT EXISTS 'hospitality';
+ALTER TYPE job_category_enum ADD VALUE IF NOT EXISTS 'security';
+ALTER TYPE job_category_enum ADD VALUE IF NOT EXISTS 'other';
 
 DO $$ BEGIN
     CREATE TYPE job_status_enum AS ENUM ('draft', 'active', 'paused', 'closed', 'filled', 'expired');
@@ -113,7 +118,7 @@ CREATE TABLE IF NOT EXISTS public.jobs (
     landmark VARCHAR(255),
     
     -- Category & Description
-    category job_category_enum NOT NULL DEFAULT 'other',
+    category job_category_enum NOT NULL DEFAULT 'all',
     description TEXT NOT NULL,
     
     -- Comprehensive Compensation
@@ -316,7 +321,7 @@ CREATE TABLE IF NOT EXISTS public.job_templates (
     business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
     template_name VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,
-    category job_category_enum NOT NULL DEFAULT 'other',
+    category job_category_enum NOT NULL DEFAULT 'all',
     description TEXT NOT NULL,
     salary_type salary_type_enum NOT NULL DEFAULT 'daily',
     daily_rate NUMERIC(10, 2),
