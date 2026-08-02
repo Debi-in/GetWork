@@ -424,7 +424,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── Top Header: Profile Avatar + Search Bar + Bell + Category Pills ──────
   Widget _buildTopHeader(double topPadding) {
     return Container(
-      color: AppColors.background,
+      // No solid background — transparent so map shows through
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.black.withValues(alpha: 0.12),
+            Colors.black.withValues(alpha: 0.05),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.65, 1.0],
+        ),
+      ),
       padding: EdgeInsets.only(
         top: topPadding + 10,
         left: 14,
