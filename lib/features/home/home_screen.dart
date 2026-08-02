@@ -1,7 +1,7 @@
 // ============================================================
 // HOME SCREEN — GetWork App
 // Interactive Map-First Local Job Discovery Interface
-// Powered by OpenStreetMap + flutter_map
+// Matching exact reference design (crisp green, pill search, bottom bar)
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -25,7 +25,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final MapController _mapController = MapController();
-  bool _isListView = false;
+  int _currentNavIndex = 0; // 0: Map, 1: Jobs, 2: Messages, 3: Notifications, 4: Profile
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -46,11 +46,100 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       resizeToAvoidBottomInset: false,
+
+      // ── Crisp Bottom Navigation Bar (Matching Target UI) ──────
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowLight,
+              blurRadius: 16,
+              offset: Offset(0, -4),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentNavIndex,
+          onTap: (index) {
+            setState(() {
+              _currentNavIndex = index;
+            });
+            if (index == 3) {
+              context.push('/notifications');
+            } else if (index == 4) {
+              context.push('/profile');
+            }
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textSecondary,
+          selectedLabelStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+          elevation: 0,
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.map_rounded),
+              label: 'Map',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.work_outline_rounded),
+              label: 'Jobs',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline_rounded),
+              label: 'Messages',
+            ),
+            BottomNavigationBarItem(
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications_none_rounded),
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.accent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Text(
+                        '2',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              label: 'Notifications',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              label: 'Profile',
+            ),
+          ],
+        ),
+      ),
+
       body: SafeArea(
         child: Stack(
           children: [
             // ── Background: Map or List View ─────────────────────
-            _isListView
+            _currentNavIndex == 1
                 ? _buildListView(jobs)
                 : OpenStreetMapWidget(
                     jobs: jobs,
@@ -65,28 +154,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                   ),
 
-            // ── Top Header & Filter Controls ──────────────────────
+            // ── Top Bar (Pill Search + Profile Avatar + Notification Bell) ──
             Positioned(
               top: 12,
-              left: 16,
-              right: 16,
+              left: 14,
+              right: 14,
               child: Column(
                 children: [
-                  // Top bar with Search & View Toggle
                   Row(
                     children: [
-                      // Search Bar
+                      // Left: Profile Circle Avatar
+                      GestureDetector(
+                        onTap: () => context.push('/profile'),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'DR',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+
+                      // Center: Crisp Pill Search Bar
                       Expanded(
                         child: Container(
-                          height: 48,
+                          height: 46,
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(color: AppColors.border, width: 0.8),
                             boxShadow: const [
                               BoxShadow(
                                 color: AppColors.shadowLight,
-                                blurRadius: 12,
-                                offset: Offset(0, 2),
+                                blurRadius: 10,
+                                offset: Offset(0, 3),
                               ),
                             ],
                           ),
@@ -96,95 +210,182 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ref.read(searchQueryProvider.notifier).setQuery(val);
                             },
                             decoration: InputDecoration(
-                              hintText: 'Search jobs, locations...',
+                              hintText: 'Search jobs, category or place',
+                              hintStyle: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                color: AppColors.textHint,
+                              ),
                               prefixIcon: const Icon(
                                 Icons.search_rounded,
-                                color: AppColors.primary,
+                                color: AppColors.textSecondary,
+                                size: 20,
                               ),
-                              suffixIcon: _searchController.text.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear_rounded, size: 18),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        ref.read(searchQueryProvider.notifier).setQuery('');
-                                      },
-                                    )
-                                  : null,
+                              suffixIcon: IconButton(
+                                icon: const Icon(
+                                  Icons.tune_rounded,
+                                  color: AppColors.textSecondary,
+                                  size: 18,
+                                ),
+                                onPressed: () {
+                                  // Open filter bottom sheet
+                                },
+                              ),
                               border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
 
-                      // Map / List Toggle Button
-                      Container(
-                        height: 48,
-                        width: 48,
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowLight,
-                              blurRadius: 12,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            _isListView ? Icons.map_rounded : Icons.format_list_bulleted_rounded,
-                            color: AppColors.primary,
+                      // Right: Notification Bell Circle
+                      GestureDetector(
+                        onTap: () => context.push('/notifications'),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.border, width: 0.8),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: AppColors.shadowLight,
+                                blurRadius: 10,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _isListView = !_isListView;
-                            });
-                          },
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Icon(
+                                Icons.notifications_none_rounded,
+                                color: AppColors.textPrimary,
+                                size: 22,
+                              ),
+                              Positioned(
+                                top: 9,
+                                right: 10,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.accent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
-                  // Category Filter Bar
+                  // Category Filter Pills Bar
                   const CategoryFilterBar(),
                 ],
               ),
             ),
 
-            // ── Floating Action Buttons (Profile & Business) ──────
-            Positioned(
-              top: 130,
-              right: 16,
-              child: Column(
-                children: [
-                  FloatingActionButton.small(
-                    heroTag: 'profileBtn',
-                    onPressed: () => context.push('/profile'),
-                    backgroundColor: AppColors.surface,
-                    child: const Icon(Icons.person_outline_rounded, color: AppColors.textPrimary),
-                  ),
-                  const SizedBox(height: 8),
-                  FloatingActionButton.small(
-                    heroTag: 'businessBtn',
-                    onPressed: () => context.push('/business'),
-                    backgroundColor: AppColors.accent,
-                    child: const Icon(Icons.business_center_rounded, color: Colors.white),
-                  ),
-                ],
+            // ── Right Floating Map Controls (Location, Layers, Filter FAB) ──
+            if (_currentNavIndex == 0)
+              Positioned(
+                right: 14,
+                bottom: selectedJob != null ? 180 : 135,
+                child: Column(
+                  children: [
+                    // Location Button
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.shadowMedium,
+                            blurRadius: 10,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.my_location_rounded,
+                          color: AppColors.textPrimary,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          _mapController.move(const LatLng(27.7172, 85.3240), 14.5);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Layers Button
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.shadowMedium,
+                            blurRadius: 10,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.layers_outlined,
+                          color: AppColors.textPrimary,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          // Toggle map style
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Green Main Filter Action FAB
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.shadowMedium,
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.filter_alt_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        onPressed: () {
+                          // Filter action
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
             // ── Bottom Sheet for Selected Job ────────────────────
-            if (selectedJob != null)
+            if (selectedJob != null && _currentNavIndex == 0)
               Positioned(
                 bottom: 12,
                 left: 0,
@@ -197,19 +398,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
-            // ── Bottom Job Quick Cards Horizontal Carousel ──
-            if (selectedJob == null && !_isListView && jobs.isNotEmpty)
+            // ── Bottom Horizontal Job Carousel (When no single job selected) ──
+            if (selectedJob == null && _currentNavIndex == 0 && jobs.isNotEmpty)
               Positioned(
-                bottom: 20,
+                bottom: 16,
                 left: 0,
                 right: 0,
                 child: SizedBox(
-                  height: 110,
+                  height: 106,
                   child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     scrollDirection: Axis.horizontal,
                     itemCount: jobs.length,
-                    separatorBuilder: (context, i) => const SizedBox(width: 12),
+                    separatorBuilder: (context, i) => const SizedBox(width: 10),
                     itemBuilder: (context, i) {
                       final job = jobs[i];
                       return GestureDetector(
@@ -218,16 +419,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           _flyToJob(job);
                         },
                         child: Container(
-                          width: 260,
+                          width: 250,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppColors.border),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: AppColors.border, width: 0.8),
                             boxShadow: const [
                               BoxShadow(
                                 color: AppColors.shadowMedium,
-                                blurRadius: 16,
+                                blurRadius: 12,
                                 offset: Offset(0, 4),
                               ),
                             ],
@@ -262,7 +463,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 3),
                               Text(
                                 job.businessName,
                                 style: const TextStyle(
@@ -271,21 +472,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   color: AppColors.textSecondary,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 6),
                               Row(
                                 children: [
                                   const Icon(
                                     Icons.location_on_outlined,
-                                    size: 12,
+                                    size: 13,
                                     color: AppColors.primary,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${job.distanceKm ?? 0.5} km • ${job.address}',
-                                    style: const TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 11,
-                                      color: AppColors.textSecondary,
+                                  const SizedBox(width: 3),
+                                  Expanded(
+                                    child: Text(
+                                      '${job.distanceKm ?? 0.5} km • ${job.address}',
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
@@ -336,13 +541,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.only(top: 130, bottom: 24, left: 16, right: 16),
+      padding: const EdgeInsets.only(top: 125, bottom: 24, left: 14, right: 14),
       itemCount: jobs.length,
-      separatorBuilder: (context, i) => const SizedBox(height: 12),
+      separatorBuilder: (context, i) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final job = jobs[i];
         return Card(
-          margin: EdgeInsets.zero,
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(

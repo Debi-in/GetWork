@@ -31,6 +31,7 @@ dependencies:
   # ── Firebase (Phase 3) ────────────────────────────────────────
   firebase_core: ^4.12.1
   firebase_messaging: ^16.4.3
+  flutter_local_notifications: ^19.0.0
 
   # ── Auth (Phase 3) ────────────────────────────────────────────
   google_sign_in: ^7.2.0
