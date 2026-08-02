@@ -69,15 +69,13 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Text(
-                      'GW',
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF5B8A6F),
-                        fontFamily: 'Inter',
-                      ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),

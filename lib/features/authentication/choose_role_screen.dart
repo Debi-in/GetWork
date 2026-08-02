@@ -47,13 +47,24 @@ class ChooseRoleScreen extends ConsumerWidget {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.work_rounded,
                     color: Colors.white,
-                    size: 36,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.shadowMedium,
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      width: 64,
+                      height: 64,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
