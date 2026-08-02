@@ -504,9 +504,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       width: 42,
                       height: 42,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Container(
+                      errorBuilder: (context, error, stackTrace) => Container(
                         color: AppColors.primary,
-                        child: Center(
+                        child: const Center(
                           child: Text(
                             'DR',
                             style: TextStyle(
