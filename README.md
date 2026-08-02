@@ -4,15 +4,30 @@ GetWork is a map-first local hiring platform designed for Nepal that allows work
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## 🛠️ Tech Stack & Architecture (Option A MVP Stack)
 
 - **Frontend**: Flutter (Material Design 3)
 - **State Management**: Riverpod 3 (`Notifier` / `NotifierProvider`)
 - **Navigation**: `go_router` (Declarative Routing with SPA support)
-- **Maps & GPS**: `google_maps_flutter`, `geolocator`
+- **Maps & GPS**: OpenStreetMap (`flutter_map`) & Google Maps (`google_maps_flutter`)
+- **Backend & Database**: Supabase (PostgreSQL + RLS + Storage)
+- **Notifications**: Firebase Cloud Messaging (FCM)
 - **Hosting**: Vercel (Flutter Web SPA)
-- **Backend & Database**: Supabase (PostgreSQL + RLS + Realtime)
-- **Target Platform**: Android (API 24+) & Web
+- **Source Control**: GitHub
+
+👉 See [Architecture & Stack Guide](file:///c:/GetWork%20-%20app/docs/ArchitectureAndStack.md) for complete rationale, excluded tools, and phased roadmap.
+
+---
+
+## 📁 Feature-First Architecture
+
+```
+lib/
+├── core/         ← Theme, constants, shared services & widgets
+├── features/     ← Modular features (map, jobs, business, profile, auth, settings)
+├── models/       ← JobModel, UserModel, ApplicationModel
+└── providers/    ← Global Riverpod providers
+```
 
 ---
 
@@ -41,14 +56,8 @@ flutter run -d android
 
 ## 🐙 Connecting GitHub Repository
 
-To connect this local repository to your GitHub account:
-
 ```bash
-# 1. Create a new repository on GitHub (e.g. named "getwork")
-# 2. Link your local project to GitHub:
 git remote add origin https://github.com/YOUR_USERNAME/getwork.git
-
-# 3. Rename branch to main and push initial commit:
 git branch -M main
 git push -u origin main
 ```
@@ -57,34 +66,25 @@ git push -u origin main
 
 ## 🌐 Deploying on Vercel
 
-The project includes `vercel.json` pre-configured for SPA routing.
-
-### Automatic Deployment via GitHub & Vercel Dashboard:
-1. Push your code to GitHub as shown above.
-2. Go to [Vercel Dashboard](https://vercel.com/dashboard) → Click **Add New...** → **Project**.
-3. Import your `getwork` repository.
-4. Set Build Settings:
-   - **Framework Preset**: Other
-   - **Build Command**: `if [ -d "flutter" ]; then cd flutter && git pull; else git clone https://github.com/flutter/flutter.git -b stable --depth 1; fi && ./flutter/bin/flutter build web --release`
-   - **Output Directory**: `build/web`
-5. Click **Deploy**!
+Build settings for Vercel Dashboard:
+- **Build Command**: `if [ -d "flutter" ]; then cd flutter && git pull; else git clone https://github.com/flutter/flutter.git -b stable --depth 1; fi && ./flutter/bin/flutter build web --release`
+- **Output Directory**: `build/web`
 
 ---
 
 ## 🗄️ Supabase Database Setup
 
-1. Log into your [Supabase Dashboard](https://supabase.com).
-2. Open **SQL Editor** → Click **New Query**.
-3. Copy all SQL from [`docs/SupabaseSchema.sql`](file:///c:/GetWork%20-%20app/docs/SupabaseSchema.sql) and paste it into the editor.
-4. Click **Run** to generate tables, indexes, policies, and seed data.
-5. Copy your Project URL & Anon Key into `lib/core/constants/supabase_config.dart`.
+1. Copy SQL from [`docs/SupabaseSchema.sql`](file:///c:/GetWork%20-%20app/docs/SupabaseSchema.sql).
+2. Paste into **Supabase SQL Editor** and click **Run**.
+3. Copy credentials into `lib/core/constants/supabase_config.dart`.
 
 ---
 
 ## 📚 Documentation Reference
 
-- 📜 [Setup Log](file:///c:/GetWork%20-%20app/docs/SetupLog.md)
+- 🏗️ [Architecture & Stack](file:///c:/GetWork%20-%20app/docs/ArchitectureAndStack.md)
+- 🗄️ [Supabase SQL Schema](file:///c:/GetWork%20-%20app/docs/SupabaseSchema.sql)
+- 📁 [Folder Structure Guide](file:///c:/GetWork%20-%20app/docs/FolderStructure.md)
 - 🔑 [API Keys Guide](file:///c:/GetWork%20-%20app/docs/ApiKeysGuide.md)
 - 📦 [Packages Guide](file:///c:/GetWork%20-%20app/docs/PackagesGuide.md)
-- 📁 [Folder Structure Guide](file:///c:/GetWork%20-%20app/docs/FolderStructure.md)
-- 🗄️ [Supabase SQL Schema](file:///c:/GetWork%20-%20app/docs/SupabaseSchema.sql)
+- 📜 [Setup Log](file:///c:/GetWork%20-%20app/docs/SetupLog.md)
