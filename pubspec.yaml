@@ -1,0 +1,83 @@
+name: getwork
+description: "GetWork - Map-first local hiring platform for nearby part-time and temporary jobs."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── Navigation ────────────────────────────────────────────────
+  go_router: ^17.3.0
+
+  # ── State Management ──────────────────────────────────────────
+  flutter_riverpod: ^3.3.2
+  riverpod_annotation: ^4.0.3
+
+  # ── Maps & Location ───────────────────────────────────────────
+  google_maps_flutter: ^2.10.0
+  geolocator: ^14.0.3
+  geocoding: ^5.0.0
+  permission_handler: ^13.0.0
+
+  # ── Backend: Supabase (Phase 2) ───────────────────────────────
+  supabase_flutter: ^2.8.4
+
+  # ── Firebase (Phase 3) ────────────────────────────────────────
+  firebase_core: ^4.12.1
+  firebase_messaging: ^16.4.3
+
+  # ── Auth (Phase 3) ────────────────────────────────────────────
+  google_sign_in: ^7.2.0
+
+  # ── UI & Styling ──────────────────────────────────────────────
+  cached_network_image: ^3.4.1
+  flutter_svg: ^2.0.17
+  shimmer: ^3.0.0
+  lottie: ^3.3.1
+  flutter_animate: ^4.5.2
+
+  # ── Local Storage ─────────────────────────────────────────────
+  shared_preferences: ^2.3.5
+
+  # ── Utilities ─────────────────────────────────────────────────
+  intl: ^0.20.2
+  url_launcher: ^6.3.1
+  connectivity_plus: ^7.3.1
+  image_picker: ^1.1.2
+  path_provider: ^2.1.5
+  equatable: ^2.0.7
+  uuid: ^4.5.1
+  logger: ^2.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.14
+  riverpod_generator: ^4.0.4
+  json_serializable: ^6.9.4
+  json_annotation: ^4.9.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+    - assets/fonts/
+
+  # fonts:
+  #   - family: Inter
+  #     fonts:
+  #       - asset: assets/fonts/Inter-Regular.ttf
+  #       - asset: assets/fonts/Inter-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Inter-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/Inter-Bold.ttf
+  #         weight: 700
