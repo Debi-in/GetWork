@@ -418,7 +418,7 @@ class _JobFilterModalState extends ConsumerState<JobFilterModal> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
         ],
       ),

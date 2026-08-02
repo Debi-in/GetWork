@@ -266,7 +266,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         scrollDirection: Axis.horizontal,
                         itemCount: jobs.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        separatorBuilder: (_, idx) => const SizedBox(width: 10),
                         itemBuilder: (context, i) {
                           final job = jobs[i];
                           return GestureDetector(
@@ -408,7 +408,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             top: topPadding + 8,
             left: 16,
             right: 16,
-            bottom: 14,
+            bottom: 12,
           ),
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -420,35 +420,83 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
             children: [
-              Text(
-                titles[_currentNavIndex],
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              if (_currentNavIndex == 1)
-                GestureDetector(
-                  onTap: () => context.push('/notifications'),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.notifications_none_rounded,
+              Row(
+                children: [
+                  Text(
+                    titles[_currentNavIndex],
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
-                      size: 20,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_currentNavIndex == 1)
+                    GestureDetector(
+                      onTap: () => context.push('/notifications'),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceVariant,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.notifications_none_rounded,
+                          color: AppColors.textPrimary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (_currentNavIndex == 1) ...[
+                const SizedBox(height: 12),
+                // Search bar inside Jobs Tab
+                Container(
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.border, width: 0.8),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) {
+                      ref.read(searchQueryProvider.notifier).setQuery(val);
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search jobs, category or place',
+                      hintStyle: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        color: AppColors.textHint,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(
+                          Icons.tune_rounded,
+                          color: AppColors.textSecondary,
+                          size: 18,
+                        ),
+                        onPressed: () => JobFilterModal.show(context),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                // Expanding Category Pills Bar
+                const CategoryFilterBar(),
+              ],
             ],
           ),
         ),
@@ -704,51 +752,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-      itemCount: jobs.length + 1, // +1 for header row
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      itemCount: jobs.length + 1,
       itemBuilder: (context, i) {
-        // ── Header row ──
+        // ── Header row: results count + sort ──
         if (i == 0) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 14),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${jobs.length} jobs nearby',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
+                Text(
+                  '${jobs.length} results found',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.sort_rounded, size: 14, color: AppColors.textSecondary),
-                      SizedBox(width: 4),
-                      Text(
-                        'Sort: Nearest',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
+                GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.border, width: 1),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.shadowLight,
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      children: const [
+                        Text(
+                          'RELEVANCE',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(Icons.keyboard_arrow_down_rounded,
+                            size: 16, color: AppColors.textSecondary),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -758,294 +813,221 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
         final job = jobs[i - 1];
         final catColor = _categoryColor(job.category);
-        final slotsLeft = job.workersNeeded - job.workersApplied;
-        final fillFraction = job.workersNeeded > 0
-            ? (job.workersApplied / job.workersNeeded).clamp(0.0, 1.0)
-            : 0.0;
+        final catLabel = _categoryLabel(job.category);
 
-        // Staggered animation widget
         return _AnimatedJobCard(
           index: i - 1,
           child: GestureDetector(
             onTap: () => context.push('/job/${job.id}'),
             child: Container(
               margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: const [
                   BoxShadow(
-                    color: AppColors.shadowMedium,
-                    blurRadius: 16,
+                    color: AppColors.shadowLight,
+                    blurRadius: 14,
                     offset: Offset(0, 4),
                   ),
                 ],
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Category color strip
+                  // ── Left: Square Business Avatar ──
                   Container(
-                    width: 5,
+                    width: 62,
+                    height: 62,
                     decoration: BoxDecoration(
-                      color: catColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        bottomLeft: Radius.circular(20),
+                      color: catColor.withValues(alpha: 0.13),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: catColor.withValues(alpha: 0.25),
+                        width: 1,
                       ),
                     ),
+                    child: job.businessLogoUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: Image.network(
+                              job.businessLogoUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, e, st) => _avatarFallback(
+                                  job.businessName, catColor),
+                            ),
+                          )
+                        : _avatarFallback(job.businessName, catColor),
                   ),
-                  // Card Content
+                  const SizedBox(width: 14),
+
+                  // ── Right: All Content ──
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Top row: business avatar + name + salary chip
-                          Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: catColor.withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top: Title + Chevron
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                job.title,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                  height: 1.25,
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    job.businessName.isNotEmpty
-                                        ? job.businessName[0].toUpperCase()
-                                        : 'B',
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                      color: catColor,
-                                    ),
-                                  ),
-                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      job.businessName,
-                                      style: const TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      _categoryLabel(job.category),
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: catColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryContainer,
+                                shape: BoxShape.circle,
                               ),
-                              // Salary chip
+                              child: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 13,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Business • Location
+                        Text(
+                          '${job.businessName} • ${job.address}',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+
+                        // Rating + Distance row
+                        Row(
+                          children: [
+                            const Icon(Icons.star_rounded,
+                                size: 14, color: Color(0xFFF59E0B)),
+                            const SizedBox(width: 3),
+                            const Text(
+                              '4.8',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const Text(
+                              ' (128)',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11,
+                                color: AppColors.textHint,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            const Icon(Icons.location_on_rounded,
+                                size: 13, color: AppColors.primary),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${job.distanceKm ?? 0.5} km',
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            if (job.isToday) ...[
+                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 5),
+                                    horizontal: 6, vertical: 1),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primaryContainer,
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: AppColors.successLight,
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: Text(
-                                  job.salaryDisplay,
-                                  style: const TextStyle(
+                                child: const Text(
+                                  'Today',
+                                  style: TextStyle(
                                     fontFamily: 'Inter',
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.primary,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.success,
                                   ),
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 10),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
 
-                          // Job title + urgent badge
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  job.title,
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary,
-                                    height: 1.2,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                        // Bottom: Salary pill + Tags
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            // Green salary pill
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD1FAE5),
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                              if (job.isUrgent) ...
-                                [
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accentContainer,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: const Text(
-                                      '🔥 Urgent',
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.accent,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-
-                          // Distance + Shift time
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_outlined,
-                                  size: 13, color: AppColors.primary),
-                              const SizedBox(width: 3),
-                              Expanded(
-                                child: Text(
-                                  '${job.distanceKm ?? 0.5} km · ${job.address}',
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.schedule_rounded,
-                                  size: 13, color: AppColors.textHint),
-                              const SizedBox(width: 3),
-                              Text(
-                                '${job.shiftStartTime} – ${job.shiftEndTime}',
+                              child: Text(
+                                job.salaryDisplay,
                                 style: const TextStyle(
                                   fontFamily: 'Inter',
                                   fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              if (job.isToday) ...
-                                [
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.successLight,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Text(
-                                      'Today',
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.success,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Workers slots fill bar
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '$slotsLeft slot${slotsLeft != 1 ? 's' : ''} left',
-                                    style: const TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${job.workersApplied}/${job.workersNeeded} applied',
-                                    style: const TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 11,
-                                      color: AppColors.textHint,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 5),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: fillFraction,
-                                  minHeight: 5,
-                                  backgroundColor: AppColors.surfaceVariant,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    fillFraction > 0.8
-                                        ? AppColors.accent
-                                        : AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-
-                          // View Details button
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton(
-                              onPressed: () => context.push('/job/${job.id}'),
-                              style: TextButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: const Text(
-                                'View Details',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF059669),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                            // Category tag
+                            _tagPill(catLabel, catColor),
+                            // Shift time tag
+                            _tagPill(
+                              '${job.shiftStartTime}–${job.shiftEndTime}',
+                              AppColors.textHint,
+                            ),
+                            // Urgent tag
+                            if (job.isUrgent)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accentContainer,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text(
+                                  '🔥 Urgent',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.accent,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1054,6 +1036,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         );
       },
+    );
+  }
+
+  // ── Avatar fallback widget ───────────────────────────────────────────────
+  Widget _avatarFallback(String name, Color color) {
+    return Center(
+      child: Text(
+        name.isNotEmpty ? name[0].toUpperCase() : 'B',
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 22,
+          fontWeight: FontWeight.w900,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  // ── Small tag pill ───────────────────────────────────────────────────────
+  Widget _tagPill(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color.withValues(alpha: 0.9),
+        ),
+      ),
     );
   }
 

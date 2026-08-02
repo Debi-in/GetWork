@@ -1,6 +1,7 @@
 // ============================================================
 // CATEGORY FILTER BAR — GetWork App
-// Material 3 horizontal scrolling category selector
+// Animated expanding pill category filter selector
+// Unselected: Icon-only pill | Selected: Expands with Icon + Label
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -59,9 +60,9 @@ class CategoryFilterBar extends ConsumerWidget {
     final selectedCategory = ref.watch(selectedCategoryProvider);
 
     return SizedBox(
-      height: 44,
+      height: 40,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         scrollDirection: Axis.horizontal,
         itemCount: JobCategory.values.length,
         separatorBuilder: (context, index) => const SizedBox(width: 8),
@@ -69,38 +70,75 @@ class CategoryFilterBar extends ConsumerWidget {
           final category = JobCategory.values[index];
           final isSelected = selectedCategory == category;
 
-          return FilterChip(
-            selected: isSelected,
-            showCheckmark: false,
-            avatar: Icon(
-              _getCategoryIcon(category),
-              size: 18,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-            ),
-            label: Text(
-              _getCategoryLabel(category),
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+          return GestureDetector(
+            onTap: () {
+              ref.read(selectedCategoryProvider.notifier).setCategory(category);
+              ref.read(jobFilterProvider.notifier).setCategory(category);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.fastOutSlowIn,
+              padding: EdgeInsets.symmetric(
+                horizontal: isSelected ? 16 : 12,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : AppColors.border,
+                  width: 1,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : const [
+                        BoxShadow(
+                          color: AppColors.shadowLight,
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _getCategoryIcon(category),
+                    size: 18,
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                  ),
+                  ClipRect(
+                    child: AnimatedSize(
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.fastOutSlowIn,
+                      alignment: Alignment.centerLeft,
+                      child: isSelected
+                          ? Padding(
+                              padding: const EdgeInsets.only(left: 7),
+                              child: Text(
+                                _getCategoryLabel(category),
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: -0.2,
+                                ),
+                                maxLines: 1,
+                              ),
+                            )
+                          : const SizedBox(width: 0, height: 0),
+                    ),
+                  ),
+                ],
               ),
             ),
-            selectedColor: AppColors.primary,
-            backgroundColor: AppColors.surface,
-            side: BorderSide(
-              color: isSelected ? AppColors.primary : AppColors.border,
-              width: 1,
-            ),
-            elevation: isSelected ? 2 : 0,
-            shadowColor: AppColors.shadowLight,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(100),
-            ),
-            onSelected: (bool selected) {
-              ref.read(selectedCategoryProvider.notifier).setCategory(category);
-            },
           );
         },
       ),

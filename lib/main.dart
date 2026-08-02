@@ -35,7 +35,7 @@ void main() async {
   // ── Phase 2: Init Supabase ───────────────────────────────────
   await Supabase.initialize(
     url: SupabaseConfig.supabaseUrl,
-    anonKey: SupabaseConfig.supabaseAnonKey,
+    publishableKey: SupabaseConfig.supabaseAnonKey,
   );
 
   // ── Phase 3: Init Firebase ───────────────────────────────────
