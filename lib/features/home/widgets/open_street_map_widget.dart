@@ -1,8 +1,8 @@
 // ============================================================
 // OPEN STREET MAP WIDGET — GetWork App
-// Renders Kathmandu map via flutter_map + OpenStreetMap / CartoDB tiles
-// Features map pin callout bubbles with downward pointer arrows,
-// dual map themes (Light vs Dark mode), and interactive job markers
+// Renders Kathmandu map via flutter_map + multi-style tiles
+// (Street, Satellite, Muted Light, Terrain)
+// Features map pin callout bubbles with downward pointer arrows
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -11,11 +11,13 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/constants/app_colors.dart';
 import '../../../models/job_model.dart';
 
+enum MapStyleType { street, satellite, lightGray, terrain }
+
 class OpenStreetMapWidget extends StatelessWidget {
   final List<JobModel> jobs;
   final JobModel? selectedJob;
   final MapController? mapController;
-  final bool isDarkMode;
+  final MapStyleType mapStyle;
   final void Function(JobModel job) onMarkerTap;
   final VoidCallback onMapTap;
 
@@ -24,13 +26,26 @@ class OpenStreetMapWidget extends StatelessWidget {
     required this.jobs,
     required this.selectedJob,
     this.mapController,
-    this.isDarkMode = false,
+    this.mapStyle = MapStyleType.street,
     required this.onMarkerTap,
     required this.onMapTap,
   });
 
   // Kathmandu default centre
   static const LatLng kathmanduCenter = LatLng(27.7172, 85.3240);
+
+  String get _tileUrl {
+    switch (mapStyle) {
+      case MapStyleType.satellite:
+        return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+      case MapStyleType.lightGray:
+        return 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+      case MapStyleType.terrain:
+        return 'https://a.tile.opentopomap.org/{z}/{x}/{y}.png';
+      case MapStyleType.street:
+        return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,17 +59,15 @@ class OpenStreetMapWidget extends StatelessWidget {
         onTap: (_, _) => onMapTap(),
       ),
       children: [
-        // ── Map Tile Layer (Light vs Sleek Dark Mode) ───────────
+        // ── Map Tile Layer (Multi-Style Tile URLs) ────────────
         TileLayer(
-          urlTemplate: isDarkMode
-              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-              : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          urlTemplate: _tileUrl,
           subdomains: const ['a', 'b', 'c', 'd'],
           userAgentPackageName: 'com.getwork.app',
           maxZoom: 19,
         ),
 
-        // ── Job Salary Pins with Downward Arrow ──────────────────
+        // ── Job Salary Pins with Downward Arrow Pointer ────────
         MarkerLayer(
           markers: jobs.map((job) {
             final isSelected = selectedJob?.id == job.id;
@@ -178,7 +191,6 @@ class _TrianglePointerPainter extends CustomPainter {
 
     canvas.drawPath(path, paint);
 
-    // Draw white border outline on sides
     final borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke

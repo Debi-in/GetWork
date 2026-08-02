@@ -2,7 +2,7 @@
 // HOME SCREEN — GetWork App
 // Interactive Map-First Local Job Discovery Interface
 // Matching exact reference design with glassmorphism blur background focus,
-// map pins with downward pointers, and sleek map dark mode toggle
+// map pins with downward pointers, and interactive map style picker
 // ============================================================
 
 import 'dart:ui';
@@ -28,7 +28,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final MapController _mapController = MapController();
   int _currentNavIndex = 0; // 0: Map, 1: Jobs, 2: Messages, 3: Notifications, 4: Profile
-  bool _isDarkMode = false;
+  MapStyleType _selectedMapStyle = MapStyleType.street;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -39,6 +39,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _flyToJob(JobModel job) {
     _mapController.move(LatLng(job.latitude, job.longitude), 15.0);
+  }
+
+  void _showMapStyleSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Select Map Style',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _MapStyleOption(
+                    title: 'Street',
+                    icon: Icons.map_rounded,
+                    isSelected: _selectedMapStyle == MapStyleType.street,
+                    onTap: () {
+                      setState(() => _selectedMapStyle = MapStyleType.street);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _MapStyleOption(
+                    title: 'Satellite',
+                    icon: Icons.satellite_alt_rounded,
+                    isSelected: _selectedMapStyle == MapStyleType.satellite,
+                    onTap: () {
+                      setState(() => _selectedMapStyle = MapStyleType.satellite);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _MapStyleOption(
+                    title: 'Muted Light',
+                    icon: Icons.wb_sunny_outlined,
+                    isSelected: _selectedMapStyle == MapStyleType.lightGray,
+                    onTap: () {
+                      setState(() => _selectedMapStyle = MapStyleType.lightGray);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _MapStyleOption(
+                    title: 'Terrain',
+                    icon: Icons.terrain_rounded,
+                    isSelected: _selectedMapStyle == MapStyleType.terrain,
+                    onTap: () {
+                      setState(() => _selectedMapStyle = MapStyleType.terrain);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -148,7 +233,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     jobs: jobs,
                     selectedJob: selectedJob,
                     mapController: _mapController,
-                    isDarkMode: _isDarkMode,
+                    mapStyle: _selectedMapStyle,
                     onMarkerTap: (job) {
                       ref.read(selectedJobProvider.notifier).selectJob(job);
                       _flyToJob(job);
@@ -295,7 +380,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // ── Right Floating Map Controls (Location, Dark Mode, Filter) ──
+            // ── Right Floating Map Controls (Location, Layers Selector, Filter) ──
             if (_currentNavIndex == 0 && selectedJob == null)
               Positioned(
                 right: 14,
@@ -330,14 +415,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Map Theme Toggle Button (Light / Dark Mode)
+                    // Map Layer Selector Button (Opens Map Style Picker)
                     Container(
                       width: 42,
                       height: 42,
-                      decoration: BoxDecoration(
-                        color: _isDarkMode ? const Color(0xFF1E222A) : Colors.white,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
                         shape: BoxShape.circle,
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
                             color: AppColors.shadowMedium,
                             blurRadius: 10,
@@ -346,16 +431,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ],
                       ),
                       child: IconButton(
-                        icon: Icon(
-                          _isDarkMode ? Icons.dark_mode_rounded : Icons.wb_sunny_outlined,
-                          color: _isDarkMode ? Colors.amber : AppColors.textPrimary,
+                        icon: const Icon(
+                          Icons.layers_outlined,
+                          color: AppColors.primary,
                           size: 20,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _isDarkMode = !_isDarkMode;
-                          });
-                        },
+                        onPressed: _showMapStyleSelector,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -390,7 +471,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
-            // ── Bottom Horizontal Job Carousel (When no job selected) ──
+            // ── Bottom Horizontal Job Carousel ─────────────────
             if (selectedJob == null && _currentNavIndex == 0 && jobs.isNotEmpty)
               Positioned(
                 bottom: 16,
@@ -634,6 +715,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+// ── Map Style Option Pill ─────────────────────────────────────
+class _MapStyleOption extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _MapStyleOption({
+    required this.title,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primaryContainer : AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
