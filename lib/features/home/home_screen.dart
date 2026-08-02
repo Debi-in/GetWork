@@ -10,6 +10,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/expanding_label_nav_bar.dart';
 import '../../models/job_model.dart';
 import '../jobs/jobs_provider.dart';
 import 'widgets/category_filter_bar.dart';
@@ -165,62 +166,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: AppColors.background,
       resizeToAvoidBottomInset: false,
 
-      // ── Bottom Navigation Bar — 4 items (no Notifications) ──────────────
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadowLight,
-              blurRadius: 16,
-              offset: Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentNavIndex,
-          onTap: (index) {
-            setState(() {
-              _currentNavIndex = index;
-            });
-            if (index == 3) {
-              context.push('/profile');
-            }
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textSecondary,
-          selectedLabelStyle: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
+      // ── Expanding Label Navigation Bar — Purple Theme ─────────────
+      bottomNavigationBar: ExpandingLabelNavBar(
+        currentIndex: _currentNavIndex,
+        onTap: (index) {
+          setState(() {
+            _currentNavIndex = index;
+          });
+          if (index == 3) {
+            context.push('/profile');
+          }
+        },
+        items: const [
+          NavItemData(
+            icon: Icons.map_outlined,
+            selectedIcon: Icons.map_rounded,
+            label: 'Map',
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
+          NavItemData(
+            icon: Icons.work_outline_rounded,
+            selectedIcon: Icons.work_rounded,
+            label: 'Jobs',
           ),
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.map_rounded),
-              label: 'Map',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.work_outline_rounded),
-              label: 'Jobs',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.chat_bubble_outline_rounded),
-              label: 'Messages',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              label: 'Profile',
-            ),
-          ],
-        ),
+          NavItemData(
+            icon: Icons.chat_bubble_outline_rounded,
+            selectedIcon: Icons.chat_bubble_rounded,
+            label: 'Messages',
+          ),
+          NavItemData(
+            icon: Icons.person_outline_rounded,
+            selectedIcon: Icons.person_rounded,
+            label: 'Profile',
+          ),
+        ],
       ),
 
       body: _currentNavIndex == 0

@@ -23,6 +23,10 @@ class AppColors {
   static const Color accentContainer = Color(0xFFFFDCC8);
   static const Color onAccent = Color(0xFFFFFFFF);
 
+  // ── Navigation Purple Theme ──────────────────────────────────
+  static const Color navPurple = Color(0xFF5B46E6);
+  static const Color navPurpleLight = Color(0xFFEEEBFF);
+
   // ── Background: Soft Warm Off-White ──────────────────────────
   static const Color background = Color(0xFFF6F6F2);
   static const Color surface = Color(0xFFFFFFFF);
