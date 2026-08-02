@@ -1,0 +1,228 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>GetWork Onboarding - Get Paid Faster</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-primary": "#b1c5ff",
+                    "on-primary": "#ffffff",
+                    "primary-fixed": "#dae2ff",
+                    "on-tertiary-fixed": "#2a1700",
+                    "secondary-fixed-dim": "#ffb695",
+                    "primary-container": "#2f6fed",
+                    "on-error": "#ffffff",
+                    "surface-tint": "#0056d0",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "tertiary": "#845300",
+                    "surface-dim": "#d1dbe8",
+                    "on-surface": "#121d26",
+                    "on-tertiary": "#ffffff",
+                    "primary": "#0055ce",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#ffffff",
+                    "on-primary-fixed": "#001847",
+                    "on-surface-variant": "#424654",
+                    "inverse-on-surface": "#e8f2ff",
+                    "surface-bright": "#f7f9ff",
+                    "on-primary-fixed-variant": "#0040a0",
+                    "on-background": "#121d26",
+                    "surface-container-high": "#dfe9f7",
+                    "on-secondary-container": "#692600",
+                    "inverse-surface": "#27313c",
+                    "surface-container-low": "#edf4ff",
+                    "secondary-container": "#ff8346",
+                    "outline-variant": "#c2c6d7",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "outline": "#737786",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#ffddb8",
+                    "background": "#f7f9ff",
+                    "primary-fixed-dim": "#b1c5ff",
+                    "surface-container-highest": "#d9e3f1",
+                    "secondary": "#a23f00",
+                    "on-secondary-fixed": "#351000",
+                    "secondary-fixed": "#ffdbcc",
+                    "surface-variant": "#d9e3f1",
+                    "surface-container": "#e4effd",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-container": "#ffffff",
+                    "on-secondary-fixed-variant": "#7b2e00",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "surface": "#f7f9ff",
+                    "tertiary-container": "#a66900"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "xxl": "48px",
+                    "xl": "32px",
+                    "margin-mobile": "16px",
+                    "base": "4px",
+                    "lg": "24px",
+                    "xs": "4px",
+                    "margin-desktop": "32px"
+            },
+            "fontFamily": {
+                    "label-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-sm": ["16px", {"lineHeight": "22px", "fontWeight": "600"}],
+                    "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fade-in { animation: fadeIn 0.8s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .blob-bg {
+            filter: blur(80px);
+            opacity: 0.15;
+            position: absolute;
+            z-index: -1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface overflow-hidden h-screen flex flex-col">
+<!-- Atmospheric Background Decoration -->
+<div class="blob-bg bg-primary-container w-72 h-72 -top-20 -right-20 rounded-full"></div>
+<div class="blob-bg bg-secondary-container w-64 h-64 top-1/2 -left-20 rounded-full"></div>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col items-center justify-center px-gutter max-w-lg mx-auto text-center relative">
+<!-- Illustration Section -->
+<div class="relative w-full aspect-square flex items-center justify-center mb-xl fade-in">
+<!-- Glassmorphism Phone Frame -->
+<div class="relative w-64 h-[450px] bg-white/40 backdrop-blur-xl border-4 border-white/60 rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
+<!-- Phone Content (Mock Map) -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-cover bg-center opacity-80" data-alt="A highly detailed 3D topographic map illustration showing a modern city grid in a minimalist style. Soft pastel tones of white and light blue dominate the landscape. Floating above the map are several premium glassmorphism bubbles displaying salary figures like $25/hr and $40/hr in bold blue text. The lighting is bright and airy, suggesting a professional yet warm job-seeking platform environment." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDOtX02OACfQ5zM-sTXuGh_lyPzRMh259QlcDW18bQ3u_EVJGopBz_VN-knFDL1uR3Nt5snbe-lg6lEs4t2C9mhHj0i9pjV2hgxRpRXOmUWTlYKG_aLU5M6Dh0z9QSc6IdCdeOIH0H7VcUZzUHNKC4Xo932SHM98MN7kshJurFPu7rjri6VtdJ52do-r7DVxiWiB-Dlu7btNoQIVp9ghAL-tCBgVUtTN_QE-tO-FYeInjZaEy7C1KxM3w')"></div>
+</div>
+<!-- Floating UI Elements within the phone -->
+<div class="absolute inset-0 flex flex-col items-center justify-center space-y-md pointer-events-none p-md">
+<!-- Notification Mock -->
+<div class="bg-white/90 backdrop-blur-md p-md rounded-xl shadow-lg border border-white/50 w-full animate-bounce flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+<div class="text-left">
+<p class="font-label-md text-label-md text-primary">Payment Received</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">+$42.50 from Gardener job</p>
+</div>
+</div>
+</div>
+<!-- Notch Mock -->
+<div class="w-24 h-6 bg-on-surface/5 rounded-b-2xl absolute top-0 left-1/2 -translate-x-1/2 z-10"></div>
+</div>
+<!-- Exterior Decorative Elements -->
+<div class="absolute -bottom-4 -right-2 bg-secondary-container text-on-secondary-container font-headline-sm text-headline-sm py-xs px-md rounded-full shadow-lg rotate-12 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Verified
+            </div>
+</div>
+<!-- Text Content -->
+<div class="space-y-md fade-in" style="animation-delay: 0.2s;">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface tracking-tight">
+                Get Paid Faster
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed max-w-xs mx-auto">
+                Track your earnings and get paid directly after completing your work.
+            </p>
+</div>
+</main>
+<!-- Footer Controls -->
+<footer class="p-gutter space-y-xl pb-xxl max-w-lg mx-auto w-full fade-in" style="animation-delay: 0.4s;">
+<!-- Progress Indicators -->
+<div class="flex justify-center items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+<div class="w-6 h-2 rounded-full bg-primary transition-all duration-300"></div>
+</div>
+<!-- Action Button -->
+<div class="flex flex-col gap-md">
+<button class="w-full h-14 bg-primary text-on-primary font-headline-sm text-headline-sm rounded-xl shadow-md hover:bg-on-primary-fixed-variant active:scale-95 transition-all flex items-center justify-center gap-sm">
+                Get Started
+                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<p class="text-on-surface-variant font-label-md text-label-md">
+                Already have an account? <span class="text-primary font-bold">Sign In</span>
+</p>
+</div>
+</footer>
+<!-- Success Feedback Overlay (Hidden by default) -->
+<div class="fixed inset-0 bg-surface/80 backdrop-blur-md z-[100] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500" id="success-feedback">
+<div class="bg-white p-xl rounded-[32px] shadow-2xl text-center scale-90 transition-transform duration-500 flex flex-col items-center">
+<div class="w-16 h-16 bg-primary-container/20 rounded-full flex items-center justify-center text-primary mb-md">
+<span class="material-symbols-outlined text-[40px]" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Welcome Aboard!</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-sm">Your journey starts now.</p>
+</div>
+</div>
+<script>
+        // Micro-interaction for the Get Started button
+        const startBtn = document.querySelector('button');
+        const overlay = document.getElementById('success-feedback');
+        
+        startBtn.addEventListener('click', () => {
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.querySelector('div').classList.remove('scale-90');
+            overlay.querySelector('div').classList.add('scale-100');
+            
+            // Artificial delay to simulate transition to next app state
+            setTimeout(() => {
+                // In a real app, this would navigate to the Login/Auth screen
+                console.log('Navigating to login options...');
+            }, 1500);
+        });
+
+        // Floating animation for UI elements
+        const cards = document.querySelectorAll('.bg-white\/90');
+        cards.forEach((card, i) => {
+            card.style.animation = `bounce 3s infinite ease-in-out ${i * 0.5}s`;
+        });
+    </script>
+
+
+</body></html>

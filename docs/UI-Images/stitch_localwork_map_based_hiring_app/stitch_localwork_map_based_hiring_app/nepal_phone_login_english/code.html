@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login - LocalWork Nepal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9ff;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Soft geometry for buttons and inputs */
+        .kinetic-input {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .kinetic-input:focus-within {
+            border-color: #0055ce;
+            box-shadow: 0 0 0 4px rgba(0, 85, 206, 0.1);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#b1c5ff",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dae2ff",
+                        "on-tertiary-fixed": "#2a1700",
+                        "secondary-fixed-dim": "#ffb695",
+                        "primary-container": "#2f6fed",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#0056d0",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#845300",
+                        "surface-dim": "#d1dbe8",
+                        "on-surface": "#121d26",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#0055ce",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#ffffff",
+                        "on-primary-fixed": "#001847",
+                        "on-surface-variant": "#424654",
+                        "inverse-on-surface": "#e8f2ff",
+                        "surface-bright": "#f7f9ff",
+                        "on-primary-fixed-variant": "#0040a0",
+                        "on-background": "#121d26",
+                        "surface-container-high": "#dfe9f7",
+                        "on-secondary-container": "#692600",
+                        "inverse-surface": "#27313c",
+                        "surface-container-low": "#edf4ff",
+                        "secondary-container": "#ff8346",
+                        "outline-variant": "#c2c6d7",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "outline": "#737786",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#ffddb8",
+                        "background": "#f7f9ff",
+                        "primary-fixed-dim": "#b1c5ff",
+                        "surface-container-highest": "#d9e3f1",
+                        "secondary": "#a23f00",
+                        "on-secondary-fixed": "#351000",
+                        "secondary-fixed": "#ffdbcc",
+                        "surface-variant": "#d9e3f1",
+                        "surface-container": "#e4effd",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#ffffff",
+                        "on-secondary-fixed-variant": "#7b2e00",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "surface": "#f7f9ff",
+                        "tertiary-container": "#a66900"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "8px",
+                        "xl": "12px",
+                        "2xl": "24px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "xxl": "48px",
+                        "xl": "32px",
+                        "margin-mobile": "16px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "headline-sm": ["16px", {"lineHeight": "22px", "fontWeight": "600"}],
+                        "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- Status Bar Spacer (Mobile-centric UI) -->
+<div class="h-8 w-full"></div>
+<main class="flex-grow flex flex-col px-margin-mobile">
+<!-- Illustration/Decorative Area -->
+<div class="mt-xl mb-xl relative h-48 flex items-center justify-center overflow-hidden rounded-2xl bg-surface-container-low">
+
+<div class="relative z-10 flex flex-col items-center text-center px-lg">
+<div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg mb-md">
+<span class="material-symbols-outlined text-on-primary text-[32px]">smartphone</span>
+</div>
+</div>
+</div>
+<!-- Typography Section -->
+<section class="space-y-sm mb-xxl">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight">
+                Take a part-time job via phone number
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+                Enter your phone number to receive a verification code.
+            </p>
+</section>
+<!-- Input Section -->
+<form class="space-y-lg" id="login-form">
+<div class="flex flex-col space-y-xs">
+<label class="font-label-md text-label-md text-primary ml-1" for="phone">Phone Number</label>
+<div class="kinetic-input flex items-center bg-white border border-outline-variant/60 rounded-xl h-[56px] overflow-hidden px-md">
+<!-- Fixed Nepal Country Code -->
+<div class="flex items-center space-x-2 pr-md border-r border-outline-variant/40 shrink-0">
+<img class="w-5 h-6 object-contain" data-alt="A small, crisp circular icon of the flag of Nepal with its unique non-rectangular shape against a white background. The colors are vibrant crimson and deep blue, matching a professional and clean mobile interface aesthetic. The lighting is flat and even for maximum legibility within a UI element." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFX33Xx70M0Dlg3swS0hBXgqGODdt5M9jQKg2-UaGQRcu-323beeGxW9PvuEJttFAUPMiLC2nVZTdTr1_Tg7nxIGvuAI29TvCG2hJbmuih61-Pi9v633Qwvz6N9qpSRJKEOhfo1f0JmetRlmAhqjFZRMOrcoxA1n59CV3QE9JDhRi4tMPygQbqLV5--7XF9Td7rY053Uy5iZMSrQH_JooSg6zxS_hkJ2Xm-DK8j8ocajMlN6euggFreA"/>
+<span class="font-headline-sm text-headline-sm text-on-surface">+977</span>
+</div>
+<!-- Input Field -->
+<input class="flex-grow bg-transparent border-none focus:ring-0 text-headline-sm font-headline-sm text-on-surface placeholder:text-outline" id="phone" maxlength="10" placeholder="98XXXXXXXX" required="" type="tel"/>
+</div>
+<p class="font-label-sm text-label-sm text-outline ml-1 mt-1">Available only for residents in Nepal.</p>
+</div>
+</form>
+</main>
+<!-- Bottom Action Area -->
+<footer class="p-margin-mobile pb-xxl flex flex-col space-y-md">
+<p class="text-center font-label-sm text-label-sm text-on-surface-variant px-md">
+            By continuing, you agree to our <span class="text-primary font-bold">Terms of Service</span> and <span class="text-primary font-bold">Privacy Policy</span>.
+        </p>
+<button class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm h-[56px] rounded-xl shadow-md active:scale-95 transition-transform duration-150 flex items-center justify-center space-x-2" form="login-form" type="submit">
+<span>Next</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</footer>
+<!-- Small decorative blobs for atmosphere -->
+<div class="fixed top-[-100px] right-[-50px] w-64 h-64 bg-primary/5 blur-[80px] rounded-full -z-10"></div>
+<div class="fixed bottom-[-50px] left-[-50px] w-48 h-48 bg-secondary-container/10 blur-[60px] rounded-full -z-10"></div>
+<script>
+        // Simple Interaction logic
+        const input = document.getElementById('phone');
+        const form = document.getElementById('login-form');
+
+        // Allow only numbers
+        input.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const phoneVal = input.value;
+            if(phoneVal.length >= 9) {
+                // Mimic transition
+                e.target.querySelector('button').innerHTML = `
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                `;
+                setTimeout(() => {
+                    alert('OTP Sent to +977 ' + phoneVal);
+                    // Reset for demo
+                    location.reload();
+                }, 1500);
+            } else {
+                input.closest('.kinetic-input').classList.add('border-error');
+                setTimeout(() => input.closest('.kinetic-input').classList.remove('border-error'), 2000);
+            }
+        });
+    </script>
+</body></html>

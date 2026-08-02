@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GetWork - Select Account Type</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#003da8",
+                    "surface-bright": "#f7f9ff",
+                    "outline-variant": "#c3c6d8",
+                    "surface-container-highest": "#d8e4f0",
+                    "on-secondary-fixed-variant": "#7c2e00",
+                    "on-secondary-fixed": "#351000",
+                    "on-tertiary-container": "#fff7f2",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-container": "#faf8ff",
+                    "surface-container-high": "#dee9f6",
+                    "inverse-on-surface": "#e7f2ff",
+                    "tertiary-fixed-dim": "#fcba65",
+                    "primary-container": "#1a66ff",
+                    "glass-surface": "rgba(247, 249, 255, 0.85)",
+                    "tertiary-fixed": "#ffddb7",
+                    "on-secondary-container": "#692600",
+                    "on-background": "#121d26",
+                    "surface-variant": "#d8e4f0",
+                    "surface-container-low": "#ecf4ff",
+                    "secondary-fixed-dim": "#ffb595",
+                    "tertiary": "#7f4f00",
+                    "on-surface": "#121d26",
+                    "secondary": "#a23f00",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "tertiary-container": "#9c6719",
+                    "urgent-glow": "rgba(26, 102, 255, 0.3)",
+                    "secondary-container": "#ff8346",
+                    "surface": "#fcfaf2", /* Adjusted to Warm Ivory */
+                    "inverse-surface": "#27323b",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "on-tertiary-fixed": "#2a1700",
+                    "surface-container": "#f4f1e6", /* Warmer Ivory */
+                    "on-error": "#ffffff",
+                    "map-road": "#d1dbe8",
+                    "on-primary": "#ffffff",
+                    "primary-fixed": "#dbe1ff",
+                    "on-error-container": "#93000a",
+                    "surface-dim": "#d0dbe8",
+                    "inverse-primary": "#b4c5ff",
+                    "surface-tint": "#0052dc",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container-lowest": "#ffffff",
+                    "outline": "#737687",
+                    "primary": "#4a6741", /* Adjusted to Sage Green */
+                    "on-surface-variant": "#424655",
+                    "error": "#ba1a1a",
+                    "on-secondary": "#ffffff",
+                    "background": "#fcfaf2", /* Warm Ivory */
+                    "map-grid": "#edf0f5",
+                    "secondary-fixed": "#ffdbcc"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "gutter": "16px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "margin-desktop": "32px",
+                    "lg": "24px",
+                    "xxl": "48px",
+                    "xl": "32px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "caption-bold": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-sm": ["16px", {"lineHeight": "22px", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "caption-bold": ["10px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .glass-card:hover {
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.65);
+            box-shadow: 0 20px 40px rgba(74, 103, 65, 0.1);
+        }
+        .bg-warm-ivory {
+            background-color: #fcfaf2;
+        }
+        .sage-gradient {
+            background: linear-gradient(135deg, #e3e9df 0%, #c4d1c1 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-ring {
+            box-shadow: 0 0 0 4px rgba(74, 103, 65, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-warm-ivory min-h-screen text-on-surface font-body-md overflow-x-hidden selection:bg-primary/20">
+<!-- Subtle Ambient Background Effects -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+<div class="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+<div class="absolute top-1/2 -right-48 w-[500px] h-[500px] bg-secondary-container/5 rounded-full blur-[120px]"></div>
+</div>
+<!-- Main Navigation Suppression Check: Transactional Page - No TopAppBar/BottomNavBar -->
+<main class="relative z-10 min-h-screen flex flex-col items-center justify-center px-margin-mobile md:px-xxl py-xl">
+<!-- Header Branding Section -->
+<div class="text-center mb-xl animate-fade-in">
+<div class="inline-flex items-center justify-center bg-white/60 backdrop-blur-md rounded-full px-lg py-sm mb-lg shadow-sm border border-white/40">
+<span class="material-symbols-outlined text-primary mr-sm">rocket_launch</span>
+<span class="font-headline-md text-headline-md tracking-tight text-on-surface">GetWork</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-md">Choose your path</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-md mx-auto">Select the account type that best matches your goals to customize your experience.</p>
+</div>
+<!-- Selection Bento-style Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg w-full max-w-5xl">
+<!-- Card 1: Worker -->
+<button class="glass-card group relative p-xl rounded-xl text-left flex flex-col items-center md:items-start overflow-hidden" id="worker-card" onclick="selectType('worker')">
+<div class="absolute top-0 right-0 p-lg opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary text-[32px]">arrow_forward</span>
+</div>
+<div class="w-full h-48 mb-xl rounded-lg sage-gradient flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover mix-blend-multiply opacity-80 group-hover:scale-105 transition-transform duration-700" data-alt="A high-quality 3D minimalist illustration of a professional worker character holding a digital tablet in a clean, sage green environment. The lighting is soft and airy, emphasizing a warm ivory aesthetic with translucent glass surfaces. The style is modern, friendly, and utilizes a sophisticated corporate-chic color palette of greens and soft creams." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvUcmNP2L2OSzAyhG-ExYwGqx6E53H3aTPbcF1Zj3eNAwncl_Cd2NRoze2_y9PcvIDh46PicHIDd-9NLgcbxe-tk1sC4FmE11S2juQIbGniqlbuYgONsyJOMBo40heelfyGWtHq36FkbhZ71CYtDDlOVHMHzALZXXxqXpAfImo1KAuOy_kO22J5ETfV3lkxdrfjBMLfpFkM3O0VQlPYJdFcrcedSXxnsf5YMGJ9wFSEUP6PpxrsmKX9w"/>
+</div>
+<div class="w-full">
+<div class="flex items-center mb-sm">
+<div class="p-sm bg-primary/10 rounded-lg mr-md text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">engineering</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg group-hover:text-primary transition-colors">Worker</h2>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-xl">I want to find work.</p>
+<div class="flex flex-wrap gap-sm">
+<span class="px-md py-xs bg-white/50 border border-white/60 rounded-full font-label-md text-label-md text-on-surface-variant">Instant Jobs</span>
+<span class="px-md py-xs bg-white/50 border border-white/60 rounded-full font-label-md text-label-md text-on-surface-variant">Daily Payouts</span>
+<span class="px-md py-xs bg-white/50 border border-white/60 rounded-full font-label-md text-label-md text-on-surface-variant">Flexible Hours</span>
+</div>
+</div>
+<!-- Interaction Indicator -->
+<div class="mt-xl w-full border-t border-outline-variant/30 pt-md flex justify-between items-center opacity-60 group-hover:opacity-100">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Get Started as Talent</span>
+<span class="material-symbols-outlined text-primary">chevron_right</span>
+</div>
+</button>
+<!-- Card 2: Business -->
+<button class="glass-card group relative p-xl rounded-xl text-left flex flex-col items-center md:items-start overflow-hidden" id="business-card" onclick="selectType('business')">
+<div class="absolute top-0 right-0 p-lg opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary text-[32px]">arrow_forward</span>
+</div>
+<div class="w-full h-48 mb-xl rounded-lg bg-[#e8e4d9] flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover mix-blend-multiply opacity-80 group-hover:scale-105 transition-transform duration-700" data-alt="A modern 3D professional illustration of a business manager character standing in front of a glass-walled office with warm ivory and sage green accents. The character is interacting with a holographic job posting interface. The lighting is bright and professional, creating an atmosphere of reliability and urgent opportunity within a minimalist workspace." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIMABHe0ozouUixfLclIRC72NjXVhgOX_L4Yp2sc4-ioEV4Dc_jtJZFkt3HdNcs3m0xTGVN3pyhrpNXncFiqjRdlMmx6vzkTHRvmjMNk1m4B7k9GIwTo2gxXzNCUguQeLTof7sDvM4C4W8w9pVfzZx2maOTq7tqgdWoV9-a_hGSddpK3H4ZTnr5Nh8qJPbP2Phh41tMZdpsm9INdexIWavnYDWnZ71SUbQhEPCDh83THzd9xcIGxtXrA"/>
+</div>
+<div class="w-full">
+<div class="flex items-center mb-sm">
+<div class="p-sm bg-primary/10 rounded-lg mr-md text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">business_center</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg group-hover:text-primary transition-colors">Business</h2>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-xl">I want to hire workers.</p>
+<div class="flex flex-wrap gap-sm">
+<span class="px-md py-xs bg-white/50 border border-white/60 rounded-full font-label-md text-label-md text-on-surface-variant">Post in Seconds</span>
+<span class="px-md py-xs bg-white/50 border border-white/60 rounded-full font-label-md text-label-md text-on-surface-variant">Verified Pros</span>
+<span class="px-md py-xs bg-white/50 border border-white/60 rounded-full font-label-md text-label-md text-on-surface-variant">Auto Billing</span>
+</div>
+</div>
+<!-- Interaction Indicator -->
+<div class="mt-xl w-full border-t border-outline-variant/30 pt-md flex justify-between items-center opacity-60 group-hover:opacity-100">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Get Started as Client</span>
+<span class="material-symbols-outlined text-primary">chevron_right</span>
+</div>
+</button>
+</div>
+<!-- Bottom Actions -->
+<div class="mt-xxl text-center animate-fade-in" style="animation-delay: 400ms;">
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Already have an account? <a class="text-primary font-headline-sm hover:underline decoration-2 underline-offset-4" href="#">Log in</a></p>
+<div class="flex items-center justify-center space-x-md text-on-surface-variant/40">
+<span class="w-12 h-[1px] bg-outline-variant/30"></span>
+<span class="font-label-sm text-label-sm">SECURED BY GETWORK</span>
+<span class="w-12 h-[1px] bg-outline-variant/30"></span>
+</div>
+</div>
+</main>
+<!-- Global Visual Tokens & Micro-interactions Script -->
+<script>
+        function selectType(type) {
+            const workerCard = document.getElementById('worker-card');
+            const businessCard = document.getElementById('business-card');
+            
+            // Remove previous active states
+            workerCard.classList.remove('active-ring', 'bg-white/80');
+            businessCard.classList.remove('active-ring', 'bg-white/80');
+            
+            // Apply selection effect
+            const activeEl = type === 'worker' ? workerCard : businessCard;
+            activeEl.classList.add('active-ring', 'bg-white/80');
+            
+            // Simple visual feedback before navigation
+            activeEl.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                activeEl.style.transform = 'scale(1)';
+                console.log(`Selected Account Type: ${type}`);
+                // In a real app, this would route to sign-up for that type
+            }, 150);
+        }
+
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100');
+                    entry.target.classList.remove('opacity-0', 'translate-y-10');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.animate-fade-in').forEach(el => {
+            el.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-10');
+            observer.observe(el);
+        });
+    </script>
+<style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+        }
+    </style>
+</body></html>

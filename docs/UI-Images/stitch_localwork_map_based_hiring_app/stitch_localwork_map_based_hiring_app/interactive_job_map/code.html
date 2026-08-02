@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>GetWork | Instant Opportunities</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden; /* Prevent scrolling for the map experience */
+        }
+        .glass-blur {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .urgent-pulse {
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(26, 102, 255, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(26, 102, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(26, 102, 255, 0); }
+        }
+        .user-location-pulse {
+            animation: location-pulse 3s infinite;
+        }
+        @keyframes location-pulse {
+            0% { transform: scale(0.95); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(0.95); opacity: 1; }
+        }
+        .map-container {
+            mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed-variant": "#003da8",
+                      "surface-bright": "#f7f9ff",
+                      "outline-variant": "#c3c6d8",
+                      "surface-container-highest": "#d8e4f0",
+                      "on-secondary-fixed-variant": "#7c2e00",
+                      "on-secondary-fixed": "#351000",
+                      "on-tertiary-container": "#fff7f2",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-container": "#faf8ff",
+                      "surface-container-high": "#dee9f6",
+                      "inverse-on-surface": "#e7f2ff",
+                      "tertiary-fixed-dim": "#fcba65",
+                      "primary-container": "#1a66ff",
+                      "glass-surface": "rgba(247, 249, 255, 0.85)",
+                      "tertiary-fixed": "#ffddb7",
+                      "on-secondary-container": "#692600",
+                      "on-background": "#121d26",
+                      "surface-variant": "#d8e4f0",
+                      "surface-container-low": "#ecf4ff",
+                      "secondary-fixed-dim": "#ffb595",
+                      "tertiary": "#7f4f00",
+                      "on-surface": "#121d26",
+                      "secondary": "#a23f00",
+                      "error-container": "#ffdad6",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "tertiary-container": "#9c6719",
+                      "urgent-glow": "rgba(26, 102, 255, 0.3)",
+                      "secondary-container": "#ff8346",
+                      "surface": "#f7f9ff",
+                      "inverse-surface": "#27323b",
+                      "on-tertiary-fixed-variant": "#653e00",
+                      "on-tertiary-fixed": "#2a1700",
+                      "surface-container": "#e4effc",
+                      "on-error": "#ffffff",
+                      "map-road": "#d1dbe8",
+                      "on-primary": "#ffffff",
+                      "primary-fixed": "#dbe1ff",
+                      "on-error-container": "#93000a",
+                      "surface-dim": "#d0dbe8",
+                      "inverse-primary": "#b4c5ff",
+                      "surface-tint": "#0052dc",
+                      "on-primary-fixed": "#00174b",
+                      "surface-container-lowest": "#ffffff",
+                      "outline": "#737687",
+                      "primary": "#004fd2",
+                      "on-surface-variant": "#424655",
+                      "error": "#ba1a1a",
+                      "on-secondary": "#ffffff",
+                      "background": "#f7f9ff",
+                      "map-grid": "#edf0f5",
+                      "secondary-fixed": "#ffdbcc",
+                      "sage-accent": "#D1E8E2" /* Custom sage for salary bubbles */
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "gutter": "16px",
+                      "xs": "4px",
+                      "sm": "8px",
+                      "margin-desktop": "32px",
+                      "lg": "24px",
+                      "xxl": "48px",
+                      "xl": "32px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Plus Jakarta Sans"],
+                      "headline-sm": ["Plus Jakarta Sans"],
+                      "label-md": ["Plus Jakarta Sans"],
+                      "headline-md": ["Plus Jakarta Sans"],
+                      "label-sm": ["Plus Jakarta Sans"],
+                      "headline-lg": ["Plus Jakarta Sans"],
+                      "caption-bold": ["Plus Jakarta Sans"],
+                      "body-md": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-sm": ["16px", {"lineHeight": "22px", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                      "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                      "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "caption-bold": ["10px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface">
+<!-- MAP LAYER (Level 0) -->
+<div class="fixed inset-0 z-0 map-container">
+<div class="w-full h-full bg-cover bg-center opacity-80 mix-blend-multiply transition-opacity duration-1000" data-alt="A highly detailed aerial perspective map of a vibrant metropolis during the warm golden hour. The streets are rendered with soft, warm tones of amber and cream, showcasing organic urban textures and park spaces. The lighting is ethereal and atmospheric, emphasizing a modern city with a focus on accessibility and mobility in a professional gig-economy context. The overall aesthetic is clean, premium, and sophisticated with high-end digital cartography styling." data-location="Mumbai, India" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA6g5DABtQh28n32vghn7Fh_5w_-cMWK_3FQ0U0L559Qs4lSobqnwUGTyt6BCKf9VYnkjmGs7Uai-2FnOZ9aWf8zCFOn6tLewGEOzUJ_TM1l8OfN-f1lvZPMKIiF5W3-rHVMAYkQYcUamVv_yUQXqn3q09vtoEyxJ5xuOmdEDBsB521Qb7C9P8XjAWCuoyl62jQ0hSnie9LTItbdhZRT9m8dsjKnVv_JvQMnWgiN-4YWWodcMPlh6l8Ug')">
+</div>
+<!-- User Location Marker (Level 10) -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+<div class="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center user-location-pulse">
+<div class="w-4 h-4 bg-primary rounded-full border-2 border-white shadow-lg"></div>
+</div>
+</div>
+<!-- Floating Salary Pins (Sage Green) -->
+<div class="absolute top-[40%] left-[30%] animate-bounce" style="animation-duration: 3s;">
+<div class="bg-sage-accent/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-white/50 flex items-center gap-1.5 cursor-pointer hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="font-label-md text-label-md text-primary">Rs.1200</span>
+</div>
+</div>
+<div class="absolute top-[25%] right-[25%] animate-bounce" style="animation-duration: 4.5s;">
+<div class="bg-sage-accent/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-white/50 flex items-center gap-1.5 cursor-pointer hover:scale-110 transition-transform">
+<span class="font-label-md text-label-md text-primary">Rs.850</span>
+</div>
+</div>
+<div class="absolute bottom-[35%] right-[40%] animate-bounce" style="animation-duration: 3.8s;">
+<div class="bg-sage-accent/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-white/50 flex items-center gap-1.5 cursor-pointer hover:scale-110 transition-transform">
+<span class="font-label-md text-label-md text-primary">Rs.1500</span>
+</div>
+</div>
+<div class="absolute top-[55%] left-[20%] animate-bounce" style="animation-duration: 5s;">
+<div class="bg-sage-accent/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-white/50 flex items-center gap-1.5 cursor-pointer hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="font-label-md text-label-md text-primary">Rs.900</span>
+</div>
+</div>
+</div>
+<!-- UI OVERLAYS (Level 40-50) -->
+<!-- Top App Bar Cluster -->
+<header class="fixed top-0 w-full z-50 flex flex-col gap-4 p-margin-mobile md:p-margin-desktop">
+<!-- Brand & Profile -->
+<div class="flex justify-between items-center w-full">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">work</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">GetWork</h1>
+</div>
+<button class="w-10 h-10 rounded-xl bg-glass-surface glass-blur border border-white/40 shadow-sm flex items-center justify-center overflow-hidden hover:scale-105 transition-transform active:scale-95">
+<img class="w-full h-full object-cover" data-alt="A professional close-up studio portrait of a friendly young professional worker with a warm smile, wearing modern casual business attire. The lighting is soft and even, against a clean, blurred office background. The aesthetic matches a modern tech-focused gig economy platform, using high-quality photography and a light-mode color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZq2C_bzQUxl4j84kGrDLV8j9ljhF2QipmlBvp8SzU63hugRKJGArcaaJPUdAbETZGGl61jtyymoWtyd0-LtN6tsSQskJvgc_hTta1W69qmnJ10vZQs1N-q0VQiqLZYmpRg3J5d2Rm3zyd7ID6shw9Fovw1jAg0G_geCGa4UPH9vMjp158QHbw18BfQ5uAb5lwTC3OG7dRPHnjAHdG58Clpa0lAeMgO4SgRQKmg61Xoc5ct5rZnQ3Gzw"/>
+</button>
+</div>
+<!-- Search Bar (Glassmorphic) -->
+<div class="w-full max-w-xl mx-auto">
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full h-14 pl-12 pr-16 bg-glass-surface glass-blur border-none shadow-xl rounded-2xl font-body-lg text-body-lg focus:ring-2 focus:ring-primary/20 placeholder:text-outline-variant" placeholder="Find gigs near you..." type="text"/>
+<div class="absolute inset-y-2 right-2 flex items-center">
+<button class="h-full px-4 bg-primary text-white rounded-xl font-label-md text-label-md shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+                        Explore
+                    </button>
+</div>
+</div>
+</div>
+<!-- Filters (Chips) -->
+<div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+<button class="flex-none px-4 py-2 bg-primary text-white rounded-full shadow-lg font-label-md text-label-md flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+                Filters
+            </button>
+<button class="flex-none px-4 py-2 bg-glass-surface glass-blur border border-white/60 text-on-surface-variant rounded-full shadow-sm font-label-md text-label-md flex items-center gap-2 hover:bg-surface transition-colors">
+                Quick Gigs
+            </button>
+<button class="flex-none px-4 py-2 bg-glass-surface glass-blur border border-white/60 text-on-surface-variant rounded-full shadow-sm font-label-md text-label-md flex items-center gap-2 hover:bg-surface transition-colors">
+                Top Rated
+            </button>
+<button class="flex-none px-4 py-2 bg-glass-surface glass-blur border border-white/60 text-on-surface-variant rounded-full shadow-sm font-label-md text-label-md flex items-center gap-2 hover:bg-surface transition-colors">
+                Salary (High-Low)
+            </button>
+</div>
+</header>
+<!-- FAB for Quick Task (Floating Contextual) -->
+<div class="fixed right-margin-mobile bottom-24 z-40 flex flex-col gap-4 items-end">
+<button class="w-14 h-14 bg-white rounded-xl shadow-xl flex items-center justify-center text-primary active:scale-90 transition-transform">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+<button class="px-6 h-14 bg-primary text-white rounded-xl shadow-xl flex items-center gap-3 font-headline-sm text-headline-sm active:scale-95 transition-all urgent-pulse">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+            Post a Job
+        </button>
+</div>
+<!-- Active Job Preview (Bottom Carousel Mockup) -->
+<div class="fixed bottom-20 left-0 w-full z-40 px-margin-mobile mb-4">
+<div class="w-full max-w-md mx-auto bg-glass-surface glass-blur border border-white/40 rounded-2xl shadow-2xl p-md flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+<div class="w-16 h-16 rounded-xl bg-surface-container-high flex-none overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="A clean, minimalist workspace with professional delivery or logistics equipment. High-quality product photography with bright natural light, accentuating textures of aluminum and fabric. Professional and reliable tone, fitting for a premium labor platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCd3nLZFjkwVWUfr4xk3zPh7l0LOJlBVbO_XcaIDKkbac2KOMTGBktIMYoRRx7ODoaiZM6E9hBNjowrlf3Yo_Ljp9Vq8uyNccNoqNUhkdes3KwIOzZVwuwz0a3A4A_AkodgiirD1r4tydx6v6Z6aBLfpQ_D66IKi2qzM6jPoRJOI90tBBagbxJblw9OcBIWe2h4aVkpfF0pUProaODLA68AEoR-rspUXtqdvIfOXACCnvjwSYjSTw-foQ"/>
+<div class="absolute top-1 right-1 px-1 bg-primary-container rounded text-[8px] font-bold text-white uppercase tracking-wider">Urgent</div>
+</div>
+<div class="flex-1 overflow-hidden">
+<h3 class="font-headline-sm text-headline-sm truncate">Delivery Executive - Express</h3>
+<div class="flex items-center gap-1 text-on-surface-variant mb-1">
+<span class="material-symbols-outlined text-[14px]">distance</span>
+<span class="font-label-sm text-label-sm">0.8 km away • 4.9 ★</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md text-primary">Rs.1200</span>
+<span class="font-label-sm text-label-sm text-outline">/ 4 hours</span>
+</div>
+</div>
+<button class="w-12 h-12 bg-primary-container text-white rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Bottom Navigation Bar (The Anchor) -->
+<nav class="fixed bottom-0 w-full z-50 bg-glass-surface glass-blur border-t border-outline-variant/30 h-16 pb-safe flex justify-around items-center px-4">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">map</span>
+<span class="font-label-md text-label-md">Map</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-md text-label-md">Bookings</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined">bookmark</span>
+<span class="font-label-md text-label-md">Saved</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction: Update map movement slightly on mouse move (desktop only)
+        document.addEventListener('mousemove', (e) => {
+            if (window.innerWidth > 768) {
+                const map = document.querySelector('[data-location]');
+                const x = (window.innerWidth / 2 - e.pageX) / 50;
+                const y = (window.innerHeight / 2 - e.pageY) / 50;
+                map.style.transform = `scale(1.1) translate(${x}px, ${y}px)`;
+            }
+        });
+
+        // Toggle Active State logic for demo
+        const navItems = document.querySelectorAll('nav a');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                navItems.forEach(i => {
+                    i.classList.remove('bg-primary-container', 'text-on-primary-container');
+                    i.classList.add('text-on-surface-variant');
+                });
+                item.classList.add('bg-primary-container', 'text-on-primary-container');
+                item.classList.remove('text-on-surface-variant');
+            });
+        });
+    </script>
+</body></html>

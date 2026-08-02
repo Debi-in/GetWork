@@ -48,7 +48,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      context.go(AppRoutes.home);
+      context.go(AppRoutes.chooseRole);
     }
   }
 
@@ -62,7 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
-                onPressed: () => context.go(AppRoutes.home),
+                onPressed: () => context.go(AppRoutes.chooseRole),
                 child: const Text('Skip'),
               ),
             ),

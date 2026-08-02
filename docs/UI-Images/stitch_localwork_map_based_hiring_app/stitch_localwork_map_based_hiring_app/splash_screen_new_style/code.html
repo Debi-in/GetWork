@@ -1,0 +1,198 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>GetWork Splash Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#1a66ff",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#e6efff",
+                        "on-primary-container": "#001a4d",
+                        "secondary": "#535f70",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#d7e3f7",
+                        "on-secondary-container": "#101c2b",
+                        "tertiary": "#6b5778",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#f2daff",
+                        "on-tertiary-container": "#251431",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#410002",
+                        "background": "#f8f9fb",
+                        "on-background": "#191c20",
+                        "surface": "#f8f9fb",
+                        "on-surface": "#191c20",
+                        "surface-variant": "#dfe2eb",
+                        "on-surface-variant": "#43474e",
+                        "outline": "#73777f",
+                        "outline-variant": "#c3c7cf",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f2f4f6",
+                        "surface-container": "#eceef0",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-container-highest": "#e1e3e5"
+                    },
+                    "fontFamily": {
+                        "sans": ["Plus Jakarta Sans", "ui-sans-serif", "system-ui"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["16px", {"lineHeight": "22px", "fontWeight": "600"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "800"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "8px",
+                        "lg": "12px",
+                        "xl": "16px",
+                        "2xl": "24px",
+                        "full": "9999px"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        .splash-reveal {
+            animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .curved-path {
+            stroke-dasharray: 8 8;
+            animation: dash 60s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -1000; }
+        }
+    </style>
+<style>
+        body {
+            min-height: 100dvh;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+<style><br>            @keyframes floatParticle {<br>                0% { transform: translateY(0) translateX(0); opacity: 0; }<br>                20% { opacity: 0.4; }<br>                80% { opacity: 0.4; }<br>                100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }<br>            }<br>            @keyframes bounce {<br>                0%, 100% { transform: translateY(0); }<br>                50% { transform: translateY(-6px); }<br>            }<br>        </style></head>
+<body class="bg-surface text-on-surface selection:bg-primary/20 overflow-hidden font-sans">
+<!-- Splash Screen Container -->
+<main class="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden">
+<!-- Animated Background Path (inspired by IMAGE_2) -->
+<div class="absolute inset-0 z-0 pointer-events-none opacity-20">
+<svg fill="none" height="100%" preserveAspectRatio="xMidYMid slice" viewBox="0 0 400 800" width="100%" xmlns="http://www.w3.org/2000/svg">
+<path class="curved-path" d="M-50 100C50 150 150 50 250 100C350 150 450 50 550 100" stroke="#1a66ff" stroke-width="2"></path>
+<path class="curved-path" d="M-50 400C100 300 200 500 350 400C500 300 600 500 750 400" stroke="#1a66ff" stroke-width="2" style="animation-delay: -5s;"></path>
+<path class="curved-path" d="M-50 700C50 650 150 750 250 700C350 650 450 750 550 700" stroke="#1a66ff" stroke-width="2" style="animation-delay: -10s;"></path>
+<!-- Floating Decorative Icons along the paths -->
+<circle class="fill-surface-container" cx="100" cy="150" opacity="0.5" r="20"></circle>
+<circle class="fill-surface-container" cx="300" cy="450" opacity="0.5" r="15"></circle>
+<circle class="fill-surface-container" cx="50" cy="600" opacity="0.5" r="25"></circle>
+</svg>
+</div>
+<!-- Content Area -->
+<div class="relative z-20 flex flex-col items-center text-center px-6 splash-reveal">
+<!-- Logo Cluster -->
+<div class="relative mb-10 group cursor-pointer">
+<!-- Kinetic Blue Logo Style -->
+<div class="w-28 h-28 bg-primary rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/30 transform transition-transform duration-500 group-hover:scale-105 animate-float">
+<div class="relative w-14 h-14 flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[56px]" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="absolute inset-0 flex items-center justify-center pt-1">
+<span class="material-symbols-outlined text-[24px] text-primary" style="font-variation-settings: 'FILL' 1;">work</span>
+</div>
+</div>
+</div>
+<!-- Subtle Glow -->
+<div class="absolute -inset-6 bg-primary/10 blur-3xl rounded-full -z-10 animate-pulse"></div>
+</div>
+<!-- Typography Header -->
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-background mb-3 tracking-tight">GetWork</h1>
+<p class="font-body-lg text-body-lg text-outline mb-16 max-w-[280px] mx-auto font-medium">
+                Find Work Around You
+            </p>
+<!-- Loading Micro-interaction (Updated to Kinetic Blue style) -->
+<div class="flex items-center gap-2 mb-8">
+<div class="w-2 h-2 rounded-full bg-primary/20 animate-[bounce_1s_infinite]"></div>
+<div class="w-2 h-2 rounded-full bg-primary/40 animate-[bounce_1s_infinite_200ms]"></div>
+<div class="w-2 h-2 rounded-full bg-primary animate-[bounce_1s_infinite_400ms]"></div>
+</div>
+</div>
+<!-- Bottom Brand Footnote -->
+<div class="absolute bottom-12 z-20 font-label-md text-label-md text-outline/60 uppercase tracking-[0.2em] splash-reveal" style="animation-delay: 400ms;">
+            Connecting Communities
+        </div>
+</main>
+<!-- Optional: Subtle Particle Effect (Retained but themed to Kinetic Blue) -->
+<div class="fixed inset-0 pointer-events-none z-10 opacity-20" id="particle-container"><div class="absolute bg-primary rounded-full" style="width: 4.3653px; height: 4.3653px; left: 91.4671%; top: 4.76521%; opacity: 0.114995; animation: 16.3797s linear -4.8593s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 3.17882px; height: 3.17882px; left: 88.8085%; top: 39.5204%; opacity: 0.253571; animation: 20.1222s linear -19.871s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 4.50536px; height: 4.50536px; left: 24.061%; top: 91.7371%; opacity: 0.218094; animation: 29.4413s linear -11.6129s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 2.29505px; height: 2.29505px; left: 85.7419%; top: 29.615%; opacity: 0.286526; animation: 16.3124s linear -9.20876s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 2.12409px; height: 2.12409px; left: 89.3238%; top: 0.39235%; opacity: 0.129119; animation: 28.0391s linear -0.910617s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 2.66584px; height: 2.66584px; left: 29.6521%; top: 3.61708%; opacity: 0.258526; animation: 22.3645s linear -10.897s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 3.65222px; height: 3.65222px; left: 84.5152%; top: 76.387%; opacity: 0.00247728; animation: 16.1811s linear -3.88311s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 3.85475px; height: 3.85475px; left: 84.5666%; top: 91.6693%; opacity: 0.214996; animation: 27.3844s linear -8.28182s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 3.08942px; height: 3.08942px; left: 26.8357%; top: 0.0732921%; opacity: 0.0364999; animation: 29.0162s linear -7.2968s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 2.61128px; height: 2.61128px; left: 35.5026%; top: 93.8453%; opacity: 0.267759; animation: 22.3845s linear -10.24s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 3.79062px; height: 3.79062px; left: 39.6614%; top: 66.9631%; opacity: 0.292102; animation: 27.8025s linear -7.05357s infinite normal none running floatParticle;"></div><div class="absolute bg-primary rounded-full" style="width: 4.67875px; height: 4.67875px; left: 73.5906%; top: 69.3482%; opacity: 0.11227; animation: 20.4582s linear -13.8781s infinite normal none running floatParticle;"></div></div>
+<script>
+        const container = document.getElementById('particle-container');
+        for(let i = 0; i < 12; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'absolute bg-primary rounded-full';
+            const size = Math.random() * 3 + 2;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 100}%`;
+            particle.style.opacity = Math.random() * 0.3;
+            
+            const duration = Math.random() * 15 + 15;
+            const delay = Math.random() * -20;
+            
+            particle.style.animation = `floatParticle ${duration}s linear infinite`;
+            particle.style.animationDelay = `${delay}s`;
+            
+            container.appendChild(particle);
+        }
+
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes floatParticle {
+                0% { transform: translateY(0) translateX(0); opacity: 0; }
+                20% { opacity: 0.4; }
+                80% { opacity: 0.4; }
+                100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }
+            }
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-6px); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    </script>
+
+
+</body></html>

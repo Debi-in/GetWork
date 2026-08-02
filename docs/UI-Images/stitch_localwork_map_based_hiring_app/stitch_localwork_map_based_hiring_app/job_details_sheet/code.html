@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GetWork - Job Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#003da8",
+                        "surface-bright": "#f7f9ff",
+                        "outline-variant": "#c3c6d8",
+                        "surface-container-highest": "#d8e4f0",
+                        "on-secondary-fixed-variant": "#7c2e00",
+                        "on-secondary-fixed": "#351000",
+                        "on-tertiary-container": "#fff7f2",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#faf8ff",
+                        "surface-container-high": "#dee9f6",
+                        "inverse-on-surface": "#e7f2ff",
+                        "tertiary-fixed-dim": "#fcba65",
+                        "primary-container": "#1a66ff",
+                        "glass-surface": "rgba(247, 249, 255, 0.85)",
+                        "tertiary-fixed": "#ffddb7",
+                        "on-secondary-container": "#692600",
+                        "on-background": "#121d26",
+                        "surface-variant": "#d8e4f0",
+                        "surface-container-low": "#ecf4ff",
+                        "secondary-fixed-dim": "#ffb595",
+                        "tertiary": "#7f4f00",
+                        "on-surface": "#121d26",
+                        "secondary": "#a23f00",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "tertiary-container": "#9c6719",
+                        "urgent-glow": "rgba(26, 102, 255, 0.3)",
+                        "secondary-container": "#ff8346",
+                        "surface": "#f7f9ff",
+                        "inverse-surface": "#27323b",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-tertiary-fixed": "#2a1700",
+                        "surface-container": "#e4effc",
+                        "on-error": "#ffffff",
+                        "map-road": "#d1dbe8",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-error-container": "#93000a",
+                        "surface-dim": "#d0dbe8",
+                        "inverse-primary": "#b4c5ff",
+                        "surface-tint": "#0052dc",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#737687",
+                        "primary": "#004fd2",
+                        "on-surface-variant": "#424655",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "background": "#f7f9ff",
+                        "map-grid": "#edf0f5",
+                        "secondary-fixed": "#ffdbcc",
+                        "sage-green": "#8BA888",
+                        "on-sage-green": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "margin-desktop": "32px",
+                        "lg": "24px",
+                        "xxl": "48px",
+                        "xl": "32px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "caption-bold": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+            background-color: #f7f9ff;
+        }
+
+        .glass-blur {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .map-bg {
+            filter: grayscale(30%) contrast(90%) brightness(85%);
+        }
+
+        .pulse-marker {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(26, 102, 255, 0.5); }
+            70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(26, 102, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(26, 102, 255, 0); }
+        }
+
+        .bottom-sheet-transition {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- Map Layer (Background) -->
+<div class="fixed inset-0 z-0 map-bg" data-location="Paris, France" style="">
+<div class="w-full h-full bg-cover bg-center" data-alt="A professional satellite view of a clean, modern urban map with soft blue roads and pale grey buildings. The aesthetic is minimal and high-end, featuring subtle grid lines and a soft focus. Warm sunlight hits the street corners, creating a premium gig-economy app backdrop." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCMfBFu3mCsqf0Rc7O2pIs94E_jjd3fQ7fDv0bqvpGeUdVMkxfZosOkksKZvEjnECt2Upy1gXTe6ZbVDxvZ_1a8M4UTHqATqLxLVbT7xsSW_QnXJD2fbUss5TVCt5-GWI0WUVjrZRwOinwKmOLGyDouXnQrnCL14gIHi8T3nUZkPrDhf8hmjogmbvYIB-VZut6d7k5DReB5esU_avA7GZmfJNPdD_HyD8h5p-Sybz-p0MbzYANC-CX1tg')"></div>
+<!-- Interactive Marker Example -->
+<div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2">
+<div class="bg-primary px-3 py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-1 text-on-primary font-bold animate-bounce">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+<span class="font-label-md text-label-md">Rs.1200</span>
+</div>
+</div>
+<div class="absolute top-1/2 left-1/4">
+<div class="w-6 h-6 bg-primary rounded-full border-4 border-white shadow-xl pulse-marker"></div>
+</div>
+</div>
+<!-- Dimmer Overlay -->
+<div class="fixed inset-0 bg-on-surface/20 z-10"></div>
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-glass-surface dark:bg-inverse-surface/90 backdrop-blur-md shadow-sm flex justify-between items-center px-margin-mobile py-sm">
+<div class="flex items-center gap-sm">
+<button class="material-symbols-outlined text-primary hover:bg-surface-container-low/50 transition-colors p-2 rounded-full active:scale-95">arrow_back</button>
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary">GetWork</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low/50 p-2 rounded-full transition-colors">search</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-container">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a friendly person for a user profile, captured with soft natural lighting and a blurred minimalist background. The style is clean, modern, and trustworthy, suitable for a professional services application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzPniFl2_N4lcmlsV4yh0GaNgwYRHG5-HWfMyn40GztN2cYio54jyl_9Mf1fjm7Y47oEJZ-vkZWAEySy2ndCOnehQXDfVRWFk33oFpbrnZdRxnfexMNgQzQCUFeFZM042bSKMLfrAaoopdl7VUwK84-rNdeYjTFAQBhqJK3kHGwYd5tmVW_la1m9zRl7FfV3uW-wF1oLF6iD8mWoR5RMpRYD9yNaIho21QRMuYjg72MXLFpq0ezBjeLg"/>
+</div>
+</div>
+</header>
+<!-- Content Wrapper / Bottom Sheet Trigger -->
+<main class="relative z-20 min-h-screen pt-24 pb-32 overflow-y-auto">
+<!-- Bottom Sheet Container -->
+<div class="max-w-2xl mx-auto px-4 md:px-0">
+<div class="bg-glass-surface glass-blur rounded-t-[32px] rounded-b-xl shadow-2xl overflow-hidden bottom-sheet-transition translate-y-0 mt-32 md:mt-24">
+<!-- Handle for visual cue -->
+<div class="w-12 h-1 bg-outline-variant/50 mx-auto mt-4 rounded-full"></div>
+<!-- Business Header -->
+<div class="relative h-48 md:h-64 mt-2">
+<img class="w-full h-full object-cover" data-alt="The interior of a high-end artisanal pastry cafe with warm ambient lighting, marble countertops, and golden accents. Rows of exquisite pastries are visible in the background, creating an atmosphere of craftsmanship and quality. The photography is sharp with a shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBn3W8BR5gk61kO1mL4MqYShTKOKMBb9ePdBtGqEfXVRR4r-U9nRpYb5cLDuCu7M4h-7Xr0m14qi_0CKHk98EaGvUG6iTMCFuGh4zjbi9hJKJjvqCTIYp0R-xiYfR7uDB9NaVkl1KbWJEXwl9Y-YPY6HT5niZrq442UozhQChu1OGf-zy9DKlPeJ7BRha0HHETeuJrqQhmcnKhBrB1iVplzts_m7uSzMeVrLJtaD3erbLVZGO33WvCVzw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/60 to-transparent"></div>
+<!-- Business Logo & Rating -->
+<div class="absolute bottom-4 left-margin-mobile flex items-end gap-md">
+<div class="w-16 h-16 rounded-xl bg-white p-2 shadow-lg overflow-hidden flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-4xl">bakery_dining</span>
+</div>
+<div class="pb-1">
+<div class="flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full w-fit mb-1">
+<span class="material-symbols-outlined text-tertiary-container text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">4.8</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-white drop-shadow-md">L'Artisan Boulangerie</h2>
+</div>
+</div>
+<!-- Top Interactions -->
+<div class="absolute top-4 right-margin-mobile flex gap-sm">
+<button class="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant">share</span>
+</button>
+<button class="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+</button>
+</div>
+</div>
+<!-- Job Details -->
+<div class="p-lg space-y-lg">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Artisanal Pastry Assistant</h3>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">distance</span> 0.8km away
+                                </span>
+<span class="bg-tertiary/10 text-tertiary px-3 py-1 rounded-full font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> 9am - 5pm shift
+                                </span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-lg text-headline-lg text-primary block">Rs.1200</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">per hour</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Requirements -->
+<div class="bg-surface-container-low rounded-xl p-md">
+<h4 class="font-headline-sm text-headline-sm text-on-surface mb-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">verified</span> Requirements
+                            </h4>
+<ul class="space-y-2">
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                                    Previous bakery experience preferred
+                                </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                                    Valid health certification
+                                </li>
+<li class="flex items-start gap-2 font-body-md text-body-md text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                                    Ability to start immediately
+                                </li>
+</ul>
+</div>
+<!-- Shift Details / Info -->
+<div class="bg-surface-container-low rounded-xl p-md">
+<h4 class="font-headline-sm text-headline-sm text-on-surface mb-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">info</span> Details
+                            </h4>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                                Join our boutique team to assist in daily preparation of croissants and seasonal pastries. High-energy environment with opportunities for daily payout.
+                            </p>
+</div>
+</div>
+<!-- Urgency Tag -->
+<div class="flex items-center gap-3 bg-secondary-container/20 p-md rounded-xl border border-secondary-container/30">
+<div class="w-10 h-10 bg-secondary-container rounded-lg flex items-center justify-center text-on-secondary-container shadow-sm">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<div>
+<span class="font-caption-bold text-caption-bold text-on-secondary-fixed-variant uppercase">Urgent Hire</span>
+<p class="font-body-md text-body-md text-on-secondary-container">Filling in the next 2 hours</p>
+</div>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="p-lg bg-surface-container-highest/30 flex items-center gap-md">
+<button class="flex-1 bg-sage-green hover:opacity-90 active:scale-95 transition-all text-on-sage-green h-14 rounded-xl font-headline-md text-headline-md flex items-center justify-center gap-2 shadow-lg">
+<span class="material-symbols-outlined">send</span>
+                        Quick Apply
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 w-full z-50 bg-glass-surface backdrop-blur-md h-16 pb-safe flex justify-around items-center rounded-t-xl shadow-lg border-t border-outline-variant/30">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:opacity-80 transition-opacity active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">Map</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 hover:opacity-80 transition-opacity active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-label-md text-label-md">Bookings</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:opacity-80 transition-opacity active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined">bookmark</span>
+<span class="font-label-md text-label-md">Saved</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:opacity-80 transition-opacity active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-md text-label-md">Inbox</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for applying button
+        const applyBtn = document.querySelector('button:contains("Quick Apply")') || document.querySelector('.bg-sage-green');
+        if(applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                applyBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Applying...';
+                setTimeout(() => {
+                    applyBtn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Application Sent!';
+                    applyBtn.classList.replace('bg-sage-green', 'bg-primary');
+                }, 1500);
+            });
+        }
+    </script>
+</body></html>

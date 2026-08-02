@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/authentication/choose_role_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/jobs/job_detail_screen.dart';
 import 'features/jobs/apply_screen.dart';
@@ -23,6 +24,7 @@ class AppRoutes {
 
   static const String splash = '/';
   static const String onboarding = '/onboarding';
+  static const String chooseRole = '/choose-role';
   static const String home = '/home';
   static const String jobDetail = '/job/:jobId';
   static const String apply = '/job/:jobId/apply';
@@ -48,6 +50,11 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.onboarding,
       name: 'onboarding',
       builder: (context, state) => const OnboardingScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.chooseRole,
+      name: 'chooseRole',
+      builder: (context, state) => const ChooseRoleScreen(),
     ),
     GoRoute(
       path: AppRoutes.home,

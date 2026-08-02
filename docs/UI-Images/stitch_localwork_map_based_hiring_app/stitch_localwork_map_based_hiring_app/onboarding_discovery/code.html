@@ -1,0 +1,214 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>GetWork - Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Design System Tokens -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "inverse-primary": "#b1c5ff",
+                "on-primary": "#ffffff",
+                "primary-fixed": "#dae2ff",
+                "on-tertiary-fixed": "#2a1700",
+                "secondary-fixed-dim": "#ffb695",
+                "primary-container": "#2f6fed",
+                "on-error": "#ffffff",
+                "surface-tint": "#0056d0",
+                "surface-container-lowest": "#ffffff",
+                "error-container": "#ffdad6",
+                "tertiary": "#845300",
+                "surface-dim": "#d1dbe8",
+                "on-surface": "#121d26",
+                "on-tertiary": "#ffffff",
+                "primary": "#0055ce",
+                "error": "#ba1a1a",
+                "on-primary-container": "#ffffff",
+                "on-primary-fixed": "#001847",
+                "on-surface-variant": "#424654",
+                "inverse-on-surface": "#e8f2ff",
+                "surface-bright": "#f7f9ff",
+                "on-primary-fixed-variant": "#0040a0",
+                "on-background": "#121d26",
+                "surface-container-high": "#dfe9f7",
+                "on-secondary-container": "#692600",
+                "inverse-surface": "#27313c",
+                "surface-container-low": "#edf4ff",
+                "secondary-container": "#ff8346",
+                "outline-variant": "#c2c6d7",
+                "tertiary-fixed-dim": "#ffb95f",
+                "outline": "#737786",
+                "on-error-container": "#93000a",
+                "tertiary-fixed": "#ffddb8",
+                "background": "#f7f9ff",
+                "primary-fixed-dim": "#b1c5ff",
+                "surface-container-highest": "#d9e3f1",
+                "secondary": "#a23f00",
+                "on-secondary-fixed": "#351000",
+                "secondary-fixed": "#ffdbcc",
+                "surface-variant": "#d9e3f1",
+                "surface-container": "#e4effd",
+                "on-secondary": "#ffffff",
+                "on-tertiary-container": "#ffffff",
+                "on-secondary-fixed-variant": "#7b2e00",
+                "on-tertiary-fixed-variant": "#653e00",
+                "surface": "#f7f9ff",
+                "tertiary-container": "#a66900"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "sm": "8px",
+                "md": "16px",
+                "gutter": "16px",
+                "xxl": "48px",
+                "xl": "32px",
+                "margin-mobile": "16px",
+                "base": "4px",
+                "lg": "24px",
+                "xs": "4px",
+                "margin-desktop": "32px"
+            },
+            "fontFamily": {
+                "label-md": ["Inter"],
+                "headline-sm": ["Inter"],
+                "headline-md": ["Inter"],
+                "headline-lg": ["Inter"],
+                "label-sm": ["Inter"],
+                "body-md": ["Inter"],
+                "headline-lg-mobile": ["Inter"],
+                "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                "headline-sm": ["16px", {"lineHeight": "22px", "fontWeight": "600"}],
+                "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "headline-lg-mobile": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #FAF8F5; /* Warm White base from style guide */
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        .onboarding-card {
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .floating-element {
+            animation: floating 4s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .dot-active {
+            width: 24px;
+            background-color: #0055ce;
+        }
+        .dot-inactive {
+            width: 8px;
+            background-color: #d9e3f1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen text-on-surface">
+<!-- Top Navigation (Shell Supression active for Transactional) -->
+<header class="fixed top-0 left-0 right-0 z-50 px-md py-md flex justify-end">
+<button class="text-primary font-label-md text-label-md px-4 py-2 hover:bg-primary-container/10 rounded-full transition-colors">
+            Skip
+        </button>
+</header>
+<main class="flex-grow flex flex-col items-center justify-center px-margin-mobile pt-xxl">
+<!-- Illustration Container -->
+<div class="relative w-full max-w-sm aspect-square mb-xl flex items-center justify-center">
+<!-- Background Blob Decor -->
+<div class="absolute inset-0 bg-primary/5 rounded-full blur-3xl transform scale-90"></div>
+<!-- Main Illustration Image -->
+<div class="relative z-10 w-full h-full flex items-center justify-center floating-element">
+<img class="w-full h-auto object-contain drop-shadow-xl" data-alt="A high-end modern digital illustration of a friendly young professional holding a sleek digital tablet with a map of a charming suburban neighborhood. The style is minimalist and approachable with soft geometric shapes, utilizing a warm palette of kinetic blues and creamy whites. Bright, optimistic natural lighting illuminates the scene, conveying a sense of reliability and community warmth consistent with the GetWork brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB28nvMLtpdfD-JSiTeRzVUwRHegLa67G-0TUlFIkAE8MN7B994I6fq1bxoASmYoHKsy35tUhxTV_CFiHadLBGE3iEZKy4H4YrAQVMjQRRmykPeEVF-EY4LOFxb4uR1L2g0W3h_XS0YSQKN2uYynfjwuPnsjfemjlR_UtoxEG9PfXMigdvUqsUC9vCChgMn2PhxDPQZDj0mckIBKPBMGUFzS580TH4qbY-NR5CoZZf-iBPUUzZinEqY9A">
+</div>
+<!-- Animated Map Marker Accent -->
+<div class="absolute top-1/4 right-8 z-20 bg-white shadow-lg p-2 rounded-xl flex items-center gap-2 animate-bounce">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="font-label-md text-label-md text-on-surface-variant">$22/hr</span>
+</div>
+</div>
+<!-- Content Area -->
+<div class="text-center max-w-xs mx-auto mb-xxl">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-md">
+                Find Local Work
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                Discover part-time and hourly jobs right in your neighborhood.
+            </p>
+</div>
+</main>
+<!-- Footer Actions -->
+<footer class="w-full px-margin-mobile pb-xxl space-y-xl">
+<!-- Pagination Dots -->
+<div class="flex justify-center items-center gap-2">
+<div class="h-2 rounded-full transition-all duration-300 dot-active"></div>
+<div class="h-2 rounded-full transition-all duration-300 dot-inactive"></div>
+<div class="h-2 rounded-full transition-all duration-300 dot-inactive"></div>
+</div>
+<!-- Action Button -->
+<div class="flex flex-col items-center w-full max-w-sm mx-auto">
+<button class="w-full h-[56px] bg-primary text-on-primary rounded-xl font-headline-sm text-headline-sm shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2 group" onclick="nextStep()">
+                Next
+                <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+</button>
+</div>
+</footer>
+<!-- Micro-interaction Script -->
+<script>
+        function nextStep() {
+            // Placeholder for navigation logic to Page 2
+            const body = document.querySelector('body');
+            body.style.opacity = '0';
+            body.style.transition = 'opacity 0.4s ease-out';
+            setTimeout(() => {
+                console.log('Navigating to onboarding step 2...');
+                // In a real app: window.location.href = '/onboarding/2';
+                body.style.opacity = '1';
+            }, 400);
+        }
+
+        // Ripple Effect for button
+        const btn = document.querySelector('button');
+        btn.addEventListener('click', function(e) {
+            let x = e.clientX - e.target.offsetLeft;
+            let y = e.clientY - e.target.offsetTop;
+            let ripples = document.createElement('span');
+            ripples.style.left = x + 'px';
+            ripples.style.top = y + 'px';
+            this.appendChild(ripples);
+            setTimeout(() => { ripples.remove() }, 1000);
+        });
+    </script>
+
+
+</body></html>

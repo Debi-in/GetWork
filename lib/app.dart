@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/mobile_frame_wrapper.dart';
 import 'router.dart';
 
 class GetWorkApp extends ConsumerWidget {
@@ -17,6 +18,9 @@ class GetWorkApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: appRouter,
+      builder: (context, child) {
+        return MobileFrameWrapper(child: child ?? const SizedBox.shrink());
+      },
     );
   }
 }

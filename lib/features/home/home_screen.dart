@@ -1,17 +1,20 @@
 // ============================================================
 // HOME SCREEN — GetWork App
 // Interactive Map-First Local Job Discovery Interface
+// Powered by OpenStreetMap + flutter_map
 // ============================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/job_model.dart';
 import '../jobs/jobs_provider.dart';
 import 'widgets/category_filter_bar.dart';
 import 'widgets/job_bottom_sheet.dart';
+import 'widgets/open_street_map_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,12 +24,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   bool _isListView = false;
   final TextEditingController _searchController = TextEditingController();
-
-  // Kathmandu default location
-  static const LatLng _kathmanduCenter = LatLng(27.7172, 85.3240);
 
   @override
   void dispose() {
@@ -34,27 +34,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  Set<Marker> _buildMarkers(List<JobModel> jobs) {
-    final selectedJob = ref.watch(selectedJobProvider);
-
-    return jobs.map((job) {
-      final isSelected = selectedJob?.id == job.id;
-
-      return Marker(
-        markerId: MarkerId(job.id),
-        position: LatLng(job.latitude, job.longitude),
-        icon: isSelected
-            ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange)
-            : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: InfoWindow(
-          title: job.title,
-          snippet: '${job.salaryDisplay} • ${job.businessName}',
-        ),
-        onTap: () {
-          ref.read(selectedJobProvider.notifier).selectJob(job);
-        },
-      );
-    }).toSet();
+  void _flyToJob(JobModel job) {
+    _mapController.move(LatLng(job.latitude, job.longitude), 15.0);
   }
 
   @override
@@ -71,7 +52,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // ── Background: Map or List View ─────────────────────
             _isListView
                 ? _buildListView(jobs)
-                : _buildMapView(jobs),
+                : OpenStreetMapWidget(
+                    jobs: jobs,
+                    selectedJob: selectedJob,
+                    mapController: _mapController,
+                    onMarkerTap: (job) {
+                      ref.read(selectedJobProvider.notifier).selectJob(job);
+                      _flyToJob(job);
+                    },
+                    onMapTap: () {
+                      ref.read(selectedJobProvider.notifier).selectJob(null);
+                    },
+                  ),
 
             // ── Top Header & Filter Controls ──────────────────────
             Positioned(
@@ -205,7 +197,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
-            // ── Bottom Job Quick Cards Horizontal Carousel (When no single job selected & Map Mode) ──
+            // ── Bottom Job Quick Cards Horizontal Carousel ──
             if (selectedJob == null && !_isListView && jobs.isNotEmpty)
               Positioned(
                 bottom: 20,
@@ -223,12 +215,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return GestureDetector(
                         onTap: () {
                           ref.read(selectedJobProvider.notifier).selectJob(job);
-                          _mapController?.animateCamera(
-                            CameraUpdate.newLatLngZoom(
-                              LatLng(job.latitude, job.longitude),
-                              15,
-                            ),
-                          );
+                          _flyToJob(job);
                         },
                         child: Container(
                           width: 260,
@@ -314,25 +301,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildMapView(List<JobModel> jobs) {
-    return GoogleMap(
-      initialCameraPosition: const CameraPosition(
-        target: _kathmanduCenter,
-        zoom: 13.5,
-      ),
-      markers: _buildMarkers(jobs),
-      myLocationEnabled: true,
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
-      onMapCreated: (controller) {
-        _mapController = controller;
-      },
-      onTap: (_) {
-        ref.read(selectedJobProvider.notifier).selectJob(null);
-      },
     );
   }
 

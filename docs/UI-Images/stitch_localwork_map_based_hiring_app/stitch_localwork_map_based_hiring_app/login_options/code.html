@@ -1,0 +1,219 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Welcome to GetWork</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-primary": "#b1c5ff",
+                    "on-primary": "#ffffff",
+                    "primary-fixed": "#dae2ff",
+                    "on-tertiary-fixed": "#2a1700",
+                    "secondary-fixed-dim": "#ffb695",
+                    "primary-container": "#2f6fed",
+                    "on-error": "#ffffff",
+                    "surface-tint": "#0056d0",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "tertiary": "#845300",
+                    "surface-dim": "#d1dbe8",
+                    "on-surface": "#121d26",
+                    "on-tertiary": "#ffffff",
+                    "primary": "#0055ce",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#ffffff",
+                    "on-primary-fixed": "#001847",
+                    "on-surface-variant": "#424654",
+                    "inverse-on-surface": "#e8f2ff",
+                    "surface-bright": "#f7f9ff",
+                    "on-primary-fixed-variant": "#0040a0",
+                    "on-background": "#121d26",
+                    "surface-container-high": "#dfe9f7",
+                    "on-secondary-container": "#692600",
+                    "inverse-surface": "#27313c",
+                    "surface-container-low": "#edf4ff",
+                    "secondary-container": "#ff8346",
+                    "outline-variant": "#c2c6d7",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "outline": "#737786",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#ffddb8",
+                    "background": "#f7f9ff",
+                    "primary-fixed-dim": "#b1c5ff",
+                    "surface-container-highest": "#d9e3f1",
+                    "secondary": "#a23f00",
+                    "on-secondary-fixed": "#351000",
+                    "secondary-fixed": "#ffdbcc",
+                    "surface-variant": "#d9e3f1",
+                    "surface-container": "#e4effd",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-container": "#ffffff",
+                    "on-secondary-fixed-variant": "#7b2e00",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "surface": "#f7f9ff",
+                    "tertiary-container": "#a66900"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "xxl": "48px",
+                    "xl": "32px",
+                    "margin-mobile": "16px",
+                    "base": "4px",
+                    "lg": "24px",
+                    "xs": "4px",
+                    "margin-desktop": "32px"
+            },
+            "fontFamily": {
+                    "label-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-sm": ["16px", {"lineHeight": "22px", "fontWeight": "600"}],
+                    "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9ff;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.7);
+        }
+        .btn-press:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease-out;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Background Atmospheric Layer -->
+<div class="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+<div class="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[120px]"></div>
+<div class="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] bg-secondary-container/10 rounded-full blur-[120px]"></div>
+</div>
+<main class="relative z-10 min-h-screen flex flex-col items-center justify-center px-gutter py-xl">
+<!-- App Identity & Hero -->
+<div class="w-full max-w-md flex flex-col items-center text-center mb-xxl space-y-md">
+<!-- Brand Logo -->
+<div class="w-24 h-24 mb-sm relative" style="transform: translateY(1.55767px);">
+<div class="absolute inset-0 bg-primary/10 rounded-[28px] rotate-6"></div>
+<div class="absolute inset-0 bg-primary shadow-xl rounded-[24px] flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary !text-[48px]" style="font-variation-settings: 'FILL' 1;">work_history</span>
+</div>
+</div>
+<div class="space-y-xs">
+<h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-on-surface tracking-tight">Welcome to GetWork</h1>
+<p class="text-body-md font-body-md text-on-surface-variant max-w-[280px] mx-auto">
+                    Join the community of local workers and businesses.
+                </p>
+</div>
+</div>
+<!-- Authentication Container -->
+<div class="w-full max-w-md bg-surface-container-lowest/40 p-lg rounded-[32px] shadow-sm border border-outline-variant/20 backdrop-blur-sm space-y-md">
+<!-- Google Auth Button -->
+<button class="btn-press w-full h-[56px] flex items-center justify-center gap-md bg-on-primary border border-outline-variant/30 rounded-xl hover:bg-surface-container transition-colors group">
+<div class="w-6 h-6 flex items-center justify-center">
+<!-- Standard Google G Icon representation using CSS/Icon -->
+<svg class="w-5 h-5" viewBox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+</svg>
+</div>
+<span class="text-label-md font-label-md text-on-surface">Continue with Google</span>
+</button>
+<!-- Phone Auth Button -->
+<button class="btn-press w-full h-[56px] flex items-center justify-center gap-md bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-all shadow-md shadow-primary/20">
+<span class="material-symbols-outlined !text-[20px]">smartphone</span>
+<span class="text-label-md font-label-md">Continue with Phone</span>
+</button>
+<!-- Secondary Context Links (Not Guest) -->
+<div class="pt-sm flex flex-col items-center space-y-sm">
+<p class="text-label-sm font-label-sm text-on-surface-variant">
+                    By continuing, you agree to our 
+                    <a class="text-primary font-bold hover:underline" href="#">Terms of Service</a>
+</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant">
+                    Need help? <a class="text-primary font-bold hover:underline" href="#">Contact Support</a>
+</p>
+</div>
+</div>
+<!-- Dynamic Visual Detail: Community Illustration -->
+<div class="mt-xxl w-full max-w-sm px-md opacity-80">
+<div class="relative w-full aspect-video rounded-[32px] overflow-hidden shadow-2xl border-4 border-white">
+<img class="w-full h-full object-cover" data-alt="A warm and inviting photograph of a modern local café and a diverse group of professional workers and local entrepreneurs collaborating in a sun-drenched, airy workspace. The scene features soft lighting, lush green plants, and a palette of warm whites and primary blues, evoking a sense of community trust and optimism. The photography style is high-end, clean, and minimalist, capturing authentic interactions in a vibrant community environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3vd9YAXSg9kmNU_TA8p6_WR6Za08p0AlpperNAMCxDHdUv1h_dZyV1f8u-MGixMAdWV5Zc_Ffr-Z7Jt0YsgPA98ybK9z2uVEPlnga3NpvXvyJp1Z_ck4ramWtnLdpzntLXHXmfjpMv-5HVrnN5ywkOTBbTCoiyoSRYeSeRBqMjEhoQ_XO5vonLVeH5kwL8EPMRD2xClmKu8cXFiYMCVPRIRIFPrd84X3NgWTlbYBD64RSI-Gh92HUnQ">
+<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+</div>
+</div>
+<!-- Subtle Footer Signature -->
+<footer class="mt-auto pt-xl">
+<span class="text-label-sm font-label-sm text-outline-variant">GetWork © 2024</span>
+</footer>
+</main>
+<!-- Micro-interaction Script -->
+<script>
+        document.querySelectorAll('.btn-press').forEach(button => {
+            button.addEventListener('click', (e) => {
+                // Subtle visual feedback can be added here
+                console.log('Login attempt initiated');
+            });
+        });
+        
+        // Lightweight atmospheric float animation for the brand logo
+        const logo = document.querySelector('.w-24.h-24');
+        if (logo) {
+            let angle = 0;
+            function animate() {
+                angle += 0.02;
+                const yOffset = Math.sin(angle) * 4;
+                logo.style.transform = `translateY(${yOffset}px)`;
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+
+
+</body></html>

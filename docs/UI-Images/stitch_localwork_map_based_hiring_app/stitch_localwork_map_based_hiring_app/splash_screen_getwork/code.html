@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GetWork | Find Work Around You</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#003da8",
+                    "surface-bright": "#f7f9ff",
+                    "outline-variant": "#c3c6d8",
+                    "surface-container-highest": "#d8e4f0",
+                    "on-secondary-fixed-variant": "#7c2e00",
+                    "on-secondary-fixed": "#351000",
+                    "on-tertiary-container": "#fff7f2",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-container": "#faf8ff",
+                    "surface-container-high": "#dee9f6",
+                    "inverse-on-surface": "#e7f2ff",
+                    "tertiary-fixed-dim": "#fcba65",
+                    "primary-container": "#1a66ff",
+                    "glass-surface": "rgba(247, 249, 255, 0.85)",
+                    "tertiary-fixed": "#ffddb7",
+                    "on-secondary-container": "#692600",
+                    "on-background": "#121d26",
+                    "surface-variant": "#d8e4f0",
+                    "surface-container-low": "#ecf4ff",
+                    "secondary-fixed-dim": "#ffb595",
+                    "tertiary": "#7f4f00",
+                    "on-surface": "#121d26",
+                    "secondary": "#a23f00",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "tertiary-container": "#9c6719",
+                    "urgent-glow": "rgba(26, 102, 255, 0.3)",
+                    "secondary-container": "#ff8346",
+                    "surface": "#f7f9ff",
+                    "inverse-surface": "#27323b",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "on-tertiary-fixed": "#2a1700",
+                    "surface-container": "#e4effc",
+                    "on-error": "#ffffff",
+                    "map-road": "#d1dbe8",
+                    "on-primary": "#ffffff",
+                    "primary-fixed": "#dbe1ff",
+                    "on-error-container": "#93000a",
+                    "surface-dim": "#d0dbe8",
+                    "inverse-primary": "#b4c5ff",
+                    "surface-tint": "#0052dc",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container-lowest": "#ffffff",
+                    "outline": "#737687",
+                    "primary": "#004fd2",
+                    "on-surface-variant": "#424655",
+                    "error": "#ba1a1a",
+                    "on-secondary": "#ffffff",
+                    "background": "#f7f9ff",
+                    "map-grid": "#edf0f5",
+                    "secondary-fixed": "#ffdbcc",
+                    "sage-green": "#7ca982", /* Custom Sage for Brand Request */
+                    "charcoal": "#333333",    /* Custom Charcoal for Brand Request */
+                    "warm-ivory": "#FAF9F6"  /* Custom Warm Ivory for Brand Request */
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "gutter": "16px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "margin-desktop": "32px",
+                    "lg": "24px",
+                    "xxl": "48px",
+                    "xl": "32px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "caption-bold": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-sm": ["16px", {"lineHeight": "22px", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "caption-bold": ["10px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FAF9F6;
+        }
+
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        .ivory-gradient {
+            background: radial-gradient(circle at top right, #FFFFFF 0%, #FAF9F6 40%, #F3F1ED 100%);
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .glass-blob {
+            position: absolute;
+            filter: blur(60px);
+            z-index: 0;
+            opacity: 0.4;
+            transition: all 5s ease;
+        }
+
+        .liquid-layer {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%);
+            pointer-events: none;
+        }
+
+        .logo-glow {
+            filter: drop-shadow(0 0 15px rgba(124, 169, 130, 0.4));
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="ivory-gradient min-h-screen flex flex-col items-center justify-center overflow-hidden relative">
+<!-- Atmospheric Liquid Glass Background Elements -->
+<div class="glass-blob w-[500px] h-[500px] bg-sage-green/20 rounded-full top-[-100px] left-[-100px] animate-float" style="animation-delay: 0s;"></div>
+<div class="glass-blob w-[400px] h-[400px] bg-primary-fixed/30 rounded-full bottom-[-100px] right-[-100px] animate-float" style="animation-delay: 2s;"></div>
+<div class="glass-blob w-[300px] h-[300px] bg-tertiary-fixed/20 rounded-full top-1/2 left-1/3 animate-float" style="animation-delay: 4s;"></div>
+<!-- Main Content Canvas -->
+<main class="relative z-10 flex flex-col items-center justify-center text-center px-margin-mobile">
+<!-- Brand Logo Container with Liquid Depth -->
+<div class="relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center group">
+<!-- Glass Depth Ring -->
+<div class="absolute inset-0 rounded-full liquid-glass animate-pulse duration-[4000ms]"></div>
+<!-- Logo: Location Pin + Briefcase Hybrid -->
+<div class="relative z-20 logo-glow transition-transform duration-500 group-hover:scale-110">
+<div class="relative flex items-center justify-center">
+<!-- The Sage Green Visual Anchor -->
+<span class="material-symbols-outlined text-sage-green text-[120px] md:text-[160px]" style="font-variation-settings: 'FILL' 1;">
+                        location_on
+                    </span>
+<!-- Inner Briefcase Core -->
+<div class="absolute top-[35%] flex items-center justify-center">
+<span class="material-symbols-outlined text-warm-ivory text-[40px] md:text-[56px]" style="font-variation-settings: 'FILL' 1;">
+                            work
+                        </span>
+</div>
+</div>
+</div>
+<!-- Accent Liquid Layer -->
+<div class="liquid-layer rounded-full"></div>
+</div>
+<!-- Typography Cluster -->
+<div class="mt-xl space-y-md animate-float" style="animation-duration: 8s;">
+<h1 class="font-headline-lg text-headline-lg md:text-[48px] md:leading-[56px] text-on-surface tracking-tighter">
+                GetWork
+            </h1>
+<p class="font-headline-sm text-charcoal/70 opacity-80 max-w-xs mx-auto">
+                Find Work Around You
+            </p>
+</div>
+<!-- Interactive Progress Hint -->
+<div class="mt-xxl flex flex-col items-center gap-sm">
+<div class="w-48 h-1 bg-outline-variant/20 rounded-full overflow-hidden relative">
+<div class="absolute inset-y-0 left-0 bg-sage-green w-0 transition-all duration-[3000ms] ease-out" id="progress-bar"></div>
+</div>
+<span class="font-label-sm text-outline uppercase tracking-widest animate-pulse">
+                Locating Opportunities...
+            </span>
+</div>
+</main>
+<!-- Navigation Shell (Suppressed as per "Task-Focused" rule for Splash screens) -->
+<!-- We skip TopAppBar and BottomNavBar here as this is a Splash screen -->
+<!-- Interactive Micro-interaction Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const progressBar = document.getElementById('progress-bar');
+            
+            // Initial loading animation trigger
+            setTimeout(() => {
+                progressBar.style.width = '100%';
+            }, 100);
+
+            // Subtle mouse parallax effect for the "Liquid" feel
+            document.addEventListener('mousemove', (e) => {
+                const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+                const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+                
+                const blobs = document.querySelectorAll('.glass-blob');
+                blobs.forEach((blob, index) => {
+                    const factor = (index + 1) * 2;
+                    blob.style.transform = `translate(${moveX * factor}px, ${moveY * factor}px)`;
+                });
+            });
+
+            // Auto-redirect simulation (Logic only, no actual redirect)
+            setTimeout(() => {
+                console.log("Splash sequence complete. Transitioning to Home Map...");
+            }, 3500);
+        });
+    </script>
+<!-- Content Card Grid (Optional background context for "Work Around You" feel) -->
+<div class="absolute bottom-0 left-0 w-full p-margin-mobile grid grid-cols-2 md:grid-cols-4 gap-sm opacity-20 pointer-events-none scale-95 blur-[2px]">
+<div class="liquid-glass rounded-xl p-md h-32 flex flex-col justify-end">
+<div class="w-1/2 h-2 bg-sage-green/30 rounded mb-xs"></div>
+<div class="w-3/4 h-2 bg-sage-green/10 rounded"></div>
+</div>
+<div class="liquid-glass rounded-xl p-md h-32 flex flex-col justify-end">
+<div class="w-1/2 h-2 bg-sage-green/30 rounded mb-xs"></div>
+<div class="w-3/4 h-2 bg-sage-green/10 rounded"></div>
+</div>
+<div class="liquid-glass rounded-xl p-md h-32 flex flex-col justify-end hidden md:flex">
+<div class="w-1/2 h-2 bg-sage-green/30 rounded mb-xs"></div>
+<div class="w-3/4 h-2 bg-sage-green/10 rounded"></div>
+</div>
+<div class="liquid-glass rounded-xl p-md h-32 flex flex-col justify-end hidden md:flex">
+<div class="w-1/2 h-2 bg-sage-green/30 rounded mb-xs"></div>
+<div class="w-3/4 h-2 bg-sage-green/10 rounded"></div>
+</div>
+</div>
+</body></html>
