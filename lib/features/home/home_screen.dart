@@ -202,33 +202,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Build header first so it always appears above map/list content
 
           // ── Background Content (Map or Job List) ─────────────────────────
-          Positioned.fill(
-            // Push content below the header area
-            top: topPadding + _headerHeight,
-            child: _currentNavIndex == 1
-                ? _buildListView(jobs)
-                : _currentNavIndex == 2
-                    ? _buildMessagesPlaceholder()
-                    : _currentNavIndex == 3
-                        ? _buildProfilePlaceholder()
-                        : OpenStreetMapWidget(
-                            jobs: jobs,
-                            selectedJob: selectedJob,
-                            mapController: _mapController,
-                            mapStyle: _selectedMapStyle,
-                            onMarkerTap: (job) {
-                              ref
-                                  .read(selectedJobProvider.notifier)
-                                  .selectJob(job);
-                              _flyToJob(job);
-                            },
-                            onMapTap: () {
-                              ref
-                                  .read(selectedJobProvider.notifier)
-                                  .selectJob(null);
-                            },
-                          ),
-          ),
+          // Map tab: fill ENTIRE screen (goes behind the floating header)
+          // Other tabs: pushed below the header so content isn't hidden
+          if (_currentNavIndex == 0)
+            Positioned.fill(
+              child: OpenStreetMapWidget(
+                jobs: jobs,
+                selectedJob: selectedJob,
+                mapController: _mapController,
+                mapStyle: _selectedMapStyle,
+                onMarkerTap: (job) {
+                  ref
+                      .read(selectedJobProvider.notifier)
+                      .selectJob(job);
+                  _flyToJob(job);
+                },
+                onMapTap: () {
+                  ref
+                      .read(selectedJobProvider.notifier)
+                      .selectJob(null);
+                },
+              ),
+            ),
+          if (_currentNavIndex != 0)
+            Positioned.fill(
+              top: topPadding + _headerHeight,
+              child: _currentNavIndex == 1
+                  ? _buildListView(jobs)
+                  : _currentNavIndex == 2
+                      ? _buildMessagesPlaceholder()
+                      : _buildProfilePlaceholder(),
+            ),
 
           // ── Map Overlay Controls — only on map tab, not covering header ──
           if (_currentNavIndex == 0 && selectedJob == null)
@@ -424,19 +428,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── Top Header: Profile Avatar + Search Bar + Bell + Category Pills ──────
   Widget _buildTopHeader(double topPadding) {
     return Container(
-      // No solid background — transparent so map shows through
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withValues(alpha: 0.12),
-            Colors.black.withValues(alpha: 0.05),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.65, 1.0],
-        ),
-      ),
+      // Fully transparent — map shows through completely
+      color: Colors.transparent,
       padding: EdgeInsets.only(
         top: topPadding + 10,
         left: 14,
