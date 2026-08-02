@@ -16,6 +16,33 @@ import 'widgets/category_filter_bar.dart';
 import 'widgets/job_bottom_sheet.dart';
 import 'widgets/open_street_map_widget.dart';
 
+// ── Category color helper ─────────────────────────────────────
+Color _categoryColor(JobCategory cat) {
+  switch (cat) {
+    case JobCategory.delivery:  return AppColors.categoryDelivery;
+    case JobCategory.retail:    return AppColors.categoryRetail;
+    case JobCategory.food:      return AppColors.categoryFood;
+    case JobCategory.construction: return AppColors.categoryConstruction;
+    case JobCategory.cleaning:  return AppColors.categoryCleaning;
+    case JobCategory.tech:      return AppColors.categoryTech;
+    case JobCategory.events:    return AppColors.categoryEvents;
+    default:                    return AppColors.primary;
+  }
+}
+
+String _categoryLabel(JobCategory cat) {
+  switch (cat) {
+    case JobCategory.delivery:  return 'Delivery';
+    case JobCategory.retail:    return 'Retail';
+    case JobCategory.food:      return 'Food';
+    case JobCategory.construction: return 'Construction';
+    case JobCategory.cleaning:  return 'Cleaning';
+    case JobCategory.tech:      return 'Tech';
+    case JobCategory.events:    return 'Events';
+    default:                    return 'All';
+  }
+}
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -196,232 +223,264 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
 
-      body: Stack(
-        children: [
-          // ── TOP HEADER — always on top regardless of which tab ───────────
-          // Build header first so it always appears above map/list content
-
-          // ── Background Content (Map or Job List) ─────────────────────────
-          // Map tab: fill ENTIRE screen (goes behind the floating header)
-          // Other tabs: pushed below the header so content isn't hidden
-          if (_currentNavIndex == 0)
-            Positioned.fill(
-              child: OpenStreetMapWidget(
-                jobs: jobs,
-                selectedJob: selectedJob,
-                mapController: _mapController,
-                mapStyle: _selectedMapStyle,
-                onMarkerTap: (job) {
-                  ref
-                      .read(selectedJobProvider.notifier)
-                      .selectJob(job);
-                  _flyToJob(job);
-                },
-                onMapTap: () {
-                  ref
-                      .read(selectedJobProvider.notifier)
-                      .selectJob(null);
-                },
-              ),
-            ),
-          if (_currentNavIndex != 0)
-            Positioned.fill(
-              top: topPadding + _headerHeight,
-              child: _currentNavIndex == 1
-                  ? _buildListView(jobs)
-                  : _currentNavIndex == 2
-                      ? _buildMessagesPlaceholder()
-                      : _buildProfilePlaceholder(),
-            ),
-
-          // ── Map Overlay Controls — only on map tab, not covering header ──
-          if (_currentNavIndex == 0 && selectedJob == null)
-            Positioned(
-              right: 14,
-              // Position relative to bottom, not overlapping header
-              bottom: 120,
-              child: Column(
-                children: [
-                  _mapControlButton(
-                    icon: Icons.my_location_rounded,
-                    color: AppColors.textPrimary,
-                    onTap: () {
-                      _mapController.move(
-                          const LatLng(27.7172, 85.3240), 14.5);
+      body: _currentNavIndex == 0
+          // ── MAP TAB: full-screen Stack with floating header ──────────────
+          ? Stack(
+              children: [
+                // Map fills the entire screen behind the floating header
+                Positioned.fill(
+                  child: OpenStreetMapWidget(
+                    jobs: jobs,
+                    selectedJob: selectedJob,
+                    mapController: _mapController,
+                    mapStyle: _selectedMapStyle,
+                    onMarkerTap: (job) {
+                      ref.read(selectedJobProvider.notifier).selectJob(job);
+                      _flyToJob(job);
+                    },
+                    onMapTap: () {
+                      ref.read(selectedJobProvider.notifier).selectJob(null);
                     },
                   ),
-                  const SizedBox(height: 10),
-                  _mapControlButton(
-                    icon: Icons.layers_outlined,
-                    color: AppColors.primary,
-                    onTap: _showMapStyleSelector,
-                  ),
-                  const SizedBox(height: 10),
-                  _mapControlButton(
-                    icon: Icons.filter_alt_rounded,
-                    color: Colors.white,
-                    bgColor: AppColors.primary,
-                    size: 48,
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
+                ),
 
-          // ── Bottom Horizontal Job Carousel — only on map tab ─────────────
-          if (selectedJob == null && _currentNavIndex == 0 && jobs.isNotEmpty)
-            Positioned(
-              bottom: 16,
-              left: 0,
-              right: 0,
-              child: SizedBox(
-                height: 106,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: jobs.length,
-                  separatorBuilder: (context, i) =>
-                      const SizedBox(width: 10),
-                  itemBuilder: (context, i) {
-                    final job = jobs[i];
-                    return GestureDetector(
-                      onTap: () {
-                        ref
-                            .read(selectedJobProvider.notifier)
-                            .selectJob(job);
-                        _flyToJob(job);
-                      },
-                      child: Container(
-                        width: 250,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border:
-                              Border.all(color: AppColors.border, width: 0.8),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowMedium,
-                              blurRadius: 12,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
+                // Map Overlay Controls
+                if (selectedJob == null)
+                  Positioned(
+                    right: 14,
+                    bottom: 120,
+                    child: Column(
+                      children: [
+                        _mapControlButton(
+                          icon: Icons.my_location_rounded,
+                          color: AppColors.textPrimary,
+                          onTap: () =>
+                              _mapController.move(const LatLng(27.7172, 85.3240), 14.5),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    job.title,
-                                    style: const TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 10),
+                        _mapControlButton(
+                          icon: Icons.layers_outlined,
+                          color: AppColors.primary,
+                          onTap: _showMapStyleSelector,
+                        ),
+                        const SizedBox(height: 10),
+                        _mapControlButton(
+                          icon: Icons.filter_alt_rounded,
+                          color: Colors.white,
+                          bgColor: AppColors.primary,
+                          size: 48,
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Bottom Horizontal Job Carousel
+                if (selectedJob == null && jobs.isNotEmpty)
+                  Positioned(
+                    bottom: 16,
+                    left: 0,
+                    right: 0,
+                    child: SizedBox(
+                      height: 106,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: jobs.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        itemBuilder: (context, i) {
+                          final job = jobs[i];
+                          return GestureDetector(
+                            onTap: () {
+                              ref.read(selectedJobProvider.notifier).selectJob(job);
+                              _flyToJob(job);
+                            },
+                            child: Container(
+                              width: 250,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: AppColors.border, width: 0.8),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: AppColors.shadowMedium,
+                                    blurRadius: 12,
+                                    offset: Offset(0, 4),
                                   ),
-                                ),
-                                Text(
-                                  job.salaryDisplay,
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              job.businessName,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.location_on_outlined,
-                                  size: 13,
-                                  color: AppColors.primary,
-                                ),
-                                const SizedBox(width: 3),
-                                Expanded(
-                                  child: Text(
-                                    '${job.distanceKm ?? 0.5} km • ${job.address}',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          job.title,
+                                          style: const TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Text(
+                                        job.salaryDisplay,
+                                        style: const TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    job.businessName,
                                     style: const TextStyle(
                                       fontFamily: 'Inter',
-                                      fontSize: 11,
+                                      fontSize: 12,
                                       color: AppColors.textSecondary,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.location_on_outlined,
+                                          size: 13, color: AppColors.primary),
+                                      const SizedBox(width: 3),
+                                      Expanded(
+                                        child: Text(
+                                          '${job.distanceKm ?? 0.5} km • ${job.address}',
+                                          style: const TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                // Blur overlay when a job is selected
+                if (selectedJob != null)
+                  Positioned(
+                    top: topPadding + _headerHeight,
+                    left: 0, right: 0, bottom: 0,
+                    child: GestureDetector(
+                      onTap: () =>
+                          ref.read(selectedJobProvider.notifier).selectJob(null),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.30),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ),
+
+                // Job detail bottom sheet
+                if (selectedJob != null)
+                  Positioned(
+                    bottom: 12, left: 0, right: 0,
+                    child: JobBottomSheet(
+                      job: selectedJob,
+                      onClose: () =>
+                          ref.read(selectedJobProvider.notifier).selectJob(null),
+                    ),
+                  ),
+
+                // Floating header — drawn last, always on top
+                Positioned(
+                  top: 0, left: 0, right: 0,
+                  child: _buildTopHeader(topPadding),
+                ),
+              ],
+            )
+          // ── NON-MAP TABS: standard Scaffold column, NO floating header ───
+          : _buildTabScaffold(topPadding, jobs),
+    );
+  }
+
+  // ── Non-map tabs share this scaffold (no floating map header) ────────────
+  Widget _buildTabScaffold(double topPadding, List<JobModel> jobs) {
+    final titles = ['', 'Nearby Jobs', 'Messages', 'Profile'];
+    return Column(
+      children: [
+        // Branded app bar for non-map tabs
+        Container(
+          padding: EdgeInsets.only(
+            top: topPadding + 8,
+            left: 16,
+            right: 16,
+            bottom: 14,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowLight,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Text(
+                titles[_currentNavIndex],
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
                 ),
               ),
-            ),
-
-          // ── BLUR OVERLAY only over the MAP area, not the header ──────────
-          // Positioned below the header so the top UI stays visible & clean
-          if (selectedJob != null && _currentNavIndex == 0)
-            Positioned(
-              top: topPadding + _headerHeight, // starts BELOW header
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: GestureDetector(
-                onTap: () {
-                  ref.read(selectedJobProvider.notifier).selectJob(null);
-                },
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              const Spacer(),
+              if (_currentNavIndex == 1)
+                GestureDetector(
+                  onTap: () => context.push('/notifications'),
                   child: Container(
-                    color: Colors.black.withValues(alpha: 0.30),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: AppColors.textPrimary,
+                      size: 20,
+                    ),
                   ),
                 ),
-              ),
-            ),
-
-          // ── Job Popup Bottom Sheet ────────────────────────────────────────
-          if (selectedJob != null && _currentNavIndex == 0)
-            Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: JobBottomSheet(
-                job: selectedJob,
-                onClose: () {
-                  ref.read(selectedJobProvider.notifier).selectJob(null);
-                },
-              ),
-            ),
-
-          // ── TOP HEADER — Drawn last so it's always on top ────────────────
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _buildTopHeader(topPadding),
+            ],
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: _currentNavIndex == 1
+              ? _buildJobsTab(jobs)
+              : _currentNavIndex == 2
+                  ? _buildMessagesPlaceholder()
+                  : _buildProfilePlaceholder(),
+        ),
+      ],
     );
   }
 
@@ -601,27 +660,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ── Jobs List Tab ─────────────────────────────────────────────────────────
-  Widget _buildListView(List<JobModel> jobs) {
+  // ── Jobs List Tab (kept for potential reuse) ──────────────────────────────
+  Widget _buildListView(List<JobModel> jobs) => _buildJobsTab(jobs);
+
+  // ── Premium Jobs Tab ──────────────────────────────────────────────────────
+  Widget _buildJobsTab(List<JobModel> jobs) {
     if (jobs.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off_rounded, size: 64, color: AppColors.textHint),
-            SizedBox(height: 16),
-            Text(
-              'No jobs found',
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.work_off_rounded,
+                size: 40,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'No Jobs Found',
               style: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-            SizedBox(height: 8),
-            Text(
-              'Try changing your filter or search terms',
+            const SizedBox(height: 8),
+            const Text(
+              'Try adjusting your filters or search',
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -633,80 +707,353 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.only(top: 12, bottom: 24, left: 14, right: 14),
-      itemCount: jobs.length,
-      separatorBuilder: (context, i) => const SizedBox(height: 10),
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      itemCount: jobs.length + 1, // +1 for header row
       itemBuilder: (context, i) {
-        final job = jobs[i];
-        return Card(
-          elevation: 1,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        // ── Header row ──
+        if (i == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        job.title,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${jobs.length} jobs nearby',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
                     ),
-                    Text(
-                      job.salaryDisplay,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  job.businessName,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_outlined,
-                        size: 14, color: AppColors.primary),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        '${job.address} (${job.distanceKm ?? 0.5} km)',
-                        style: const TextStyle(
-                            fontFamily: 'Inter', fontSize: 12),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.sort_rounded, size: 14, color: AppColors.textSecondary),
+                      SizedBox(width: 4),
+                      Text(
+                        'Sort: Nearest',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    OutlinedButton(
-                      onPressed: () => context.push('/job/${job.id}'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(80, 36),
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      child: const Text('Details'),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
+            ),
+          );
+        }
+
+        final job = jobs[i - 1];
+        final catColor = _categoryColor(job.category);
+        final slotsLeft = job.workersNeeded - job.workersApplied;
+        final fillFraction = job.workersNeeded > 0
+            ? (job.workersApplied / job.workersNeeded).clamp(0.0, 1.0)
+            : 0.0;
+
+        // Staggered animation widget
+        return _AnimatedJobCard(
+          index: i - 1,
+          child: GestureDetector(
+            onTap: () => context.push('/job/${job.id}'),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.shadowMedium,
+                    blurRadius: 16,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Category color strip
+                  Container(
+                    width: 5,
+                    decoration: BoxDecoration(
+                      color: catColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        bottomLeft: Radius.circular(20),
+                      ),
+                    ),
+                  ),
+                  // Card Content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Top row: business avatar + name + salary chip
+                          Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: catColor.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    job.businessName.isNotEmpty
+                                        ? job.businessName[0].toUpperCase()
+                                        : 'B',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      color: catColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      job.businessName,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      _categoryLabel(job.category),
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: catColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Salary chip
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryContainer,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  job.salaryDisplay,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Job title + urgent badge
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  job.title,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textPrimary,
+                                    height: 1.2,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (job.isUrgent) ...
+                                [
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accentContainer,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text(
+                                      '🔥 Urgent',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.accent,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Distance + Shift time
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined,
+                                  size: 13, color: AppColors.primary),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(
+                                  '${job.distanceKm ?? 0.5} km · ${job.address}',
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.schedule_rounded,
+                                  size: 13, color: AppColors.textHint),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${job.shiftStartTime} – ${job.shiftEndTime}',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              if (job.isToday) ...
+                                [
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.successLight,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'Today',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.success,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Workers slots fill bar
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '$slotsLeft slot${slotsLeft != 1 ? 's' : ''} left',
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${job.workersApplied}/${job.workersNeeded} applied',
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 11,
+                                      color: AppColors.textHint,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: fillFraction,
+                                  minHeight: 5,
+                                  backgroundColor: AppColors.surfaceVariant,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    fillFraction > 0.8
+                                        ? AppColors.accent
+                                        : AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // View Details button
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: () => context.push('/job/${job.id}'),
+                              style: TextButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text(
+                                'View Details',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -773,6 +1120,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Animated Job Card — staggered slide-up + fade entrance ───────────────────
+class _AnimatedJobCard extends StatefulWidget {
+  final int index;
+  final Widget child;
+
+  const _AnimatedJobCard({required this.index, required this.child});
+
+  @override
+  State<_AnimatedJobCard> createState() => _AnimatedJobCardState();
+}
+
+class _AnimatedJobCardState extends State<_AnimatedJobCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _fade;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.18),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+
+    // Stagger each card by 60ms
+    Future.delayed(Duration(milliseconds: widget.index * 60), () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(position: _slide, child: widget.child),
     );
   }
 }

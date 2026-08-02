@@ -1,8 +1,7 @@
 // ============================================================
 // OPEN STREET MAP WIDGET — GetWork App
 // Renders Kathmandu map via flutter_map + multi-style tiles
-// (Street, Satellite, Muted Light, Terrain)
-// Features map pin callout bubbles with downward pointer arrows
+// Features smooth staggered entrance animations on job markers
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -13,6 +12,84 @@ import '../../../models/job_model.dart';
 
 enum MapStyleType { street, satellite, lightGray, terrain }
 
+// ── Animated single marker wrapper ───────────────────────────
+class _AnimatedMarkerWidget extends StatefulWidget {
+  final JobModel job;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final int index;
+
+  const _AnimatedMarkerWidget({
+    required this.job,
+    required this.isSelected,
+    required this.onTap,
+    required this.index,
+  });
+
+  @override
+  State<_AnimatedMarkerWidget> createState() => _AnimatedMarkerWidgetState();
+}
+
+class _AnimatedMarkerWidgetState extends State<_AnimatedMarkerWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnim;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+
+    _scaleAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
+      ),
+    );
+
+    // Stagger each marker by 80ms per index
+    Future.delayed(Duration(milliseconds: widget.index * 80), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: ScaleTransition(
+        scale: _scaleAnim,
+        alignment: Alignment.bottomCenter,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: _MarkerCalloutPin(
+            job: widget.job,
+            isSelected: widget.isSelected,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Main Map Widget ───────────────────────────────────────────
 class OpenStreetMapWidget extends StatelessWidget {
   final List<JobModel> jobs;
   final JobModel? selectedJob;
@@ -59,7 +136,7 @@ class OpenStreetMapWidget extends StatelessWidget {
         onTap: (_, _) => onMapTap(),
       ),
       children: [
-        // ── Map Tile Layer (Multi-Style Tile URLs) ────────────
+        // ── Map Tile Layer ────────────────────────────────────
         TileLayer(
           urlTemplate: _tileUrl,
           subdomains: const ['a', 'b', 'c', 'd'],
@@ -67,24 +144,25 @@ class OpenStreetMapWidget extends StatelessWidget {
           maxZoom: 19,
         ),
 
-        // ── Job Salary Pins with Downward Arrow Pointer ────────
+        // ── Job Markers with Staggered Entrance Animations ────
         MarkerLayer(
-          markers: jobs.map((job) {
+          markers: List.generate(jobs.length, (i) {
+            final job = jobs[i];
             final isSelected = selectedJob?.id == job.id;
             return Marker(
               point: LatLng(job.latitude, job.longitude),
               width: 140,
-              height: 64,
+              height: 72,
               alignment: Alignment.topCenter,
-              child: GestureDetector(
+              child: _AnimatedMarkerWidget(
+                key: ValueKey(job.id),
+                job: job,
+                isSelected: isSelected,
                 onTap: () => onMarkerTap(job),
-                child: _MarkerCalloutPin(
-                  job: job,
-                  isSelected: isSelected,
-                ),
+                index: i,
               ),
             );
-          }).toList(),
+          }),
         ),
       ],
     );
@@ -126,7 +204,7 @@ class _MarkerCalloutPin extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: bgColor.withValues(alpha: 0.45),
-                blurRadius: isSelected ? 14 : 8,
+                blurRadius: isSelected ? 16 : 8,
                 offset: const Offset(0, 4),
               ),
             ],
