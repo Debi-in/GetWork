@@ -479,24 +479,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Row: Avatar | Search | Bell
           Row(
             children: [
-              // Left: Profile Avatar
+              // Left: App Logo / Profile Avatar
               GestureDetector(
                 onTap: () => context.push('/profile'),
                 child: Container(
                   width: 42,
                   height: 42,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
                     shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border, width: 0.8),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.shadowLight,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Center(
-                    child: Text(
-                      'DR',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(21),
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      width: 42,
+                      height: 42,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Container(
+                        color: AppColors.primary,
+                        child: Center(
+                          child: Text(
+                            'DR',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
