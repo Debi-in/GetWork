@@ -495,60 +495,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
 
-                  // ── Blur overlay + job sheet (fast animated in/out) ────────
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 160),
-                    reverseDuration: const Duration(milliseconds: 120),
-                    transitionBuilder: (child, anim) => FadeTransition(
-                      opacity: anim,
-                      child: child,
-                    ),
-                    child: selectedJob != null
-                        ? Positioned.fill(
-                            key: const ValueKey('blur'),
-                            child: GestureDetector(
-                              onTap: () => ref
-                                  .read(selectedJobProvider.notifier)
-                                  .selectJob(null),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                                child: Container(
-                                  color: Colors.black.withValues(alpha: 0.35),
-                                ),
-                              ),
+                  // ── Blur overlay (Fast animated fade, crash-free) ──────────
+                  Positioned.fill(
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 160),
+                      opacity: selectedJob != null ? 1.0 : 0.0,
+                      child: IgnorePointer(
+                        ignoring: selectedJob == null,
+                        child: GestureDetector(
+                          onTap: () => ref
+                              .read(selectedJobProvider.notifier)
+                              .selectJob(null),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: Container(
+                              color: Colors.black.withValues(alpha: 0.35),
                             ),
-                          )
-                        : const SizedBox.shrink(key: ValueKey('no-blur')),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
 
-                  // Job detail sheet — slides up fast
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    reverseDuration: const Duration(milliseconds: 130),
-                    transitionBuilder: (child, anim) => SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 1),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: anim,
-                        curve: Curves.easeOutCubic,
-                      )),
-                      child: FadeTransition(opacity: anim, child: child),
+                  // ── Job detail sheet (Fast slide-up & fade, crash-free) ─────
+                  Positioned(
+                    bottom: 12,
+                    left: 0,
+                    right: 0,
+                    child: AnimatedSlide(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      offset: selectedJob != null ? Offset.zero : const Offset(0, 1.4),
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 150),
+                        opacity: selectedJob != null ? 1.0 : 0.0,
+                        child: IgnorePointer(
+                          ignoring: selectedJob == null,
+                          child: selectedJob != null
+                              ? JobBottomSheet(
+                                  job: selectedJob,
+                                  onClose: () => ref
+                                      .read(selectedJobProvider.notifier)
+                                      .selectJob(null),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ),
                     ),
-                    child: selectedJob != null
-                        ? Positioned(
-                            key: ValueKey(selectedJob.id),
-                            bottom: 12,
-                            left: 0,
-                            right: 0,
-                            child: JobBottomSheet(
-                              job: selectedJob,
-                              onClose: () => ref
-                                  .read(selectedJobProvider.notifier)
-                                  .selectJob(null),
-                            ),
-                          )
-                        : const SizedBox.shrink(key: ValueKey('no-sheet')),
                   ),
 
                   // Floating header — fast fade when panning map
