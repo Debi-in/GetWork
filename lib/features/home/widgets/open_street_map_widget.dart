@@ -252,49 +252,52 @@ class OpenStreetMapWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FlutterMap(
-      mapController: mapController,
-      options: MapOptions(
-        initialCenter: userLocation ?? kathmanduCenter,
-        initialZoom: 13.5,
-        minZoom: 10,
-        maxZoom: 18,
-        onTap: (_, _) => onMapTap(),
-        onPositionChanged: (position, hasGesture) {
-          if (hasGesture && onMapInteractionChanged != null) {
-            onMapInteractionChanged!(true);
-          }
-        },
-      ),
-      children: [
-        // ── Map Tile Layer ────────────────────────────────────
-        TileLayer(
-          urlTemplate: _tileUrl,
-          subdomains: const ['a', 'b', 'c'],
-          userAgentPackageName: 'com.getwork.app',
-          maxZoom: 19,
+    return Container(
+      color: const Color(0xFFE5E9EC),
+      child: FlutterMap(
+        mapController: mapController,
+        options: MapOptions(
+          initialCenter: userLocation ?? kathmanduCenter,
+          initialZoom: 13.5,
+          minZoom: 10,
+          maxZoom: 18,
+          onTap: (_, _) => onMapTap(),
+          onPositionChanged: (position, hasGesture) {
+            if (hasGesture && onMapInteractionChanged != null) {
+              onMapInteractionChanged!(true);
+            }
+          },
         ),
-
-        // ── Dynamic Location Filter Distance Range Circle ────
-        if (userLocation != null)
-          CircleLayer(
-            circles: [
-              CircleMarker(
-                point: userLocation!,
-                radius: filterDistanceKm * 1000, // radius in meters
-                useRadiusInMeter: true,
-                color: AppColors.primary.withValues(alpha: 0.08),
-                borderColor: AppColors.primary.withValues(alpha: 0.35),
-                borderStrokeWidth: 1.5,
-              ),
-            ],
+        children: [
+          // ── Map Tile Layer ────────────────────────────────────
+          TileLayer(
+            urlTemplate: _tileUrl,
+            subdomains: const ['a', 'b', 'c'],
+            userAgentPackageName: 'com.getwork.getwork',
+            maxZoom: 19,
           ),
 
-        // ── Job Markers & User Location Marker ───────────────
-        MarkerLayer(
-          markers: _buildSpiderfiedMarkers(),
-        ),
-      ],
+          // ── Dynamic Location Filter Distance Range Circle ────
+          if (userLocation != null)
+            CircleLayer(
+              circles: [
+                CircleMarker(
+                  point: userLocation!,
+                  radius: filterDistanceKm * 1000, // radius in meters
+                  useRadiusInMeter: true,
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderColor: AppColors.primary.withValues(alpha: 0.35),
+                  borderStrokeWidth: 1.5,
+                ),
+              ],
+            ),
+
+          // ── Job Markers & User Location Marker ───────────────
+          MarkerLayer(
+            markers: _buildSpiderfiedMarkers(),
+          ),
+        ],
+      ),
     );
   }
 }
