@@ -34,12 +34,12 @@ class ChooseRoleScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 48),
+              const SizedBox(height: 20),
 
               // ── Header ───────────────────────────────────────
               Center(
@@ -68,13 +68,13 @@ class ChooseRoleScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               const Center(
                 child: Text(
                   'How will you use GetWork?',
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 26,
+                    fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
@@ -87,13 +87,13 @@ class ChooseRoleScreen extends ConsumerWidget {
                   'Choose your role. You can switch later.',
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 15,
+                    fontSize: 14,
                     color: AppColors.textSecondary,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 28),
 
               // ── Worker Role Card ──────────────────────────────
               _RoleCard(
@@ -128,7 +128,7 @@ class ChooseRoleScreen extends ConsumerWidget {
                 onTap: () => ref.read(userRoleProvider.notifier).setRole(UserRole.business),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 28),
 
               // ── Continue Button ───────────────────────────────
               SizedBox(
@@ -176,7 +176,7 @@ class ChooseRoleScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -211,7 +211,7 @@ class _RoleCard extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary.withValues(alpha: 0.06) : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
@@ -234,15 +234,15 @@ class _RoleCard extends StatelessWidget {
           children: [
             // Icon bubble
             Container(
-              width: 52,
-              height: 52,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: iconBg,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(icon, color: Colors.white, size: 28),
+              child: Icon(icon, color: Colors.white, size: 26),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
 
             // Text content
             Expanded(
@@ -251,16 +251,20 @@ class _RoleCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         width: 22,
@@ -284,14 +288,16 @@ class _RoleCard extends StatelessWidget {
                     subtitle,
                     style: const TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 13,
+                      fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   ...bullets.map(
                     (b) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
+                      padding: const EdgeInsets.only(bottom: 3),
                       child: Row(
                         children: [
                           Container(
@@ -303,12 +309,16 @@ class _RoleCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            b,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                          Expanded(
+                            child: Text(
+                              b,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],

@@ -115,28 +115,33 @@ class ExpandingLabelNavBar extends StatelessWidget {
                                       : AppColors.textSecondary,
                                 ),
                               ),
-                              ClipRect(
-                                child: AnimatedSize(
-                                  duration: const Duration(milliseconds: 280),
-                                  curve: Curves.easeOutCubic,
-                                  alignment: Alignment.centerLeft,
-                                  child: isSelected
-                                      ? Padding(
-                                          padding: const EdgeInsets.only(left: 6),
-                                          child: Text(
-                                            item.label,
-                                            style: const TextStyle(
-                                              fontFamily: 'Inter',
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.white,
-                                              letterSpacing: -0.2,
+                              Flexible(
+                                child: ClipRect(
+                                  child: AnimatedSize(
+                                    duration: const Duration(milliseconds: 280),
+                                    curve: Curves.easeOutCubic,
+                                    alignment: Alignment.centerLeft,
+                                    child: isSelected
+                                        ? Padding(
+                                            padding: const EdgeInsets.only(left: 4),
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                item.label,
+                                                style: const TextStyle(
+                                                  fontFamily: 'Inter',
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                  letterSpacing: -0.2,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        )
-                                      : const SizedBox(width: 0, height: 0),
+                                          )
+                                        : const SizedBox(width: 0, height: 0),
+                                  ),
                                 ),
                               ),
                             ],

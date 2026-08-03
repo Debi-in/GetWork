@@ -3,13 +3,14 @@ Flutter
 
 Backend:
 Supabase
+Note : Supabase project created but not setup yet. subapase is connected with repo made for Getwork. but not pushed yet.
 
 Database:
 PostgreSQL
+Note : Database is in-built with Supabase. and table setup is not done yet. but structure is ready as per docs/SupabaseSchema.sql
 
 Maps:
 MapTiler + flutter_map
-
 MapTier Claud Key = "DjzvVwLyrsp0aDuDoccX"
 
 Routing:
@@ -24,19 +25,21 @@ GoRouter
 Notifications:
 Firebase Cloud Messaging
 
+
 Analytics:
 Firebase Analytics
 
 Crash Reports:
 Firebase Crashlytics
+Note : firbase project have been maded but not setup yet.
 
 Hosting:
 Vercel
+Note : Vercel not setup yet.
 
 Repository:
 GitHub
-
-
+Note : Github repo made But not pushed the code yet.
 
 Install Packages
 

@@ -4,6 +4,7 @@
 // Features smooth staggered entrance animations on job markers
 // ============================================================
 
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -105,8 +106,10 @@ class OpenStreetMapWidget extends StatelessWidget {
   final MapController? mapController;
   final MapStyleType mapStyle;
   final LatLng? userLocation;
+  final double filterDistanceKm;
   final void Function(JobModel job) onMarkerTap;
   final VoidCallback onMapTap;
+  final void Function(bool isInteracting)? onMapInteractionChanged;
 
   const OpenStreetMapWidget({
     super.key,
@@ -115,8 +118,10 @@ class OpenStreetMapWidget extends StatelessWidget {
     this.mapController,
     this.mapStyle = MapStyleType.street,
     this.userLocation,
+    this.filterDistanceKm = 25.0,
     required this.onMarkerTap,
     required this.onMapTap,
+    this.onMapInteractionChanged,
   });
 
   // Kathmandu default centre
@@ -133,6 +138,99 @@ class OpenStreetMapWidget extends StatelessWidget {
     }
   }
 
+  /// Calculates offsets for markers that share the same or very close coordinates
+  List<Marker> _buildSpiderfiedMarkers() {
+    final Map<String, List<int>> locationClusters = {};
+
+    // Group jobs by location key (rounded to ~30 meters precision)
+    for (int i = 0; i < jobs.length; i++) {
+      final job = jobs[i];
+      final key = '${job.latitude.toStringAsFixed(3)},${job.longitude.toStringAsFixed(3)}';
+      locationClusters.putIfAbsent(key, () => []).add(i);
+    }
+
+    final List<Marker> markers = [];
+
+    // Render User Location Pin first if active
+    if (userLocation != null) {
+      markers.add(
+        Marker(
+          point: userLocation!,
+          width: 44,
+          height: 44,
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0x332563EB),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF2563EB), width: 2),
+            ),
+            child: Center(
+              child: Container(
+                width: 18,
+                height: 18,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2563EB),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black38,
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Build job markers with fan-out spiderfy offset for overlapping markers
+    for (int i = 0; i < jobs.length; i++) {
+      final job = jobs[i];
+      final key = '${job.latitude.toStringAsFixed(3)},${job.longitude.toStringAsFixed(3)}';
+      final cluster = locationClusters[key] ?? [i];
+
+      double lat = job.latitude;
+      double lng = job.longitude;
+
+      if (cluster.length > 1) {
+        final indexInCluster = cluster.indexOf(i);
+        final angle = (2 * math.pi * indexInCluster) / cluster.length;
+        const radius = 0.00045; // ~45 meters offset for clear separation
+        lat += radius * math.sin(angle);
+        lng += radius * math.cos(angle);
+      }
+
+      final isSelected = selectedJob?.id == job.id;
+      markers.add(
+        Marker(
+          point: LatLng(lat, lng),
+          width: 140,
+          height: 72,
+          alignment: Alignment.topCenter,
+          child: _AnimatedMarkerWidget(
+            key: ValueKey(job.id),
+            job: job,
+            isSelected: isSelected,
+            onTap: () => onMarkerTap(job),
+            index: i,
+          ),
+        ),
+      );
+    }
+
+    return markers;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FlutterMap(
@@ -143,6 +241,11 @@ class OpenStreetMapWidget extends StatelessWidget {
         minZoom: 10,
         maxZoom: 18,
         onTap: (_, _) => onMapTap(),
+        onPositionChanged: (position, hasGesture) {
+          if (hasGesture && onMapInteractionChanged != null) {
+            onMapInteractionChanged!(true);
+          }
+        },
       ),
       children: [
         // ── Map Tile Layer ────────────────────────────────────
@@ -153,67 +256,24 @@ class OpenStreetMapWidget extends StatelessWidget {
           maxZoom: 19,
         ),
 
+        // ── Dynamic Location Filter Distance Range Circle ────
+        if (userLocation != null)
+          CircleLayer(
+            circles: [
+              CircleMarker(
+                point: userLocation!,
+                radius: filterDistanceKm * 1000, // radius in meters
+                useRadiusInMeter: true,
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderColor: AppColors.primary.withValues(alpha: 0.35),
+                borderStrokeWidth: 1.5,
+              ),
+            ],
+          ),
+
         // ── Job Markers & User Location Marker ───────────────
         MarkerLayer(
-          markers: [
-            // ── User Current Location Pin (Pulse Blue Dot) ────
-            if (userLocation != null)
-              Marker(
-                point: userLocation!,
-                width: 44,
-                height: 44,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0x332563EB),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF2563EB), width: 2),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 18,
-                      height: 18,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2563EB),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black38,
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-            // ── Job Markers with Staggered Entrance ────────
-            ...List.generate(jobs.length, (i) {
-              final job = jobs[i];
-              final isSelected = selectedJob?.id == job.id;
-              return Marker(
-                point: LatLng(job.latitude, job.longitude),
-                width: 140,
-                height: 72,
-                alignment: Alignment.topCenter,
-                child: _AnimatedMarkerWidget(
-                  key: ValueKey(job.id),
-                  job: job,
-                  isSelected: isSelected,
-                  onTap: () => onMarkerTap(job),
-                  index: i,
-                ),
-              );
-            }),
-          ],
+          markers: _buildSpiderfiedMarkers(),
         ),
       ],
     );

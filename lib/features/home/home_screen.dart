@@ -3,6 +3,7 @@
 // Interactive Map-First Local Job Discovery Interface
 // ============================================================
 
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,7 @@ import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/expanding_label_nav_bar.dart';
 import '../../models/job_model.dart';
+import '../authentication/choose_role_screen.dart';
 import '../jobs/jobs_provider.dart';
 import 'widgets/category_filter_bar.dart';
 import 'widgets/job_bottom_sheet.dart';
@@ -55,6 +57,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final MapController _mapController = MapController();
   // 0: Map, 1: Jobs, 2: Messages, 3: Profile
   int _currentNavIndex = 0;
@@ -65,6 +68,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   LatLng? _currentUserLocation;
   bool _isLoadingLocation = false;
 
+  bool _isMapInteracting = false;
+  Timer? _mapInteractionTimer;
+
+  void _onMapInteractionChanged(bool isInteracting) {
+    if (!_isMapInteracting) {
+      setState(() => _isMapInteracting = true);
+    }
+    _mapInteractionTimer?.cancel();
+    _mapInteractionTimer = Timer(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        setState(() => _isMapInteracting = false);
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -73,6 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
+    _mapInteractionTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -235,8 +254,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
 
-  // ── Top header height constant so other widgets can use it for padding ──
-  static const double _headerHeight = 118.0;
 
   @override
   Widget build(BuildContext context) {
@@ -284,8 +301,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       },
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: AppColors.background,
         resizeToAvoidBottomInset: false,
+        drawer: _buildProfileDrawer(context),
 
         bottomNavigationBar: ExpandingLabelNavBar(
           currentIndex: _currentNavIndex,
@@ -331,6 +350,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       mapController: _mapController,
                       mapStyle: _selectedMapStyle,
                       userLocation: _currentUserLocation,
+                      filterDistanceKm: ref.watch(jobFilterProvider).maxDistanceKm,
+                      onMapInteractionChanged: _onMapInteractionChanged,
                       onMarkerTap: (job) {
                         FocusScope.of(context).unfocus();
                         ref.read(selectedJobProvider.notifier).selectJob(job);
@@ -343,189 +364,207 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                  // Map Overlay Controls
+                  // Map Overlay Controls (Fades out when panning/rotating map)
                   if (selectedJob == null)
                     Positioned(
                       right: 14,
                       bottom: 130,
-                      child: Column(
-                        children: [
-                          _mapControlButton(
-                            icon: _isLoadingLocation
-                                ? Icons.sync_rounded
-                                : Icons.my_location_rounded,
-                            color: _currentUserLocation != null
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
-                            onTap: () =>
-                                _requestAndMoveToUserLocation(moveMap: true),
+                      child: AnimatedOpacity(
+                        opacity: _isMapInteracting ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 250),
+                        child: IgnorePointer(
+                          ignoring: _isMapInteracting,
+                          child: Column(
+                            children: [
+                              _mapControlButton(
+                                icon: _isLoadingLocation
+                                    ? Icons.sync_rounded
+                                    : Icons.my_location_rounded,
+                                color: _currentUserLocation != null
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                                onTap: () =>
+                                    _requestAndMoveToUserLocation(moveMap: true),
+                              ),
+                              const SizedBox(height: 10),
+                              _mapControlButton(
+                                icon: Icons.layers_outlined,
+                                color: AppColors.primary,
+                                onTap: _showMapStyleSelector,
+                              ),
+                              const SizedBox(height: 10),
+                              _mapControlButton(
+                                icon: Icons.filter_alt_rounded,
+                                color: Colors.white,
+                                bgColor: AppColors.primary,
+                                size: 48,
+                                onTap: () => JobFilterModal.show(context),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 10),
-                          _mapControlButton(
-                            icon: Icons.layers_outlined,
-                            color: AppColors.primary,
-                            onTap: _showMapStyleSelector,
-                          ),
-                          const SizedBox(height: 10),
-                          _mapControlButton(
-                            icon: Icons.filter_alt_rounded,
-                            color: Colors.white,
-                            bgColor: AppColors.primary,
-                            size: 48,
-                            onTap: () => JobFilterModal.show(context),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
 
-                  // Bottom Horizontal Job Carousel
+                  // Bottom Horizontal Job Carousel (Fades out when panning/rotating map)
                   if (selectedJob == null && jobs.isNotEmpty)
                     Positioned(
                       bottom: 16,
                       left: 0,
                       right: 0,
-                      child: SizedBox(
-                        height: 114,
-                        child: ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          scrollDirection: Axis.horizontal,
-                          itemCount: jobs.length,
-                          separatorBuilder: (_, idx) =>
-                              const SizedBox(width: 10),
-                          itemBuilder: (context, i) {
-                            final job = jobs[i];
-                            return GestureDetector(
-                              onTap: () {
-                                FocusScope.of(context).unfocus();
-                                ref
-                                    .read(selectedJobProvider.notifier)
-                                    .selectJob(job);
-                                _flyToJob(job);
-                              },
-                              child: Container(
-                                width: 250,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
-                                      color: AppColors.border, width: 0.8),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: AppColors.shadowMedium,
-                                      blurRadius: 12,
-                                      offset: Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            job.title,
-                                            style: const TextStyle(
-                                              fontFamily: 'Inter',
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                      child: AnimatedOpacity(
+                        opacity: _isMapInteracting ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 250),
+                        child: IgnorePointer(
+                          ignoring: _isMapInteracting,
+                          child: SizedBox(
+                            height: 114,
+                            child: ListView.separated(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              scrollDirection: Axis.horizontal,
+                              itemCount: jobs.length,
+                              separatorBuilder: (_, idx) =>
+                                  const SizedBox(width: 10),
+                              itemBuilder: (context, i) {
+                                final job = jobs[i];
+                                return GestureDetector(
+                                  onTap: () {
+                                    FocusScope.of(context).unfocus();
+                                    ref
+                                        .read(selectedJobProvider.notifier)
+                                        .selectJob(job);
+                                    _flyToJob(job);
+                                  },
+                                  child: Container(
+                                    width: 250,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(
+                                          color: AppColors.border, width: 0.8),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: AppColors.shadowMedium,
+                                          blurRadius: 12,
+                                          offset: Offset(0, 4),
                                         ),
-                                        const SizedBox(width: 6),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                job.title,
+                                                style: const TextStyle(
+                                                  fontFamily: 'Inter',
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              job.salaryDisplay,
+                                              style: const TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 3),
                                         Text(
-                                          job.salaryDisplay,
+                                          job.businessName,
                                           style: const TextStyle(
                                             fontFamily: 'Inter',
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.primary,
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      job.businessName,
-                                      style: const TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.location_on_outlined,
-                                            size: 13, color: AppColors.primary),
-                                        const SizedBox(width: 3),
-                                        Expanded(
-                                          child: Text(
-                                            '${job.distanceKm ?? 0.5} km • ${job.address}',
-                                            style: const TextStyle(
-                                              fontFamily: 'Inter',
-                                              fontSize: 11,
-                                              color: AppColors.textSecondary,
+                                        const SizedBox(height: 5),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.location_on_outlined,
+                                                size: 13, color: AppColors.primary),
+                                            const SizedBox(width: 3),
+                                            Expanded(
+                                              child: Text(
+                                                '${job.distanceKm ?? 0.5} km • ${job.address}',
+                                                style: const TextStyle(
+                                                  fontFamily: 'Inter',
+                                                  fontSize: 11,
+                                                  color: AppColors.textSecondary,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
                     ),
 
-                // Blur overlay when a job is selected
-                if (selectedJob != null)
-                  Positioned(
-                    top: topPadding + _headerHeight,
-                    left: 0, right: 0, bottom: 0,
-                    child: GestureDetector(
-                      onTap: () =>
-                          ref.read(selectedJobProvider.notifier).selectJob(null),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                        child: Container(
-
-                          color: Colors.black.withValues(alpha: 0.30),
+                  // Blur overlay covering entire screen when a job is selected
+                  if (selectedJob != null)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: () =>
+                            ref.read(selectedJobProvider.notifier).selectJob(null),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                          child: Container(
+                            color: Colors.black.withValues(alpha: 0.35),
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                // Job detail bottom sheet
-                if (selectedJob != null)
+                  // Job detail bottom sheet
+                  if (selectedJob != null)
+                    Positioned(
+                      bottom: 12, left: 0, right: 0,
+                      child: JobBottomSheet(
+                        job: selectedJob,
+                        onClose: () =>
+                            ref.read(selectedJobProvider.notifier).selectJob(null),
+                      ),
+                    ),
+
+                  // Floating header — drawn last, always on top (Fades out when panning map)
                   Positioned(
-                    bottom: 12, left: 0, right: 0,
-                    child: JobBottomSheet(
-                      job: selectedJob,
-                      onClose: () =>
-                          ref.read(selectedJobProvider.notifier).selectJob(null),
+                    top: 0, left: 0, right: 0,
+                    child: AnimatedOpacity(
+                      opacity: _isMapInteracting ? 0.0 : 1.0,
+                      duration: const Duration(milliseconds: 250),
+                      child: IgnorePointer(
+                        ignoring: _isMapInteracting,
+                        child: _buildTopHeader(topPadding),
+                      ),
                     ),
                   ),
-
-                // Floating header — drawn last, always on top
-                Positioned(
-                  top: 0, left: 0, right: 0,
-                  child: _buildTopHeader(topPadding),
-                ),
-              ],
-            )
+                ],
+              )
           // ── NON-MAP TABS: standard Scaffold column, NO floating header ───
           : _buildTabScaffold(topPadding, jobs),
       ),
@@ -657,7 +696,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               // Left: App Logo / Profile Avatar
               GestureDetector(
-                onTap: () => context.push('/profile'),
+                onTap: () => _scaffoldKey.currentState?.openDrawer(),
                 child: Container(
                   width: 42,
                   height: 42,
@@ -822,6 +861,288 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         icon: Icon(icon, color: color, size: 20),
         onPressed: onTap,
         padding: EdgeInsets.zero,
+      ),
+    );
+  }
+
+  // ── Side Profile Drawer ────────────────────────────────────────────────────
+  Widget _buildProfileDrawer(BuildContext context) {
+    final role = ref.watch(userRoleProvider);
+    final isWorker = role != UserRole.business;
+    return Drawer(
+      width: MediaQuery.of(context).size.width * 0.78,
+      backgroundColor: Colors.white,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ────────────────────────────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.8),
+                  ],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Avatar circle
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 2),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(32),
+                      child: Image.asset(
+                        'assets/images/app_logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, e, st) => const Icon(
+                          Icons.person_rounded,
+                          size: 36,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'GetWork User',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'user@getwork.app',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Role badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1),
+                    ),
+                    child: Text(
+                      isWorker ? '⚒️  Worker Mode' : '🏢  Business Mode',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Role Switch Toggle ─────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Switch Role',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textHint,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Toggle Pill
+                  Container(
+                    width: double.infinity,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        // Worker side
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              ref.read(userRoleProvider.notifier).setRole(UserRole.worker);
+                              Navigator.of(context).pop();
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOutCubic,
+                              margin: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: isWorker ? AppColors.primary : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: isWorker
+                                    ? [
+                                        BoxShadow(
+                                          color: AppColors.primary.withValues(alpha: 0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.handyman_rounded,
+                                      size: 16,
+                                      color: isWorker ? Colors.white : AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Worker',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: isWorker ? Colors.white : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Business side
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              ref.read(userRoleProvider.notifier).setRole(UserRole.business);
+                              Navigator.of(context).pop();
+                              context.go('/business');
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOutCubic,
+                              margin: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: !isWorker ? AppColors.accent : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: !isWorker
+                                    ? [
+                                        BoxShadow(
+                                          color: AppColors.accent.withValues(alpha: 0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.storefront_rounded,
+                                      size: 16,
+                                      color: !isWorker ? Colors.white : AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Business',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: !isWorker ? Colors.white : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1, color: AppColors.border),
+
+            // ── Menu Items ─────────────────────────────────────────
+            _drawerItem(Icons.person_outline_rounded, 'My Profile', () {
+              Navigator.of(context).pop();
+              context.push('/profile');
+            }),
+            _drawerItem(Icons.assignment_outlined, 'My Applications', () {
+              Navigator.of(context).pop();
+              setState(() => _currentNavIndex = 3);
+            }),
+            _drawerItem(Icons.settings_outlined, 'Settings', () {
+              Navigator.of(context).pop();
+            }),
+            _drawerItem(Icons.help_outline_rounded, 'Help & Support', () {
+              Navigator.of(context).pop();
+            }),
+
+            const Spacer(),
+
+            const Divider(height: 1, color: AppColors.border),
+            _drawerItem(Icons.logout_rounded, 'Sign Out', () {
+              Navigator.of(context).pop();
+              context.go('/');
+            }, color: Colors.red),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerItem(IconData icon, String label, VoidCallback onTap,
+      {Color? color}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 22, color: color ?? AppColors.textPrimary),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: color ?? AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
