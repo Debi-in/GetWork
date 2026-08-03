@@ -306,36 +306,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         resizeToAvoidBottomInset: false,
         drawer: _buildProfileDrawer(context),
 
-        bottomNavigationBar: ExpandingLabelNavBar(
-          currentIndex: _currentNavIndex,
-          onTap: (index) {
-            FocusScope.of(context).unfocus();
-            setState(() {
-              _currentNavIndex = index;
-            });
-          },
-          items: const [
-            NavItemData(
-              icon: Icons.map_outlined,
-              selectedIcon: Icons.map_rounded,
-              label: 'Map',
+        bottomNavigationBar: AnimatedSlide(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          offset: _currentNavIndex == 0 ? const Offset(0, 1) : Offset.zero,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 150),
+            opacity: _currentNavIndex == 0 ? 0.0 : 1.0,
+            child: ExpandingLabelNavBar(
+              currentIndex: _currentNavIndex,
+              onTap: (index) {
+                FocusScope.of(context).unfocus();
+                setState(() {
+                  _currentNavIndex = index;
+                });
+              },
+              items: const [
+                NavItemData(
+                  icon: Icons.map_outlined,
+                  selectedIcon: Icons.map_rounded,
+                  label: 'Map',
+                ),
+                NavItemData(
+                  icon: Icons.work_outline_rounded,
+                  selectedIcon: Icons.work_rounded,
+                  label: 'Jobs',
+                ),
+                NavItemData(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  selectedIcon: Icons.chat_bubble_rounded,
+                  label: 'Messages',
+                ),
+                NavItemData(
+                  icon: Icons.assignment_outlined,
+                  selectedIcon: Icons.assignment_rounded,
+                  label: 'Applied',
+                ),
+              ],
             ),
-            NavItemData(
-              icon: Icons.work_outline_rounded,
-              selectedIcon: Icons.work_rounded,
-              label: 'Jobs',
-            ),
-            NavItemData(
-              icon: Icons.chat_bubble_outline_rounded,
-              selectedIcon: Icons.chat_bubble_rounded,
-              label: 'Messages',
-            ),
-            NavItemData(
-              icon: Icons.assignment_outlined,
-              selectedIcon: Icons.assignment_rounded,
-              label: 'Applied',
-            ),
-          ],
+          ),
         ),
 
         body: _currentNavIndex == 0
@@ -525,31 +534,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
 
-                  // Blur overlay covering entire screen when a job is selected
-                  if (selectedJob != null)
-                    Positioned.fill(
-                      child: GestureDetector(
-                        onTap: () =>
-                            ref.read(selectedJobProvider.notifier).selectJob(null),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                          child: Container(
-                            color: Colors.black.withValues(alpha: 0.35),
-                          ),
-                        ),
-                      ),
+                  // ── Blur overlay + job sheet (fast animated in/out) ────────
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 160),
+                    reverseDuration: const Duration(milliseconds: 120),
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: child,
                     ),
+                    child: selectedJob != null
+                        ? Positioned.fill(
+                            key: const ValueKey('blur'),
+                            child: GestureDetector(
+                              onTap: () => ref
+                                  .read(selectedJobProvider.notifier)
+                                  .selectJob(null),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                child: Container(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('no-blur')),
+                  ),
 
-                  // Job detail bottom sheet
-                  if (selectedJob != null)
-                    Positioned(
-                      bottom: 12, left: 0, right: 0,
-                      child: JobBottomSheet(
-                        job: selectedJob,
-                        onClose: () =>
-                            ref.read(selectedJobProvider.notifier).selectJob(null),
-                      ),
+                  // Job detail sheet — slides up fast
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    reverseDuration: const Duration(milliseconds: 130),
+                    transitionBuilder: (child, anim) => SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 1),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: anim,
+                        curve: Curves.easeOutCubic,
+                      )),
+                      child: FadeTransition(opacity: anim, child: child),
                     ),
+                    child: selectedJob != null
+                        ? Positioned(
+                            key: ValueKey(selectedJob.id),
+                            bottom: 12,
+                            left: 0,
+                            right: 0,
+                            child: JobBottomSheet(
+                              job: selectedJob,
+                              onClose: () => ref
+                                  .read(selectedJobProvider.notifier)
+                                  .selectJob(null),
+                            ),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('no-sheet')),
+                  ),
 
                   // Floating header — drawn last, always on top (Fades out when panning map)
                   Positioned(

@@ -64,8 +64,8 @@ class ExpandingLabelNavBar extends StatelessWidget {
               children: [
                 // ── Sliding Purple Active Highlight Pill ─────────────────────
                 AnimatedPositioned(
-                  duration: const Duration(milliseconds: 320),
-                  curve: Curves.fastOutSlowIn,
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOutCubic,
                   left: currentIndex * itemWidth + 4,
                   width: itemWidth - 8,
                   top: 2,
@@ -118,7 +118,7 @@ class ExpandingLabelNavBar extends StatelessWidget {
                               Flexible(
                                 child: ClipRect(
                                   child: AnimatedSize(
-                                    duration: const Duration(milliseconds: 280),
+                                    duration: const Duration(milliseconds: 160),
                                     curve: Curves.easeOutCubic,
                                     alignment: Alignment.centerLeft,
                                     child: isSelected
