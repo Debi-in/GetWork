@@ -76,7 +76,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       setState(() => _isMapInteracting = true);
     }
     _mapInteractionTimer?.cancel();
-    _mapInteractionTimer = Timer(const Duration(milliseconds: 1200), () {
+    _mapInteractionTimer = Timer(const Duration(milliseconds: 400), () {
       if (mounted) {
         setState(() => _isMapInteracting = false);
       }
@@ -341,7 +341,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       bottom: 130,
                       child: AnimatedOpacity(
                         opacity: _isMapInteracting ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 250),
+                        duration: const Duration(milliseconds: 150),
                         child: IgnorePointer(
                           ignoring: _isMapInteracting,
                           child: Column(
@@ -384,7 +384,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       right: 0,
                       child: AnimatedOpacity(
                         opacity: _isMapInteracting ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 250),
+                        duration: const Duration(milliseconds: 150),
                         child: IgnorePointer(
                           ignoring: _isMapInteracting,
                           child: SizedBox(
@@ -564,13 +564,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       left: 20,
                       right: 20,
                       child: AnimatedSlide(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOutCubic,
+                        duration: const Duration(milliseconds: 150),
+                        curve: Curves.easeOutCubic,
                         offset: _isMapInteracting
                             ? const Offset(0, 1.6)
                             : Offset.zero,
                         child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 160),
+                          duration: const Duration(milliseconds: 120),
                           opacity: _isMapInteracting ? 0.0 : 1.0,
                           child: Container(
                             decoration: BoxDecoration(
