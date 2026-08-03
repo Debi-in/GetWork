@@ -168,16 +168,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: AppColors.background,
       resizeToAvoidBottomInset: false,
 
-      // ── Expanding Label Navigation Bar — Purple Theme ─────────────
       bottomNavigationBar: ExpandingLabelNavBar(
         currentIndex: _currentNavIndex,
         onTap: (index) {
           setState(() {
             _currentNavIndex = index;
           });
-          if (index == 3) {
-            context.push('/profile');
-          }
         },
         items: const [
           NavItemData(
@@ -196,9 +192,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             label: 'Messages',
           ),
           NavItemData(
-            icon: Icons.person_outline_rounded,
-            selectedIcon: Icons.person_rounded,
-            label: 'Profile',
+            icon: Icons.assignment_outlined,
+            selectedIcon: Icons.assignment_rounded,
+            label: 'Applied',
           ),
         ],
       ),
@@ -1092,6 +1088,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildProfilePlaceholder() {
     final appliedJobIds = ref.watch(appliedJobsProvider);
+    final autoAppliedJobIds = ref.watch(autoAppliedJobsProvider);
     final allJobs = ref.watch(allJobsProvider).asData?.value ?? [];
 
     // Filter jobs the user has applied to
@@ -1104,7 +1101,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // ── Sub-header ────────────────────────────────────────────
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           color: Colors.white,
           child: Row(
             children: [
@@ -1115,7 +1112,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${appliedJobs.length} Applied',
+                  '${appliedJobs.length} / 6 Applied',
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 12,
@@ -1126,10 +1123,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const Spacer(),
               const Text(
-                'Tap "Got the Job" when hired',
+                'Auto-cancels rest when 1 hired',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textHint,
                 ),
               ),
@@ -1140,55 +1138,291 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
         // ── Body ──────────────────────────────────────────────────
         Expanded(
-          child: appliedJobs.isEmpty
-              ? _buildEmptyApplied()
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                  itemCount: appliedJobs.length,
-                  itemBuilder: (context, i) {
-                    final job = appliedJobs[i];
-                    return _buildAppliedJobCard(job);
-                  },
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            children: [
+              // ── Auto-Apply Form / Engine Card ────────────────────────
+              _buildAutoApplyFormCard(allJobs, appliedJobIds.length),
+
+              const SizedBox(height: 16),
+
+              if (appliedJobs.isNotEmpty) ...[
+                Row(
+                  children: [
+                    const Text(
+                      'Active Applications',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(appliedJobsProvider.notifier).clearAll();
+                        ref.read(autoAppliedJobsProvider.notifier).clearAll();
+                      },
+                      child: const Text(
+                        'Clear All',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+                ...appliedJobs.map((job) {
+                  final isAuto = autoAppliedJobIds.contains(job.id);
+                  return _buildAppliedJobCard(job, isAuto);
+                }),
+              ] else
+                _buildEmptyApplied(),
+            ],
+          ),
         ),
       ],
     );
   }
 
+  // ── Auto Apply Form & Settings Card ─────────────────────────────
+  Widget _buildAutoApplyFormCard(List<JobModel> allJobs, int currentAppliedCount) {
+    final canAutoApply = currentAppliedCount < 6 && allJobs.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryDark,
+            AppColors.primary,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowMedium,
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.bolt_rounded,
+                  color: Colors.amber,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Auto-Apply Engine',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Apply to 6 jobs at once. Auto-cancel when hired.',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Max 6',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 12),
+
+          // Form settings pills
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _formPill(Icons.radar_rounded, 'Radius: ≤ 25 km'),
+              _formPill(Icons.attach_money_rounded, 'Salary: Top Paying'),
+              _formPill(Icons.cleaning_services_rounded, 'Auto-Cancel: Active'),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Trigger Auto Apply Button
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton.icon(
+              onPressed: canAutoApply
+                  ? () {
+                      final availableJobIds = allJobs.map((j) => j.id).toList();
+                      ref
+                          .read(appliedJobsProvider.notifier)
+                          .autoApply6Jobs(availableJobIds);
+                      ref
+                          .read(autoAppliedJobsProvider.notifier)
+                          .markAutoApplied(availableJobIds.take(6));
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppColors.primaryDark,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          content: Row(
+                            children: const [
+                              Icon(Icons.bolt_rounded,
+                                  color: Colors.amber, size: 20),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  '⚡ Auto-applied to 6 nearby jobs! If 1 hires you, the rest auto-cancel.',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                  : null,
+              icon: const Icon(Icons.flash_on_rounded, size: 18),
+              label: Text(
+                currentAppliedCount >= 6
+                    ? '6 Jobs Auto-Applied (Limit Reached)'
+                    : 'Auto-Apply to 6 Jobs Now 🚀',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.primaryDark,
+                disabledBackgroundColor: Colors.white38,
+                disabledForegroundColor: Colors.white70,
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _formPill(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: Colors.white70),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyApplied() {
-    return Center(
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 88,
-            height: 88,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
               color: AppColors.primaryContainer,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.assignment_outlined,
-              size: 44,
+              size: 36,
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           const Text(
-            'No Applications Yet',
+            'No Active Applications',
             style: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           const Text(
-            'Jobs you apply to will appear here',
+            'Tap "Auto-Apply to 6 Jobs Now" above to apply automatically!',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 14,
+              fontSize: 13,
               color: AppColors.textSecondary,
             ),
           ),
@@ -1197,18 +1431,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildAppliedJobCard(JobModel job) {
+  Widget _buildAppliedJobCard(JobModel job, bool isAutoApplied) {
     return _AnimatedJobCard(
       index: 0,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
+        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isAutoApplied
+                ? AppColors.primary.withValues(alpha: 0.3)
+                : AppColors.border,
+            width: isAutoApplied ? 1.2 : 0.8,
+          ),
           boxShadow: const [
             BoxShadow(
               color: AppColors.shadowLight,
-              blurRadius: 14,
+              blurRadius: 12,
               offset: Offset(0, 4),
             ),
           ],
@@ -1224,8 +1464,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   // Avatar
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 50,
+                    height: 50,
                     decoration: BoxDecoration(
                       color: AppColors.primaryContainer,
                       borderRadius: BorderRadius.circular(14),
@@ -1249,16 +1489,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          job.title,
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                job.title,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isAutoApplied)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accentContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.bolt_rounded,
+                                        size: 11, color: AppColors.accent),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      'Auto',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.accent,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 3),
                         Text(
@@ -1319,9 +1590,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
 
             // ── Divider + Action Row ─────────────────────────
-            const Divider(height: 1, thickness: 0.8, indent: 14, endIndent: 14, color: AppColors.divider),
+            const Divider(
+                height: 1,
+                thickness: 0.8,
+                indent: 14,
+                endIndent: 14,
+                color: AppColors.divider),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               child: Row(
                 children: [
                   // View job button
@@ -1329,35 +1605,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: TextButton.icon(
                       onPressed: () => context.push('/job/${job.id}'),
                       icon: const Icon(Icons.open_in_new_rounded, size: 15),
-                      label: const Text('View Job'),
+                      label: const Text('View'),
                       style: TextButton.styleFrom(
                         foregroundColor: AppColors.textSecondary,
                         textStyle: const TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   // Got the Job button
                   Expanded(
                     flex: 2,
                     child: ElevatedButton.icon(
                       onPressed: () => _onGotTheJob(job.id, job.title),
-                      icon: const Icon(Icons.celebration_rounded, size: 16),
+                      icon: const Icon(Icons.celebration_rounded, size: 15),
                       label: const Text('Got the Job! 🎉'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        elevation: 1,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         textStyle: const TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

@@ -143,6 +143,16 @@ class AppliedJobsNotifier extends Notifier<Set<String>> {
     state = {...state, jobId};
   }
 
+  /// Auto-apply up to 6 jobs at once
+  void autoApply6Jobs(List<String> jobIds) {
+    final next = {...state};
+    for (final id in jobIds) {
+      if (next.length >= 6) break;
+      next.add(id);
+    }
+    state = next;
+  }
+
   bool isApplied(String jobId) {
     return state.contains(jobId);
   }
@@ -156,6 +166,10 @@ class AppliedJobsNotifier extends Notifier<Set<String>> {
     state = {jobId};
   }
 
+  void clearAll() {
+    state = {};
+  }
+
   int get appliedCount => state.length;
 }
 
@@ -163,6 +177,26 @@ final appliedJobsProvider =
     NotifierProvider<AppliedJobsNotifier, Set<String>>(
   AppliedJobsNotifier.new,
 );
+
+// ── Auto-Applied Jobs Notifier ──────────────────────────────
+class AutoAppliedJobsNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => {};
+
+  void markAutoApplied(Iterable<String> jobIds) {
+    state = {...state, ...jobIds};
+  }
+
+  void clearAll() {
+    state = {};
+  }
+}
+
+final autoAppliedJobsProvider =
+    NotifierProvider<AutoAppliedJobsNotifier, Set<String>>(
+  AutoAppliedJobsNotifier.new,
+);
+
 
 // ── All Jobs List Notifier (Async — fetches from Supabase) ──
 class JobsListNotifier extends AsyncNotifier<List<JobModel>> {
