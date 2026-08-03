@@ -33,14 +33,10 @@ void main() async {
   ]);
 
   // ── Phase 2: Init Supabase ───────────────────────────────────
-  try {
-    await Supabase.initialize(
-      url: SupabaseConfig.supabaseUrl,
-      publishableKey: SupabaseConfig.supabaseAnonKey,
-    );
-  } catch (e) {
-    debugPrint('Supabase init skipped: $e');
-  }
+  await Supabase.initialize(
+    url: SupabaseConfig.supabaseUrl,
+    publishableKey: SupabaseConfig.supabaseAnonKey,
+  );
 
   // ── Phase 3: Init Firebase ───────────────────────────────────
   // await Firebase.initializeApp(

@@ -18,7 +18,7 @@ dependencies:
   riverpod_annotation: ^4.0.3
 
   # ── Maps & Location ───────────────────────────────────────────
-  # google_maps_flutter removed — using flutter_map (OSM) instead
+  google_maps_flutter: ^2.10.0
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
   geolocator: ^14.0.3
@@ -70,7 +70,9 @@ flutter:
 
   assets:
     - assets/images/
-    # icons/, animations/, fonts/ removed — empty dirs not tracked by git
+    - assets/icons/
+    - assets/animations/
+    - assets/fonts/
 
   # fonts:
   #   - family: Inter

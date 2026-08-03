@@ -134,40 +134,24 @@ class OpenStreetMapWidget extends StatelessWidget {
       case MapStyleType.lightGray:
         return 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
       case MapStyleType.street:
-        return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+        return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
     }
   }
 
-  /// Clusters overlapping/nearby markers and fans them out so none overlap
+  /// Calculates offsets for markers that share the same or very close coordinates
   List<Marker> _buildSpiderfiedMarkers() {
-    // ── Step 1: cluster jobs that are within ~150m of each other ──────────
-    // We use a coarser key (2 decimal places ≈ ~1.1 km grid) as a first pass,
-    // then do an exact proximity check within each cell.
-    const double clusterRadiusDeg = 0.0014; // ~150 m in lat/lng degrees
+    final Map<String, List<int>> locationClusters = {};
 
-    // Each element = list of job indices that are "near" each other
-    final List<List<int>> clusters = [];
-    final List<bool> assigned = List.filled(jobs.length, false);
-
+    // Group jobs by location key (rounded to ~30 meters precision)
     for (int i = 0; i < jobs.length; i++) {
-      if (assigned[i]) continue;
-      final group = [i];
-      assigned[i] = true;
-      for (int j = i + 1; j < jobs.length; j++) {
-        if (assigned[j]) continue;
-        final dlat = (jobs[i].latitude - jobs[j].latitude).abs();
-        final dlng = (jobs[i].longitude - jobs[j].longitude).abs();
-        if (dlat < clusterRadiusDeg && dlng < clusterRadiusDeg) {
-          group.add(j);
-          assigned[j] = true;
-        }
-      }
-      clusters.add(group);
+      final job = jobs[i];
+      final key = '${(job.latitude * 1000).round()},${(job.longitude * 1000).round()}';
+      locationClusters.putIfAbsent(key, () => []).add(i);
     }
 
     final List<Marker> markers = [];
 
-    // ── User location pin ──────────────────────────────────────────────────
+    // Render User Location Pin first if active
     if (userLocation != null) {
       markers.add(
         Marker(
@@ -209,42 +193,39 @@ class OpenStreetMapWidget extends StatelessWidget {
       );
     }
 
-    // ── Step 2: fan-out markers within each cluster ────────────────────────
-    for (final group in clusters) {
-      final n = group.length;
-      for (int k = 0; k < n; k++) {
-        final idx = group[k];
-        final job = jobs[idx];
+    // Build job markers with fan-out spiderfy offset for overlapping markers
+    for (int i = 0; i < jobs.length; i++) {
+      final job = jobs[i];
+      final key = '${(job.latitude * 1000).round()},${(job.longitude * 1000).round()}';
+      final cluster = locationClusters[key] ?? [i];
 
-        double lat = job.latitude;
-        double lng = job.longitude;
+      double lat = job.latitude;
+      double lng = job.longitude;
 
-        if (n > 1) {
-          // Spread radius scales with cluster size so all pins are visible
-          final double spread = 0.0008 + (n - 2) * 0.0003; // ~90m base + 30m per extra
-          // Start angle offset so first pin isn't directly up
-          final angle = (2 * math.pi * k / n) - math.pi / 2;
-          lat += spread * math.sin(angle);
-          lng += spread * math.cos(angle);
-        }
-
-        final isSelected = selectedJob?.id == job.id;
-        markers.add(
-          Marker(
-            point: LatLng(lat, lng),
-            width: 140,
-            height: 72,
-            alignment: Alignment.topCenter,
-            child: _AnimatedMarkerWidget(
-              key: ValueKey(job.id),
-              job: job,
-              isSelected: isSelected,
-              onTap: () => onMarkerTap(job),
-              index: idx,
-            ),
-          ),
-        );
+      if (cluster.length > 1) {
+        final indexInCluster = cluster.indexOf(i);
+        final angle = (2 * math.pi * indexInCluster) / cluster.length;
+        const radius = 0.0008; // ~90m spread for clear visual separation
+        lat += radius * math.sin(angle);
+        lng += radius * math.cos(angle);
       }
+
+      final isSelected = selectedJob?.id == job.id;
+      markers.add(
+        Marker(
+          point: LatLng(lat, lng),
+          width: 140,
+          height: 72,
+          alignment: Alignment.topCenter,
+          child: _AnimatedMarkerWidget(
+            key: ValueKey(job.id),
+            job: job,
+            isSelected: isSelected,
+            onTap: () => onMarkerTap(job),
+            index: i,
+          ),
+        ),
+      );
     }
 
     return markers;
@@ -252,52 +233,49 @@ class OpenStreetMapWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFE5E9EC),
-      child: FlutterMap(
-        mapController: mapController,
-        options: MapOptions(
-          initialCenter: userLocation ?? kathmanduCenter,
-          initialZoom: 13.5,
-          minZoom: 10,
-          maxZoom: 18,
-          onTap: (_, _) => onMapTap(),
-          onPositionChanged: (position, hasGesture) {
-            if (hasGesture && onMapInteractionChanged != null) {
-              onMapInteractionChanged!(true);
-            }
-          },
-        ),
-        children: [
-          // ── Map Tile Layer ────────────────────────────────────
-          TileLayer(
-            urlTemplate: _tileUrl,
-            subdomains: const ['a', 'b', 'c'],
-            userAgentPackageName: 'com.getwork.getwork',
-            maxZoom: 19,
-          ),
-
-          // ── Dynamic Location Filter Distance Range Circle ────
-          if (userLocation != null)
-            CircleLayer(
-              circles: [
-                CircleMarker(
-                  point: userLocation!,
-                  radius: filterDistanceKm * 1000, // radius in meters
-                  useRadiusInMeter: true,
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderColor: AppColors.primary.withValues(alpha: 0.35),
-                  borderStrokeWidth: 1.5,
-                ),
-              ],
-            ),
-
-          // ── Job Markers & User Location Marker ───────────────
-          MarkerLayer(
-            markers: _buildSpiderfiedMarkers(),
-          ),
-        ],
+    return FlutterMap(
+      mapController: mapController,
+      options: MapOptions(
+        initialCenter: userLocation ?? kathmanduCenter,
+        initialZoom: 13.5,
+        minZoom: 10,
+        maxZoom: 18,
+        onTap: (_, _) => onMapTap(),
+        onPositionChanged: (position, hasGesture) {
+          if (hasGesture && onMapInteractionChanged != null) {
+            onMapInteractionChanged!(true);
+          }
+        },
       ),
+      children: [
+        // ── Map Tile Layer ────────────────────────────────────
+        TileLayer(
+          urlTemplate: _tileUrl,
+          subdomains: const ['a', 'b', 'c', 'd'],
+          userAgentPackageName: 'com.getwork.app',
+          maxZoom: 19,
+        ),
+
+        // ── Dynamic Location Filter Distance Range Circle ────
+        if (userLocation != null)
+          CircleLayer(
+            circles: [
+              CircleMarker(
+                point: userLocation!,
+                radius: filterDistanceKm * 1000, // radius in meters
+                useRadiusInMeter: true,
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderColor: AppColors.primary.withValues(alpha: 0.35),
+                borderStrokeWidth: 1.5,
+              ),
+            ],
+          ),
+
+        // ── Job Markers & User Location Marker ───────────────
+        MarkerLayer(
+          markers: _buildSpiderfiedMarkers(),
+        ),
+      ],
     );
   }
 }

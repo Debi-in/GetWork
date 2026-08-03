@@ -5,7 +5,6 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/job_model.dart';
-import 'dummy_data_service.dart';
 
 class SupabaseJobsService {
   SupabaseJobsService._();
@@ -15,24 +14,19 @@ class SupabaseJobsService {
   // ── Fetch all active jobs ─────────────────────────────────
   static Future<List<JobModel>> fetchJobs() async {
     try {
-      final client = Supabase.instance.client;
-      final response = await client
+      final response = await _db
           .from('jobs')
           .select()
           .eq('status', 'active')
           .order('created_at', ascending: false)
           .limit(100);
 
-      final jobs = (response as List<dynamic>)
+      return (response as List<dynamic>)
           .map((row) => _rowToJobModel(row as Map<String, dynamic>))
           .toList();
-
-      if (jobs.isEmpty) {
-        return DummyDataService.getDummyJobs();
-      }
-      return jobs;
     } catch (e) {
-      return DummyDataService.getDummyJobs();
+      // Return empty list on error; UI shows empty state
+      return [];
     }
   }
 

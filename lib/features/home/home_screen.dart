@@ -101,38 +101,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() => _isLoadingLocation = true);
 
     try {
-      bool serviceEnabled = false;
-      try {
-        serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      } catch (_) {}
-
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
-          setState(() => _isLoadingLocation = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Location services are disabled on your phone.'),
+              action: SnackBarAction(
+                label: 'SETTINGS',
+                onPressed: () => Geolocator.openLocationSettings(),
+              ),
+            ),
+          );
         }
+        setState(() => _isLoadingLocation = false);
         return;
       }
 
-      LocationPermission permission = LocationPermission.denied;
-      try {
-        permission = await Geolocator.checkPermission();
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
-        }
-      } catch (_) {}
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        if (mounted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permission denied.')),
+            );
+          }
           setState(() => _isLoadingLocation = false);
+          return;
         }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Location permissions are permanently denied. Please enable in Settings.'),
+              action: SnackBarAction(
+                label: 'SETTINGS',
+                onPressed: () => Geolocator.openAppSettings(),
+              ),
+            ),
+          );
+        }
+        setState(() => _isLoadingLocation = false);
         return;
       }
 
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 5),
+          timeLimit: Duration(seconds: 10),
         ),
       );
 
@@ -147,7 +166,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _mapController.move(userPos, 15.0);
         }
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() => _isLoadingLocation = false);
       }
@@ -287,38 +306,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         resizeToAvoidBottomInset: false,
         drawer: _buildProfileDrawer(context),
 
-        // Nav bar shown in body Stack on map tab as floating pill; standard for other tabs
-        bottomNavigationBar: _currentNavIndex == 0
-            ? null
-            : ExpandingLabelNavBar(
-                currentIndex: _currentNavIndex,
-                onTap: (index) {
-                  FocusScope.of(context).unfocus();
-                  setState(() => _currentNavIndex = index);
-                },
-                items: const [
-                  NavItemData(
-                    icon: Icons.map_outlined,
-                    selectedIcon: Icons.map_rounded,
-                    label: 'Map',
-                  ),
-                  NavItemData(
-                    icon: Icons.work_outline_rounded,
-                    selectedIcon: Icons.work_rounded,
-                    label: 'Jobs',
-                  ),
-                  NavItemData(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    selectedIcon: Icons.chat_bubble_rounded,
-                    label: 'Messages',
-                  ),
-                  NavItemData(
-                    icon: Icons.assignment_outlined,
-                    selectedIcon: Icons.assignment_rounded,
-                    label: 'Applied',
-                  ),
-                ],
-              ),
+        // No bottomNavigationBar — nav is floating inside the Stack
 
         body: _currentNavIndex == 0
             // ── MAP TAB: full-screen Stack with floating header ──────────────
@@ -346,14 +334,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                  // Map Overlay Controls (above floating nav pill)
+                  // Map Overlay Controls (Fades out when panning/rotating map)
                   if (selectedJob == null)
                     Positioned(
                       right: 14,
-                      bottom: MediaQuery.of(context).padding.bottom + 86,
+                      bottom: 130,
                       child: AnimatedOpacity(
                         opacity: _isMapInteracting ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 100),
+                        duration: const Duration(milliseconds: 250),
                         child: IgnorePointer(
                           ignoring: _isMapInteracting,
                           child: Column(
@@ -388,15 +376,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
 
-                  // Bottom Horizontal Job Carousel (above floating nav pill)
+                  // Bottom Horizontal Job Carousel (Fades out when panning/rotating map)
                   if (selectedJob == null && jobs.isNotEmpty)
                     Positioned(
-                      bottom: MediaQuery.of(context).padding.bottom + 86,
+                      bottom: 104, // raised above floating nav bar
                       left: 0,
                       right: 0,
                       child: AnimatedOpacity(
                         opacity: _isMapInteracting ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 100),
+                        duration: const Duration(milliseconds: 250),
                         child: IgnorePointer(
                           ignoring: _isMapInteracting,
                           child: SizedBox(
@@ -563,12 +551,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         : const SizedBox.shrink(key: ValueKey('no-sheet')),
                   ),
 
-                  // Floating header — drawn last, always on top (fast 100ms)
+                  // Floating header — fast fade when panning map
                   Positioned(
                     top: 0, left: 0, right: 0,
                     child: AnimatedOpacity(
                       opacity: _isMapInteracting ? 0.0 : 1.0,
-                      duration: const Duration(milliseconds: 100),
+                      duration: const Duration(milliseconds: 120),
                       child: IgnorePointer(
                         ignoring: _isMapInteracting,
                         child: _buildTopHeader(topPadding),
@@ -576,38 +564,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                  // ── Floating Nav Pill (map tab only) ───────────────────────
-                  Positioned(
-                    bottom: MediaQuery.of(context).padding.bottom + 14,
-                    left: 24,
-                    right: 24,
-                    child: AnimatedSlide(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOutCubic,
-                      offset: (_isMapInteracting || selectedJob != null)
-                          ? const Offset(0, 1.8)
-                          : Offset.zero,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 150),
-                        opacity: (_isMapInteracting || selectedJob != null) ? 0.0 : 1.0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(
-                              color: AppColors.border,
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.12),
-                                blurRadius: 20,
-                                offset: const Offset(0, 6),
+                  // ── Floating Pill Navigation Bar ─────────────────
+                  if (selectedJob == null)
+                    Positioned(
+                      bottom: 16,
+                      left: 20,
+                      right: 20,
+                      child: AnimatedSlide(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOutCubic,
+                        offset: _isMapInteracting
+                            ? const Offset(0, 1.6)
+                            : Offset.zero,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 160),
+                          opacity: _isMapInteracting ? 0.0 : 1.0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(32),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.15),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: AppColors.border,
+                                width: 0.8,
                               ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(28),
+                            ),
                             child: ExpandingLabelNavBar(
                               currentIndex: _currentNavIndex,
                               onTap: (index) {
@@ -641,7 +628,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                     ),
-                  ),
                 ],
               )
           // ── NON-MAP TABS: standard Scaffold column, NO floating header ───
@@ -653,104 +639,159 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── Non-map tabs share this scaffold (no floating map header) ────────────
   Widget _buildTabScaffold(double topPadding, List<JobModel> jobs) {
     final titles = ['', 'Nearby Jobs', 'Messages', 'Applied'];
-    return Column(
+    return Stack(
       children: [
-        // Branded app bar for non-map tabs
-        Container(
-          padding: EdgeInsets.only(
-            top: topPadding + 8,
-            left: 16,
-            right: 16,
-            bottom: 12,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadowLight,
-                blurRadius: 8,
-                offset: Offset(0, 2),
+        Column(
+          children: [
+            // Branded app bar for non-map tabs
+            Container(
+              padding: EdgeInsets.only(
+                top: topPadding + 8,
+                left: 16,
+                right: 16,
+                bottom: 12,
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Text(
-                    titles[_currentNavIndex],
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadowLight,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
                   ),
-                  const Spacer(),
-                  if (_currentNavIndex == 1)
-                    GestureDetector(
-                      onTap: () => context.push('/notifications'),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none_rounded,
-                          color: AppColors.textPrimary,
-                          size: 20,
-                        ),
-                      ),
-                    ),
                 ],
               ),
-              if (_currentNavIndex == 1) ...[
-                const SizedBox(height: 12),
-                // Search bar inside Jobs Tab
-                Container(
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.border, width: 0.8),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        titles[_currentNavIndex],
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (_currentNavIndex == 1)
+                        GestureDetector(
+                          onTap: () => context.push('/notifications'),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.notifications_none_rounded,
+                              color: AppColors.textPrimary,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) {
-                      ref.read(searchQueryProvider.notifier).setQuery(val);
-                    },
-                    decoration: const InputDecoration(
-                      hintText: 'Search jobs, category or place',
-                      hintStyle: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        color: AppColors.textHint,
+                  if (_currentNavIndex == 1) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: AppColors.border, width: 0.8),
                       ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: AppColors.textSecondary,
-                        size: 20,
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) {
+                          ref.read(searchQueryProvider.notifier).setQuery(val);
+                        },
+                        decoration: const InputDecoration(
+                          hintText: 'Search jobs, category or place',
+                          hintStyle: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            color: AppColors.textHint,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 10),
+                        ),
                       ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 10),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Expanding Category Pills Bar
-                const CategoryFilterBar(),
-              ],
-            ],
-          ),
+                    const SizedBox(height: 12),
+                    const CategoryFilterBar(),
+                  ],
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 80), // space for floating nav
+                child: _currentNavIndex == 1
+                    ? _buildJobsTab(jobs)
+                    : _currentNavIndex == 2
+                        ? _buildMessagesPlaceholder()
+                        : _buildProfilePlaceholder(),
+              ),
+            ),
+          ],
         ),
-        Expanded(
-          child: _currentNavIndex == 1
-              ? _buildJobsTab(jobs)
-              : _currentNavIndex == 2
-                  ? _buildMessagesPlaceholder()
-                  : _buildProfilePlaceholder(),
+
+        // ── Floating Pill Nav for non-map tabs ───────────────
+        Positioned(
+          bottom: 16,
+          left: 20,
+          right: 20,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+              border: Border.all(color: AppColors.border, width: 0.8),
+            ),
+            child: ExpandingLabelNavBar(
+              currentIndex: _currentNavIndex,
+              onTap: (index) {
+                FocusScope.of(context).unfocus();
+                setState(() => _currentNavIndex = index);
+              },
+              items: const [
+                NavItemData(
+                  icon: Icons.map_outlined,
+                  selectedIcon: Icons.map_rounded,
+                  label: 'Map',
+                ),
+                NavItemData(
+                  icon: Icons.work_outline_rounded,
+                  selectedIcon: Icons.work_rounded,
+                  label: 'Jobs',
+                ),
+                NavItemData(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  selectedIcon: Icons.chat_bubble_rounded,
+                  label: 'Messages',
+                ),
+                NavItemData(
+                  icon: Icons.assignment_outlined,
+                  selectedIcon: Icons.assignment_rounded,
+                  label: 'Applied',
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
