@@ -5,6 +5,7 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/job_model.dart';
+import 'dummy_data_service.dart';
 
 class SupabaseJobsService {
   SupabaseJobsService._();
@@ -21,12 +22,16 @@ class SupabaseJobsService {
           .order('created_at', ascending: false)
           .limit(100);
 
-      return (response as List<dynamic>)
+      final jobs = (response as List<dynamic>)
           .map((row) => _rowToJobModel(row as Map<String, dynamic>))
           .toList();
+
+      if (jobs.isEmpty) {
+        return DummyDataService.getDummyJobs();
+      }
+      return jobs;
     } catch (e) {
-      // Return empty list on error; UI shows empty state
-      return [];
+      return DummyDataService.getDummyJobs();
     }
   }
 

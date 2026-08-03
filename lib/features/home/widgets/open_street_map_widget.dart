@@ -134,7 +134,7 @@ class OpenStreetMapWidget extends StatelessWidget {
       case MapStyleType.lightGray:
         return 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
       case MapStyleType.street:
-        return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+        return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
     }
   }
 
@@ -270,7 +270,7 @@ class OpenStreetMapWidget extends StatelessWidget {
         // ── Map Tile Layer ────────────────────────────────────
         TileLayer(
           urlTemplate: _tileUrl,
-          subdomains: const ['a', 'b', 'c', 'd'],
+          subdomains: const ['a', 'b', 'c'],
           userAgentPackageName: 'com.getwork.app',
           maxZoom: 19,
         ),
