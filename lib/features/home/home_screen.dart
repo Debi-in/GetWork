@@ -160,6 +160,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final jobs = ref.watch(filteredJobsProvider);
+    ref.watch(allJobsProvider); // keep provider alive for applied-jobs tab
     final selectedJob = ref.watch(selectedJobProvider);
     final topPadding = MediaQuery.of(context).padding.top;
 
@@ -399,7 +400,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ── Non-map tabs share this scaffold (no floating map header) ────────────
   Widget _buildTabScaffold(double topPadding, List<JobModel> jobs) {
-    final titles = ['', 'Nearby Jobs', 'Messages', 'Profile'];
+    final titles = ['', 'Nearby Jobs', 'Messages', 'Applied'];
     return Column(
       children: [
         // Branded app bar for non-map tabs
@@ -468,28 +469,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     onChanged: (val) {
                       ref.read(searchQueryProvider.notifier).setQuery(val);
                     },
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Search jobs, category or place',
-                      hintStyle: const TextStyle(
+                      hintStyle: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 13,
                         color: AppColors.textHint,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.search_rounded,
                         color: AppColors.textSecondary,
                         size: 20,
                       ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(
-                          Icons.tune_rounded,
-                          color: AppColors.textSecondary,
-                          size: 18,
-                        ),
-                        onPressed: () => JobFilterModal.show(context),
-                      ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      contentPadding: EdgeInsets.symmetric(vertical: 10),
                     ),
                   ),
                 ),
@@ -596,29 +589,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           .read(searchQueryProvider.notifier)
                           .setQuery(val);
                     },
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Search jobs, category or place',
-                      hintStyle: const TextStyle(
+                      hintStyle: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 13,
                         color: AppColors.textHint,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.search_rounded,
                         color: AppColors.textSecondary,
                         size: 20,
                       ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(
-                          Icons.tune_rounded,
-                          color: AppColors.textSecondary,
-                          size: 18,
-                        ),
-                        onPressed: () => JobFilterModal.show(context),
-                      ),
                       border: InputBorder.none,
                       contentPadding:
-                          const EdgeInsets.symmetric(vertical: 11),
+                          EdgeInsets.symmetric(vertical: 11),
                     ),
                   ),
                 ),
@@ -1106,15 +1091,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildProfilePlaceholder() {
-    return const Center(
+    final appliedJobIds = ref.watch(appliedJobsProvider);
+    final allJobs = ref.watch(allJobsProvider).asData?.value ?? [];
+
+    // Filter jobs the user has applied to
+    final appliedJobs = allJobs
+        .where((j) => appliedJobIds.contains(j.id))
+        .toList();
+
+    return Column(
+      children: [
+        // ── Sub-header ────────────────────────────────────────────
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          color: Colors.white,
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${appliedJobs.length} Applied',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              const Text(
+                'Tap "Got the Job" when hired',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  color: AppColors.textHint,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1, thickness: 0.8, color: AppColors.divider),
+
+        // ── Body ──────────────────────────────────────────────────
+        Expanded(
+          child: appliedJobs.isEmpty
+              ? _buildEmptyApplied()
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                  itemCount: appliedJobs.length,
+                  itemBuilder: (context, i) {
+                    final job = appliedJobs[i];
+                    return _buildAppliedJobCard(job);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyApplied() {
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person_outline_rounded,
-              size: 64, color: AppColors.textHint),
-          SizedBox(height: 16),
-          Text(
-            'Profile',
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.assignment_outlined,
+              size: 44,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'No Applications Yet',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 20,
@@ -1122,14 +1183,256 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: AppColors.textPrimary,
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            'Manage your profile & settings',
+          const SizedBox(height: 8),
+          const Text(
+            'Jobs you apply to will appear here',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,
               color: AppColors.textSecondary,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppliedJobCard(JobModel job) {
+    return _AnimatedJobCard(
+      index: 0,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadowLight,
+              blurRadius: 14,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Job Info Row ────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Avatar
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Center(
+                      child: Text(
+                        job.businessName.isNotEmpty
+                            ? job.businessName[0].toUpperCase()
+                            : 'B',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job.title,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          job.businessName,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            // Salary pill
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD1FAE5),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                job.salaryDisplay,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF059669),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Status pill — pending
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text(
+                                '⏳ Pending',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFD97706),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Divider + Action Row ─────────────────────────
+            const Divider(height: 1, thickness: 0.8, indent: 14, endIndent: 14, color: AppColors.divider),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Row(
+                children: [
+                  // View job button
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () => context.push('/job/${job.id}'),
+                      icon: const Icon(Icons.open_in_new_rounded, size: 15),
+                      label: const Text('View Job'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary,
+                        textStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Got the Job button
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _onGotTheJob(job.id, job.title),
+                      icon: const Icon(Icons.celebration_rounded, size: 16),
+                      label: const Text('Got the Job! 🎉'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        textStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _onGotTheJob(String jobId, String jobTitle) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Congratulations! 🎉',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        content: Text(
+          'You got the job at $jobTitle! Your other pending applications will be automatically removed.',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(appliedJobsProvider.notifier).gotTheJob(jobId);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: AppColors.success,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  content: const Row(
+                    children: [
+                      Icon(Icons.check_circle_rounded,
+                          color: Colors.white, size: 20),
+                      SizedBox(width: 10),
+                      Text(
+                        'Awesome! Other applications removed.',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Confirm'),
           ),
         ],
       ),

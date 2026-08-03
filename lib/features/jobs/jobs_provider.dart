@@ -5,7 +5,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/services/dummy_data_service.dart';
+import '../../core/services/supabase_jobs_service.dart';
 import '../../models/job_model.dart';
 
 // ── Job Filter State ─────────────────────────────────────────
@@ -146,6 +146,17 @@ class AppliedJobsNotifier extends Notifier<Set<String>> {
   bool isApplied(String jobId) {
     return state.contains(jobId);
   }
+
+  void removeApplication(String jobId) {
+    state = {...state}..remove(jobId);
+  }
+
+  /// User got the job — keep only that job id, remove all others.
+  void gotTheJob(String jobId) {
+    state = {jobId};
+  }
+
+  int get appliedCount => state.length;
 }
 
 final appliedJobsProvider =
@@ -153,40 +164,45 @@ final appliedJobsProvider =
   AppliedJobsNotifier.new,
 );
 
-// ── All Jobs List Notifier ──────────────────────────────────
-class JobsListNotifier extends Notifier<List<JobModel>> {
+// ── All Jobs List Notifier (Async — fetches from Supabase) ──
+class JobsListNotifier extends AsyncNotifier<List<JobModel>> {
   @override
-  List<JobModel> build() => DummyDataService.getDummyJobs();
+  Future<List<JobModel>> build() => SupabaseJobsService.fetchJobs();
 
-  void addJob(JobModel job) {
-    state = [job, ...state];
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(SupabaseJobsService.fetchJobs);
   }
 
   void incrementAppliedCount(String jobId) {
-    state = [
-      for (final job in state)
+    final current = state.asData?.value ?? [];
+    state = AsyncData([
+      for (final job in current)
         if (job.id == jobId)
           job.copyWith(workersApplied: job.workersApplied + 1)
         else
           job,
-    ];
+    ]);
   }
 }
 
-final allJobsProvider = NotifierProvider<JobsListNotifier, List<JobModel>>(
+final allJobsProvider =
+    AsyncNotifierProvider<JobsListNotifier, List<JobModel>>(
   JobsListNotifier.new,
 );
 
 // ── Filtered Jobs Provider ──────────────────────────────────
 final filteredJobsProvider = Provider<List<JobModel>>((ref) {
-  final jobs = ref.watch(allJobsProvider);
+  // Use asData?.value so UI stays responsive while Supabase loads
+  final jobs = ref.watch(allJobsProvider).asData?.value ?? [];
   final topCategory = ref.watch(selectedCategoryProvider);
   final filter = ref.watch(jobFilterProvider);
   final query = ref.watch(searchQueryProvider).toLowerCase().trim();
 
   return jobs.where((job) {
     // 1. Top Category Pill or Modal Category
-    final matchesCategory = (topCategory == JobCategory.all && filter.category == JobCategory.all) ||
+    final matchesCategory =
+        (topCategory == JobCategory.all && filter.category == JobCategory.all) ||
         (topCategory != JobCategory.all && job.category == topCategory) ||
         (filter.category != JobCategory.all && job.category == filter.category);
 
