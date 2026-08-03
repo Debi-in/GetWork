@@ -15,7 +15,8 @@ class SupabaseJobsService {
   // ── Fetch all active jobs ─────────────────────────────────
   static Future<List<JobModel>> fetchJobs() async {
     try {
-      final response = await _db
+      final client = Supabase.instance.client;
+      final response = await client
           .from('jobs')
           .select()
           .eq('status', 'active')

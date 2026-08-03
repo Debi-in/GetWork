@@ -101,57 +101,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() => _isLoadingLocation = true);
 
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      bool serviceEnabled = false;
+      try {
+        serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      } catch (_) {}
+
       if (!serviceEnabled) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Location services are disabled on your phone.'),
-              action: SnackBarAction(
-                label: 'SETTINGS',
-                onPressed: () => Geolocator.openLocationSettings(),
-              ),
-            ),
-          );
+          setState(() => _isLoadingLocation = false);
         }
-        setState(() => _isLoadingLocation = false);
         return;
       }
 
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
+      LocationPermission permission = LocationPermission.denied;
+      try {
+        permission = await Geolocator.checkPermission();
         if (permission == LocationPermission.denied) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Location permission denied.')),
-            );
-          }
-          setState(() => _isLoadingLocation = false);
-          return;
+          permission = await Geolocator.requestPermission();
         }
-      }
+      } catch (_) {}
 
-      if (permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Location permissions are permanently denied. Please enable in Settings.'),
-              action: SnackBarAction(
-                label: 'SETTINGS',
-                onPressed: () => Geolocator.openAppSettings(),
-              ),
-            ),
-          );
+          setState(() => _isLoadingLocation = false);
         }
-        setState(() => _isLoadingLocation = false);
         return;
       }
 
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
+          timeLimit: Duration(seconds: 5),
         ),
       );
 
@@ -166,7 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _mapController.move(userPos, 15.0);
         }
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() => _isLoadingLocation = false);
       }
