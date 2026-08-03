@@ -5,8 +5,10 @@
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
@@ -54,15 +56,102 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final MapController _mapController = MapController();
-  // 0: Map, 1: Jobs, 2: Messages, 3: Profile  (Notifications removed — it's in top bell)
+  // 0: Map, 1: Jobs, 2: Messages, 3: Profile
   int _currentNavIndex = 0;
   MapStyleType _selectedMapStyle = MapStyleType.street;
   final TextEditingController _searchController = TextEditingController();
+
+  DateTime? _lastBackPressTime;
+  LatLng? _currentUserLocation;
+  bool _isLoadingLocation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestAndMoveToUserLocation(moveMap: false);
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _requestAndMoveToUserLocation({bool moveMap = true}) async {
+    if (_isLoadingLocation) return;
+    setState(() => _isLoadingLocation = true);
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Location services are disabled on your phone.'),
+              action: SnackBarAction(
+                label: 'SETTINGS',
+                onPressed: () => Geolocator.openLocationSettings(),
+              ),
+            ),
+          );
+        }
+        setState(() => _isLoadingLocation = false);
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permission denied.')),
+            );
+          }
+          setState(() => _isLoadingLocation = false);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Location permissions are permanently denied. Please enable in Settings.'),
+              action: SnackBarAction(
+                label: 'SETTINGS',
+                onPressed: () => Geolocator.openAppSettings(),
+              ),
+            ),
+          );
+        }
+        setState(() => _isLoadingLocation = false);
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+
+      final userPos = LatLng(position.latitude, position.longitude);
+      if (mounted) {
+        setState(() {
+          _currentUserLocation = userPos;
+          _isLoadingLocation = false;
+        });
+
+        if (moveMap) {
+          _mapController.move(userPos, 15.0);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingLocation = false);
+      }
+    }
   }
 
   void _flyToJob(JobModel job) {
@@ -135,15 +224,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Navigator.pop(context);
                     },
                   ),
-                  _MapStyleOption(
-                    title: 'Terrain',
-                    icon: Icons.terrain_rounded,
-                    isSelected: _selectedMapStyle == MapStyleType.terrain,
-                    onTap: () {
-                      setState(() => _selectedMapStyle = MapStyleType.terrain);
-                      Navigator.pop(context);
-                    },
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -153,6 +233,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
     );
   }
+
 
   // ── Top header height constant so other widgets can use it for padding ──
   static const double _headerHeight = 118.0;
@@ -164,195 +245,250 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final selectedJob = ref.watch(selectedJobProvider);
     final topPadding = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      resizeToAvoidBottomInset: false,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
 
-      bottomNavigationBar: ExpandingLabelNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() {
-            _currentNavIndex = index;
-          });
-        },
-        items: const [
-          NavItemData(
-            icon: Icons.map_outlined,
-            selectedIcon: Icons.map_rounded,
-            label: 'Map',
-          ),
-          NavItemData(
-            icon: Icons.work_outline_rounded,
-            selectedIcon: Icons.work_rounded,
-            label: 'Jobs',
-          ),
-          NavItemData(
-            icon: Icons.chat_bubble_outline_rounded,
-            selectedIcon: Icons.chat_bubble_rounded,
-            label: 'Messages',
-          ),
-          NavItemData(
-            icon: Icons.assignment_outlined,
-            selectedIcon: Icons.assignment_rounded,
-            label: 'Applied',
-          ),
-        ],
-      ),
+        // 1. Unfocus keyboard if active
+        if (FocusScope.of(context).hasFocus) {
+          FocusScope.of(context).unfocus();
+        }
 
-      body: _currentNavIndex == 0
-          // ── MAP TAB: full-screen Stack with floating header ──────────────
-          ? Stack(
-              children: [
-                // Map fills the entire screen behind the floating header
-                Positioned.fill(
-                  child: OpenStreetMapWidget(
-                    jobs: jobs,
-                    selectedJob: selectedJob,
-                    mapController: _mapController,
-                    mapStyle: _selectedMapStyle,
-                    onMarkerTap: (job) {
-                      ref.read(selectedJobProvider.notifier).selectJob(job);
-                      _flyToJob(job);
-                    },
-                    onMapTap: () {
-                      ref.read(selectedJobProvider.notifier).selectJob(null);
-                    },
-                  ),
-                ),
+        // 2. Clear selected job details if open
+        if (ref.read(selectedJobProvider) != null) {
+          ref.read(selectedJobProvider.notifier).selectJob(null);
+          return;
+        }
 
-                // Map Overlay Controls
-                if (selectedJob == null)
-                  Positioned(
-                    right: 14,
-                    bottom: 120,
-                    child: Column(
-                      children: [
-                        _mapControlButton(
-                          icon: Icons.my_location_rounded,
-                          color: AppColors.textPrimary,
-                          onTap: () =>
-                              _mapController.move(const LatLng(27.7172, 85.3240), 14.5),
-                        ),
-                        const SizedBox(height: 10),
-                        _mapControlButton(
-                          icon: Icons.layers_outlined,
-                          color: AppColors.primary,
-                          onTap: _showMapStyleSelector,
-                        ),
-                        const SizedBox(height: 10),
-                        _mapControlButton(
-                          icon: Icons.filter_alt_rounded,
-                          color: Colors.white,
-                          bgColor: AppColors.primary,
-                          size: 48,
-                          onTap: () => JobFilterModal.show(context),
-                        ),
-                      ],
+        // 3. Switch back to Map tab if on another tab
+        if (_currentNavIndex != 0) {
+          setState(() => _currentNavIndex = 0);
+          return;
+        }
+
+        // 4. Double press back button within 2 seconds to quit app
+        final now = DateTime.now();
+        if (_lastBackPressTime == null ||
+            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Press back again to exit GetWork'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        resizeToAvoidBottomInset: false,
+
+        bottomNavigationBar: ExpandingLabelNavBar(
+          currentIndex: _currentNavIndex,
+          onTap: (index) {
+            FocusScope.of(context).unfocus();
+            setState(() {
+              _currentNavIndex = index;
+            });
+          },
+          items: const [
+            NavItemData(
+              icon: Icons.map_outlined,
+              selectedIcon: Icons.map_rounded,
+              label: 'Map',
+            ),
+            NavItemData(
+              icon: Icons.work_outline_rounded,
+              selectedIcon: Icons.work_rounded,
+              label: 'Jobs',
+            ),
+            NavItemData(
+              icon: Icons.chat_bubble_outline_rounded,
+              selectedIcon: Icons.chat_bubble_rounded,
+              label: 'Messages',
+            ),
+            NavItemData(
+              icon: Icons.assignment_outlined,
+              selectedIcon: Icons.assignment_rounded,
+              label: 'Applied',
+            ),
+          ],
+        ),
+
+        body: _currentNavIndex == 0
+            // ── MAP TAB: full-screen Stack with floating header ──────────────
+            ? Stack(
+                children: [
+                  // Map fills the entire screen behind the floating header
+                  Positioned.fill(
+                    child: OpenStreetMapWidget(
+                      jobs: jobs,
+                      selectedJob: selectedJob,
+                      mapController: _mapController,
+                      mapStyle: _selectedMapStyle,
+                      userLocation: _currentUserLocation,
+                      onMarkerTap: (job) {
+                        FocusScope.of(context).unfocus();
+                        ref.read(selectedJobProvider.notifier).selectJob(job);
+                        _flyToJob(job);
+                      },
+                      onMapTap: () {
+                        FocusScope.of(context).unfocus();
+                        ref.read(selectedJobProvider.notifier).selectJob(null);
+                      },
                     ),
                   ),
 
-                // Bottom Horizontal Job Carousel
-                if (selectedJob == null && jobs.isNotEmpty)
-                  Positioned(
-                    bottom: 16,
-                    left: 0,
-                    right: 0,
-                    child: SizedBox(
-                      height: 106,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: jobs.length,
-                        separatorBuilder: (_, idx) => const SizedBox(width: 10),
-                        itemBuilder: (context, i) {
-                          final job = jobs[i];
-                          return GestureDetector(
-                            onTap: () {
-                              ref.read(selectedJobProvider.notifier).selectJob(job);
-                              _flyToJob(job);
-                            },
-                            child: Container(
-                              width: 250,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.border, width: 0.8),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: AppColors.shadowMedium,
-                                    blurRadius: 12,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          job.title,
-                                          style: const TextStyle(
-                                            fontFamily: 'Inter',
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      Text(
-                                        job.salaryDisplay,
-                                        style: const TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    job.businessName,
-                                    style: const TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.location_on_outlined,
-                                          size: 13, color: AppColors.primary),
-                                      const SizedBox(width: 3),
-                                      Expanded(
-                                        child: Text(
-                                          '${job.distanceKm ?? 0.5} km • ${job.address}',
-                                          style: const TextStyle(
-                                            fontFamily: 'Inter',
-                                            fontSize: 11,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                  // Map Overlay Controls
+                  if (selectedJob == null)
+                    Positioned(
+                      right: 14,
+                      bottom: 130,
+                      child: Column(
+                        children: [
+                          _mapControlButton(
+                            icon: _isLoadingLocation
+                                ? Icons.sync_rounded
+                                : Icons.my_location_rounded,
+                            color: _currentUserLocation != null
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                            onTap: () =>
+                                _requestAndMoveToUserLocation(moveMap: true),
+                          ),
+                          const SizedBox(height: 10),
+                          _mapControlButton(
+                            icon: Icons.layers_outlined,
+                            color: AppColors.primary,
+                            onTap: _showMapStyleSelector,
+                          ),
+                          const SizedBox(height: 10),
+                          _mapControlButton(
+                            icon: Icons.filter_alt_rounded,
+                            color: Colors.white,
+                            bgColor: AppColors.primary,
+                            size: 48,
+                            onTap: () => JobFilterModal.show(context),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+
+                  // Bottom Horizontal Job Carousel
+                  if (selectedJob == null && jobs.isNotEmpty)
+                    Positioned(
+                      bottom: 16,
+                      left: 0,
+                      right: 0,
+                      child: SizedBox(
+                        height: 114,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          scrollDirection: Axis.horizontal,
+                          itemCount: jobs.length,
+                          separatorBuilder: (_, idx) =>
+                              const SizedBox(width: 10),
+                          itemBuilder: (context, i) {
+                            final job = jobs[i];
+                            return GestureDetector(
+                              onTap: () {
+                                FocusScope.of(context).unfocus();
+                                ref
+                                    .read(selectedJobProvider.notifier)
+                                    .selectJob(job);
+                                _flyToJob(job);
+                              },
+                              child: Container(
+                                width: 250,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                      color: AppColors.border, width: 0.8),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: AppColors.shadowMedium,
+                                      blurRadius: 12,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            job.title,
+                                            style: const TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          job.salaryDisplay,
+                                          style: const TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      job.businessName,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.location_on_outlined,
+                                            size: 13, color: AppColors.primary),
+                                        const SizedBox(width: 3),
+                                        Expanded(
+                                          child: Text(
+                                            '${job.distanceKm ?? 0.5} km • ${job.address}',
+                                            style: const TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
 
                 // Blur overlay when a job is selected
                 if (selectedJob != null)
@@ -365,6 +501,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                         child: Container(
+
                           color: Colors.black.withValues(alpha: 0.30),
                         ),
                       ),
@@ -391,6 +528,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             )
           // ── NON-MAP TABS: standard Scaffold column, NO floating header ───
           : _buildTabScaffold(topPadding, jobs),
+      ),
     );
   }
 
@@ -1056,32 +1194,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildMessagesPlaceholder() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.chat_bubble_outline_rounded,
-              size: 64, color: AppColors.textHint),
-          SizedBox(height: 16),
-          Text(
-            'Messages',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.chat_bubble_outline_rounded,
+                size: 64, color: AppColors.textHint),
+            SizedBox(height: 16),
+            Text(
+              'Messages',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Your conversations will appear here',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              color: AppColors.textSecondary,
+            SizedBox(height: 8),
+            Text(
+              'Your conversations will appear here',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

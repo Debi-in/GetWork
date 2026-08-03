@@ -10,7 +10,7 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/constants/app_colors.dart';
 import '../../../models/job_model.dart';
 
-enum MapStyleType { street, satellite, lightGray, terrain }
+enum MapStyleType { street, satellite, lightGray }
 
 // ── Animated single marker wrapper ───────────────────────────
 class _AnimatedMarkerWidget extends StatefulWidget {
@@ -104,6 +104,7 @@ class OpenStreetMapWidget extends StatelessWidget {
   final JobModel? selectedJob;
   final MapController? mapController;
   final MapStyleType mapStyle;
+  final LatLng? userLocation;
   final void Function(JobModel job) onMarkerTap;
   final VoidCallback onMapTap;
 
@@ -113,6 +114,7 @@ class OpenStreetMapWidget extends StatelessWidget {
     required this.selectedJob,
     this.mapController,
     this.mapStyle = MapStyleType.street,
+    this.userLocation,
     required this.onMarkerTap,
     required this.onMapTap,
   });
@@ -126,8 +128,6 @@ class OpenStreetMapWidget extends StatelessWidget {
         return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
       case MapStyleType.lightGray:
         return 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-      case MapStyleType.terrain:
-        return 'https://a.tile.opentopomap.org/{z}/{x}/{y}.png';
       case MapStyleType.street:
         return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
     }
@@ -138,7 +138,7 @@ class OpenStreetMapWidget extends StatelessWidget {
     return FlutterMap(
       mapController: mapController,
       options: MapOptions(
-        initialCenter: kathmanduCenter,
+        initialCenter: userLocation ?? kathmanduCenter,
         initialZoom: 13.5,
         minZoom: 10,
         maxZoom: 18,
@@ -153,30 +153,73 @@ class OpenStreetMapWidget extends StatelessWidget {
           maxZoom: 19,
         ),
 
-        // ── Job Markers with Staggered Entrance Animations ────
+        // ── Job Markers & User Location Marker ───────────────
         MarkerLayer(
-          markers: List.generate(jobs.length, (i) {
-            final job = jobs[i];
-            final isSelected = selectedJob?.id == job.id;
-            return Marker(
-              point: LatLng(job.latitude, job.longitude),
-              width: 140,
-              height: 72,
-              alignment: Alignment.topCenter,
-              child: _AnimatedMarkerWidget(
-                key: ValueKey(job.id),
-                job: job,
-                isSelected: isSelected,
-                onTap: () => onMarkerTap(job),
-                index: i,
+          markers: [
+            // ── User Current Location Pin (Pulse Blue Dot) ────
+            if (userLocation != null)
+              Marker(
+                point: userLocation!,
+                width: 44,
+                height: 44,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0x332563EB),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF2563EB), width: 2),
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2563EB),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black38,
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            );
-          }),
+
+            // ── Job Markers with Staggered Entrance ────────
+            ...List.generate(jobs.length, (i) {
+              final job = jobs[i];
+              final isSelected = selectedJob?.id == job.id;
+              return Marker(
+                point: LatLng(job.latitude, job.longitude),
+                width: 140,
+                height: 72,
+                alignment: Alignment.topCenter,
+                child: _AnimatedMarkerWidget(
+                  key: ValueKey(job.id),
+                  job: job,
+                  isSelected: isSelected,
+                  onTap: () => onMarkerTap(job),
+                  index: i,
+                ),
+              );
+            }),
+          ],
         ),
       ],
     );
   }
 }
+
 
 // ── Callout Pin Bubble with Downward Arrow Tip ────────────────
 class _MarkerCalloutPin extends StatelessWidget {
