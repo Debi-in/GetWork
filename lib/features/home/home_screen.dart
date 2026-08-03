@@ -306,46 +306,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         resizeToAvoidBottomInset: false,
         drawer: _buildProfileDrawer(context),
 
-        bottomNavigationBar: AnimatedSlide(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeInOut,
-          offset: _currentNavIndex == 0 ? const Offset(0, 1) : Offset.zero,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 150),
-            opacity: _currentNavIndex == 0 ? 0.0 : 1.0,
-            child: ExpandingLabelNavBar(
-              currentIndex: _currentNavIndex,
-              onTap: (index) {
-                FocusScope.of(context).unfocus();
-                setState(() {
-                  _currentNavIndex = index;
-                });
-              },
-              items: const [
-                NavItemData(
-                  icon: Icons.map_outlined,
-                  selectedIcon: Icons.map_rounded,
-                  label: 'Map',
-                ),
-                NavItemData(
-                  icon: Icons.work_outline_rounded,
-                  selectedIcon: Icons.work_rounded,
-                  label: 'Jobs',
-                ),
-                NavItemData(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  selectedIcon: Icons.chat_bubble_rounded,
-                  label: 'Messages',
-                ),
-                NavItemData(
-                  icon: Icons.assignment_outlined,
-                  selectedIcon: Icons.assignment_rounded,
-                  label: 'Applied',
-                ),
-              ],
-            ),
-          ),
-        ),
+        // Nav bar shown in body Stack on map tab as floating pill; standard for other tabs
+        bottomNavigationBar: _currentNavIndex == 0
+            ? null
+            : ExpandingLabelNavBar(
+                currentIndex: _currentNavIndex,
+                onTap: (index) {
+                  FocusScope.of(context).unfocus();
+                  setState(() => _currentNavIndex = index);
+                },
+                items: const [
+                  NavItemData(
+                    icon: Icons.map_outlined,
+                    selectedIcon: Icons.map_rounded,
+                    label: 'Map',
+                  ),
+                  NavItemData(
+                    icon: Icons.work_outline_rounded,
+                    selectedIcon: Icons.work_rounded,
+                    label: 'Jobs',
+                  ),
+                  NavItemData(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    selectedIcon: Icons.chat_bubble_rounded,
+                    label: 'Messages',
+                  ),
+                  NavItemData(
+                    icon: Icons.assignment_outlined,
+                    selectedIcon: Icons.assignment_rounded,
+                    label: 'Applied',
+                  ),
+                ],
+              ),
 
         body: _currentNavIndex == 0
             // ── MAP TAB: full-screen Stack with floating header ──────────────
@@ -373,14 +365,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                  // Map Overlay Controls (Fades out when panning/rotating map)
+                  // Map Overlay Controls (above floating nav pill)
                   if (selectedJob == null)
                     Positioned(
                       right: 14,
-                      bottom: 130,
+                      bottom: MediaQuery.of(context).padding.bottom + 86,
                       child: AnimatedOpacity(
                         opacity: _isMapInteracting ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 250),
+                        duration: const Duration(milliseconds: 100),
                         child: IgnorePointer(
                           ignoring: _isMapInteracting,
                           child: Column(
@@ -415,15 +407,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
 
-                  // Bottom Horizontal Job Carousel (Fades out when panning/rotating map)
+                  // Bottom Horizontal Job Carousel (above floating nav pill)
                   if (selectedJob == null && jobs.isNotEmpty)
                     Positioned(
-                      bottom: 16,
+                      bottom: MediaQuery.of(context).padding.bottom + 86,
                       left: 0,
                       right: 0,
                       child: AnimatedOpacity(
                         opacity: _isMapInteracting ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 250),
+                        duration: const Duration(milliseconds: 100),
                         child: IgnorePointer(
                           ignoring: _isMapInteracting,
                           child: SizedBox(
@@ -590,15 +582,82 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         : const SizedBox.shrink(key: ValueKey('no-sheet')),
                   ),
 
-                  // Floating header — drawn last, always on top (Fades out when panning map)
+                  // Floating header — drawn last, always on top (fast 100ms)
                   Positioned(
                     top: 0, left: 0, right: 0,
                     child: AnimatedOpacity(
                       opacity: _isMapInteracting ? 0.0 : 1.0,
-                      duration: const Duration(milliseconds: 250),
+                      duration: const Duration(milliseconds: 100),
                       child: IgnorePointer(
                         ignoring: _isMapInteracting,
                         child: _buildTopHeader(topPadding),
+                      ),
+                    ),
+                  ),
+
+                  // ── Floating Nav Pill (map tab only) ───────────────────────
+                  Positioned(
+                    bottom: MediaQuery.of(context).padding.bottom + 14,
+                    left: 24,
+                    right: 24,
+                    child: AnimatedSlide(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOutCubic,
+                      offset: (_isMapInteracting || selectedJob != null)
+                          ? const Offset(0, 1.8)
+                          : Offset.zero,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 150),
+                        opacity: (_isMapInteracting || selectedJob != null) ? 0.0 : 1.0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(
+                              color: AppColors.border,
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(28),
+                            child: ExpandingLabelNavBar(
+                              currentIndex: _currentNavIndex,
+                              onTap: (index) {
+                                FocusScope.of(context).unfocus();
+                                setState(() => _currentNavIndex = index);
+                              },
+                              items: const [
+                                NavItemData(
+                                  icon: Icons.map_outlined,
+                                  selectedIcon: Icons.map_rounded,
+                                  label: 'Map',
+                                ),
+                                NavItemData(
+                                  icon: Icons.work_outline_rounded,
+                                  selectedIcon: Icons.work_rounded,
+                                  label: 'Jobs',
+                                ),
+                                NavItemData(
+                                  icon: Icons.chat_bubble_outline_rounded,
+                                  selectedIcon: Icons.chat_bubble_rounded,
+                                  label: 'Messages',
+                                ),
+                                NavItemData(
+                                  icon: Icons.assignment_outlined,
+                                  selectedIcon: Icons.assignment_rounded,
+                                  label: 'Applied',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

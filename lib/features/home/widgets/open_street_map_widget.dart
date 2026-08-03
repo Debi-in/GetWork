@@ -138,20 +138,36 @@ class OpenStreetMapWidget extends StatelessWidget {
     }
   }
 
-  /// Calculates offsets for markers that share the same or very close coordinates
+  /// Clusters overlapping/nearby markers and fans them out so none overlap
   List<Marker> _buildSpiderfiedMarkers() {
-    final Map<String, List<int>> locationClusters = {};
+    // ── Step 1: cluster jobs that are within ~150m of each other ──────────
+    // We use a coarser key (2 decimal places ≈ ~1.1 km grid) as a first pass,
+    // then do an exact proximity check within each cell.
+    const double clusterRadiusDeg = 0.0014; // ~150 m in lat/lng degrees
 
-    // Group jobs by location key (rounded to ~30 meters precision)
+    // Each element = list of job indices that are "near" each other
+    final List<List<int>> clusters = [];
+    final List<bool> assigned = List.filled(jobs.length, false);
+
     for (int i = 0; i < jobs.length; i++) {
-      final job = jobs[i];
-      final key = '${job.latitude.toStringAsFixed(3)},${job.longitude.toStringAsFixed(3)}';
-      locationClusters.putIfAbsent(key, () => []).add(i);
+      if (assigned[i]) continue;
+      final group = [i];
+      assigned[i] = true;
+      for (int j = i + 1; j < jobs.length; j++) {
+        if (assigned[j]) continue;
+        final dlat = (jobs[i].latitude - jobs[j].latitude).abs();
+        final dlng = (jobs[i].longitude - jobs[j].longitude).abs();
+        if (dlat < clusterRadiusDeg && dlng < clusterRadiusDeg) {
+          group.add(j);
+          assigned[j] = true;
+        }
+      }
+      clusters.add(group);
     }
 
     final List<Marker> markers = [];
 
-    // Render User Location Pin first if active
+    // ── User location pin ──────────────────────────────────────────────────
     if (userLocation != null) {
       markers.add(
         Marker(
@@ -193,39 +209,42 @@ class OpenStreetMapWidget extends StatelessWidget {
       );
     }
 
-    // Build job markers with fan-out spiderfy offset for overlapping markers
-    for (int i = 0; i < jobs.length; i++) {
-      final job = jobs[i];
-      final key = '${job.latitude.toStringAsFixed(3)},${job.longitude.toStringAsFixed(3)}';
-      final cluster = locationClusters[key] ?? [i];
+    // ── Step 2: fan-out markers within each cluster ────────────────────────
+    for (final group in clusters) {
+      final n = group.length;
+      for (int k = 0; k < n; k++) {
+        final idx = group[k];
+        final job = jobs[idx];
 
-      double lat = job.latitude;
-      double lng = job.longitude;
+        double lat = job.latitude;
+        double lng = job.longitude;
 
-      if (cluster.length > 1) {
-        final indexInCluster = cluster.indexOf(i);
-        final angle = (2 * math.pi * indexInCluster) / cluster.length;
-        const radius = 0.00045; // ~45 meters offset for clear separation
-        lat += radius * math.sin(angle);
-        lng += radius * math.cos(angle);
-      }
+        if (n > 1) {
+          // Spread radius scales with cluster size so all pins are visible
+          final double spread = 0.0008 + (n - 2) * 0.0003; // ~90m base + 30m per extra
+          // Start angle offset so first pin isn't directly up
+          final angle = (2 * math.pi * k / n) - math.pi / 2;
+          lat += spread * math.sin(angle);
+          lng += spread * math.cos(angle);
+        }
 
-      final isSelected = selectedJob?.id == job.id;
-      markers.add(
-        Marker(
-          point: LatLng(lat, lng),
-          width: 140,
-          height: 72,
-          alignment: Alignment.topCenter,
-          child: _AnimatedMarkerWidget(
-            key: ValueKey(job.id),
-            job: job,
-            isSelected: isSelected,
-            onTap: () => onMarkerTap(job),
-            index: i,
+        final isSelected = selectedJob?.id == job.id;
+        markers.add(
+          Marker(
+            point: LatLng(lat, lng),
+            width: 140,
+            height: 72,
+            alignment: Alignment.topCenter,
+            child: _AnimatedMarkerWidget(
+              key: ValueKey(job.id),
+              job: job,
+              isSelected: isSelected,
+              onTap: () => onMarkerTap(job),
+              index: idx,
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
 
     return markers;
