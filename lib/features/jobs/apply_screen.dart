@@ -48,10 +48,10 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final jobs = ref.watch(allJobsProvider);
-    final job = jobs.firstWhere(
+    final jobList = ref.watch(allJobsProvider).asData?.value ?? [];
+    final job = jobList.firstWhere(
       (j) => j.id == widget.jobId,
-      orElse: () => jobs.first,
+      orElse: () => jobList.first,
     );
 
     final dummyWorker = UserModel.dummyWorker();

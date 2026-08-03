@@ -20,12 +20,12 @@ class JobDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final jobs = ref.watch(allJobsProvider);
+    final jobList = ref.watch(allJobsProvider).asData?.value ?? [];
     final appliedJobs = ref.watch(appliedJobsProvider);
 
-    final job = jobs.firstWhere(
+    final job = jobList.firstWhere(
       (j) => j.id == jobId,
-      orElse: () => jobs.first,
+      orElse: () => jobList.first,
     );
 
     final isApplied = appliedJobs.contains(job.id);
