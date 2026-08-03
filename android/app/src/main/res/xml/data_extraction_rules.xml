@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    data_extraction_rules.xml — Controls what Android 12+ can extract
+    from the device via cloud backup or device-to-device transfer.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Exclude auth tokens from cloud backup -->
+        <exclude domain="sharedpref" path="flutter_secure_storage_prefs.xml" />
+        <!-- Exclude all local databases -->
+        <exclude domain="database" path="." />
+        <!-- Exclude all internal files -->
+        <exclude domain="file" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <!-- Same exclusions for device-to-device transfer (e.g. new phone setup) -->
+        <exclude domain="sharedpref" path="flutter_secure_storage_prefs.xml" />
+        <exclude domain="database" path="." />
+    </device-transfer>
+</data-extraction-rules>

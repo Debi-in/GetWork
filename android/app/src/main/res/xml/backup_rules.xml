@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    backup_rules.xml — Controls what gets backed up to Google Drive
+    We exclude auth tokens and local DBs to avoid leaking session data
+    on app reinstall / device transfer.
+-->
+<full-backup-content>
+    <!-- Exclude Supabase / Flutter Secure Storage tokens -->
+    <exclude domain="sharedpref" path="flutter_secure_storage_prefs.xml" />
+    <!-- Exclude all local SQLite databases -->
+    <exclude domain="database" path="." />
+    <!-- Exclude all internal files (cached job data, temp files) -->
+    <exclude domain="file" path="." />
+</full-backup-content>
