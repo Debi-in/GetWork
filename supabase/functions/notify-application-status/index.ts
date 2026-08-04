@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ============================================================
 // SUPABASE EDGE FUNCTION — notify-application-status
 // GetWork Notification Engine — Auto Trigger (Layer 2)
@@ -22,8 +23,35 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const FCM_SERVER_KEY = Deno.env.get('FCM_SERVER_KEY')!;
-const FCM_URL = 'https://fcm.googleapis.com/fcm/send';
+const SERVICE_ACCOUNT_JSON = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON')!;
+
+function getServiceAccount() { return JSON.parse(SERVICE_ACCOUNT_JSON); }
+
+function base64url(data: Uint8Array): string {
+  return btoa(String.fromCharCode(...data)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function getAccessToken(sa: Record<string, string>): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const enc = new TextEncoder();
+  const h = base64url(enc.encode(JSON.stringify({ alg: 'RS256', typ: 'JWT' })));
+  const p = base64url(enc.encode(JSON.stringify({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/firebase.messaging', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 })));
+  const pemBody = sa.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----/g, '').replace(/\n/g, '');
+  const keyDer = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey('pkcs8', keyDer, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, enc.encode(`${h}.${p}`));
+  const jwt = `${h}.${p}.${base64url(new Uint8Array(sig))}`;
+  const res = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }) });
+  return (await res.json()).access_token;
+}
+
+async function sendFcmV1(accessToken: string, projectId: string, token: string, title: string, body: string, data: Record<string, string>) {
+  return fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: { token, notification: { title, body }, data, android: { priority: 'HIGH', notification: { channel_id: 'getwork_high_importance_channel' } } } }),
+  });
+}
 
 Deno.serve(async (req) => {
   try {
@@ -87,25 +115,11 @@ Deno.serve(async (req) => {
       body = `Your shift at "${jobTitle}" is marked complete. Rate your experience.`;
     }
 
-    // ── Send FCM notification ─────────────────────────────────────
-    const fcmRes = await fetch(FCM_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `key=${FCM_SERVER_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        registration_ids: tokens,
-        notification: { title, body },
-        data: {
-          type: 'application_status',
-          jobId: String(job_id),
-          status,
-          tab: 'for_you',
-          click_action: 'FLUTTER_NOTIFICATION_CLICK',
-        },
-      }),
-    });
+    // ── Send FCM V1 notification ─────────────────────────────────────
+    const sa = getServiceAccount();
+    const accessToken = await getAccessToken(sa);
+    const dataPayload = { type: 'application_status', jobId: String(job_id), status, tab: 'for_you', click_action: 'FLUTTER_NOTIFICATION_CLICK' };
+    await Promise.allSettled(tokens.map((t) => sendFcmV1(accessToken, sa.project_id, t, title, body, dataPayload)));
 
     // ── Log it ────────────────────────────────────────────────────
     await supabase.from('notification_log').insert({
