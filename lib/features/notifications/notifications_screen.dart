@@ -1,33 +1,15 @@
 // ============================================================
 // NOTIFICATIONS SCREEN — GetWork App
-// Redesigned with category icon badges, tabs, and unread dots
+// Dynamic real-time data, 3-day retention auto-purge,
+// Swipe-left delete with 3-second UNDO countdown & mark as read
 // ============================================================
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
-
-class NotificationItem {
-  final String id;
-  final String title;
-  final String message;
-  final String timeAgo;
-  final IconData icon;
-  final Color iconBgColor;
-  bool isRead;
-  final bool isSystem; // true = System tab, false = For You tab
-
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.message,
-    required this.timeAgo,
-    required this.icon,
-    required this.iconBgColor,
-    this.isRead = false,
-    this.isSystem = false,
-  });
-}
+import 'models/notification_item.dart';
+import 'services/notification_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -38,70 +20,134 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   int _selectedTab = 0; // 0: For You, 1: System
+  bool _isLoading = true;
+  List<NotificationItem> _notifications = [];
 
-  final List<NotificationItem> _notifications = [
-    NotificationItem(
-      id: '1',
-      title: '3 New Jobs Nearby',
-      message: 'We found 3 new shifts within 5 km of your location! Check them out now.',
-      timeAgo: '10m ago',
-      icon: Icons.near_me_rounded,
-      iconBgColor: const Color(0xFF5B8A6F),
-      isRead: false,
-      isSystem: false,
-    ),
-    NotificationItem(
-      id: '2',
-      title: 'Application Accepted! 🎉',
-      message: 'Daraz Nepal accepted your application for Delivery Rider shift!',
-      timeAgo: '1h ago',
-      icon: Icons.check_circle_rounded,
-      iconBgColor: const Color(0xFF4CAF50),
-      isRead: false,
-      isSystem: false,
-    ),
-    NotificationItem(
-      id: '3',
-      title: 'System Maintenance Update',
-      message: 'GetWork platform updates scheduled tonight at 12:00 AM. Services will remain active.',
-      timeAgo: '3h ago',
-      icon: Icons.campaign_rounded,
-      iconBgColor: const Color(0xFF7C4DFF),
-      isRead: true,
-      isSystem: true,
-    ),
-    NotificationItem(
-      id: '4',
-      title: 'Account Security Alert',
-      message: 'Your login security preferences were successfully updated.',
-      timeAgo: '1d ago',
-      icon: Icons.shield_rounded,
-      iconBgColor: const Color(0xFF3F64D8),
-      isRead: true,
-      isSystem: false,
-    ),
-    NotificationItem(
-      id: '5',
-      title: 'Welcome to GetWork Xaie!',
-      message: 'Complete your profile details to increase your chances of getting hired by 80%.',
-      timeAgo: '2d ago',
-      icon: Icons.info_rounded,
-      iconBgColor: const Color(0xFFE89F2A),
-      isRead: true,
-      isSystem: true,
-    ),
-  ];
+  // Track pending deletions for 3-second UNDO countdown
+  final Map<String, _PendingDeletion> _pendingDeletions = {};
 
-  void _markAllAsRead() {
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  @override
+  void dispose() {
+    // Execute any remaining pending deletions immediately on screen exit
+    for (final deletion in _pendingDeletions.values) {
+      deletion.timer.cancel();
+      NotificationRepository.deleteNotification(deletion.item.id);
+    }
+    _pendingDeletions.clear();
+    super.dispose();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() => _isLoading = true);
+    final items = await NotificationRepository.fetchNotifications();
+    if (mounted) {
+      setState(() {
+        _notifications = items;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _markAllAsRead() async {
+    final currentTabItems = _selectedTab == 0
+        ? _notifications.where((n) => !n.isSystem).toList()
+        : _notifications.where((n) => n.isSystem).toList();
+
+    if (currentTabItems.isEmpty) return;
+
     setState(() {
-      for (var item in _notifications) {
+      for (var item in currentTabItems) {
         item.isRead = true;
       }
     });
+
+    await NotificationRepository.markAllAsRead(currentTabItems);
+  }
+
+  void _markItemAsRead(NotificationItem item) async {
+    if (item.isRead) return;
+    setState(() {
+      item.isRead = true;
+    });
+    await NotificationRepository.markAsRead(item.id);
+  }
+
+  /// Swipe left to delete with 3-second UNDO countdown
+  void _onSwipeToDelete(NotificationItem item, int originalIndex) {
+    // 1. Remove from UI list immediately
+    setState(() {
+      _notifications.removeWhere((n) => n.id == item.id);
+    });
+
+    // 2. Start 3-second timer before permanent deletion
+    final timer = Timer(const Duration(seconds: 3), () async {
+      _pendingDeletions.remove(item.id);
+      await NotificationRepository.deleteNotification(item.id);
+    });
+
+    _pendingDeletions[item.id] = _PendingDeletion(
+      item: item,
+      originalIndex: originalIndex,
+      timer: timer,
+    );
+
+    // 3. Show SnackBar with UNDO button & 3s timer countdown
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 3),
+        backgroundColor: const Color(0xFF1E2235),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        content: Row(
+          children: const [
+            Icon(Icons.delete_outline_rounded, color: Colors.white70, size: 20),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Notification deleted',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'UNDO',
+          textColor: const Color(0xFFFFB74D), // Soft Amber
+          onPressed: () => _undoDeletion(item.id),
+        ),
+      ),
+    );
+  }
+
+  /// Undo a pending deletion if tapped within 3 seconds
+  void _undoDeletion(String id) {
+    final pending = _pendingDeletions.remove(id);
+    if (pending != null) {
+      pending.timer.cancel();
+      setState(() {
+        final insertIdx = pending.originalIndex.clamp(0, _notifications.length);
+        _notifications.insert(insertIdx, pending.item);
+      });
+      ScaffoldMessenger.of(context).clearSnackBars();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Filter active items for current tab
     final filteredNotifications = _selectedTab == 0
         ? _notifications.where((n) => !n.isSystem).toList()
         : _notifications.where((n) => n.isSystem).toList();
@@ -133,15 +179,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Notifications',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                    letterSpacing: -0.5,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Notifications',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        '3-day auto-purge',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textHint,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -175,33 +242,59 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
           // ── Notification List ──────────────────────────────────────
           Expanded(
-            child: filteredNotifications.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.notifications_off_outlined,
-                            size: 56, color: AppColors.textHint),
-                        SizedBox(height: 14),
-                        Text(
-                          'No notifications here',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredNotifications.length,
-                    itemBuilder: (context, i) {
-                      final item = filteredNotifications[i];
-                      return _buildNotificationCard(item);
-                    },
+                : RefreshIndicator(
+                    onRefresh: _loadNotifications,
+                    color: AppColors.primary,
+                    child: filteredNotifications.isEmpty
+                        ? ListView(
+                            children: const [
+                              SizedBox(height: 120),
+                              Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.notifications_off_outlined,
+                                      size: 56,
+                                      color: AppColors.textHint,
+                                    ),
+                                    SizedBox(height: 14),
+                                    Text(
+                                      'No notifications yet',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    SizedBox(height: 6),
+                                    Text(
+                                      'New job alerts and updates will appear here.\nNotifications are automatically kept for 3 days.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        color: AppColors.textHint,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filteredNotifications.length,
+                            itemBuilder: (context, index) {
+                              final item = filteredNotifications[index];
+                              return _buildDismissibleCard(item, index);
+                            },
+                          ),
                   ),
           ),
         ],
@@ -243,101 +336,164 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationCard(NotificationItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowLight,
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
+  /// Dismissible wrapper for swipe-left-to-delete with red background
+  Widget _buildDismissibleCard(NotificationItem item, int index) {
+    return Dismissible(
+      key: Key(item.id),
+      direction: DismissDirection.endToStart, // Swipe Left
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE53935), // Red
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: const [
+            Text(
+              'Delete',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 8),
+            Icon(Icons.delete_forever_rounded, color: Colors.white, size: 24),
+          ],
+        ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Circular Category Icon Badge
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: item.iconBgColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              item.icon,
-              color: Colors.white,
-              size: 22,
-            ),
+      onDismissed: (_) => _onSwipeToDelete(item, index),
+      child: GestureDetector(
+        onTap: () => _markItemAsRead(item),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: item.isRead
+                ? Border.all(color: Colors.transparent)
+                : Border.all(color: AppColors.navPurple.withValues(alpha: 0.3), width: 1.5),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadowLight,
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Circular Category Icon Badge
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: item.iconBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  item.icon,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
 
-          // Title, Message & Timestamp
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Title, Message & Timestamp
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.title,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 16,
+                              fontWeight: item.isRead ? FontWeight.w600 : FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                         ),
+                        if (!item.isRead)
+                          Container(
+                            width: 9,
+                            height: 9,
+                            decoration: const BoxDecoration(
+                              color: AppColors.navPurple,
+                              shape: BoxShape.circle,
+                            ),
+                          )
+                        else
+                          const Icon(
+                            Icons.check_circle_outline_rounded,
+                            size: 16,
+                            color: AppColors.textHint,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.message,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        color: item.isRead ? AppColors.textSecondary : AppColors.textPrimary,
+                        height: 1.35,
                       ),
                     ),
-                    if (!item.isRead)
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.navPurple,
-                          shape: BoxShape.circle,
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          item.timeAgo,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            color: AppColors.textHint,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      )
-                    else
-                      const Icon(
-                        Icons.check_circle_outline_rounded,
-                        size: 16,
-                        color: AppColors.textHint,
-                      ),
+                        const Text(
+                          'Swipe to delete ←',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 10,
+                            color: AppColors.textHint,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  item.message,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  item.timeAgo,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    color: AppColors.textHint,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+}
+
+class _PendingDeletion {
+  final NotificationItem item;
+  final int originalIndex;
+  final Timer timer;
+
+  _PendingDeletion({
+    required this.item,
+    required this.originalIndex,
+    required this.timer,
+  });
 }

@@ -11,6 +11,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../features/notifications/models/notification_item.dart';
+import '../../features/notifications/services/notification_repository.dart';
 import '../../router.dart';
 
 /// Top-level background message handler for FCM
@@ -124,6 +126,20 @@ class NotificationService {
 
         final notification = message.notification;
         final android = message.notification?.android;
+
+        // Save incoming notification locally so it displays in Notifications screen
+        if (notification != null) {
+          final item = NotificationItem(
+            id: message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            title: notification.title ?? 'GetWork Alert',
+            message: notification.body ?? '',
+            createdAt: DateTime.now(),
+            type: message.data['type']?.toString() ?? message.data['tab']?.toString() ?? 'system',
+            isRead: false,
+            data: message.data,
+          );
+          NotificationRepository.addNotification(item);
+        }
 
         // Show local notification banner if message contains a notification object
         if (notification != null) {
