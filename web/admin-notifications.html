@@ -301,25 +301,25 @@
 
 <script>
   // ── CONFIG ─────────────────────────────────────────────────────
-  // Replace these with your actual values from Supabase Dashboard
   const SUPABASE_URL      = 'https://umoyvhkzsomfyjriexcn.supabase.co';
-  const SUPABASE_SERVICE_KEY = 'YOUR_SERVICE_ROLE_KEY_HERE'; // ⚠️ NEVER commit this publicly
-  const ADMIN_PASSWORD    = 'xaie-admin-2026'; // Change this!
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtb3l2aGt6c29tZnlqcmlleGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NzAyODAsImV4cCI6MjEwMTI0NjI4MH0.vw8xTnzSlkx7adpXaWX-DxCFb1xi_bP3v5EQLLaiq-Q';
 
   // ── STATE ──────────────────────────────────────────────────────
   let selectedTarget = 'all';
   let selectedTab    = 'for_you';
+  let adminPassword  = ''; // Entered dynamically by user — never stored in code
   const sendLog      = [];
 
   // ── LOGIN ──────────────────────────────────────────────────────
   function doLogin() {
-    const pass = document.getElementById('admin-pass').value;
-    if (pass === ADMIN_PASSWORD) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('main-panel').style.display   = 'block';
-    } else {
-      showToast('❌ Wrong password', 'error');
+    const pass = document.getElementById('admin-pass').value.trim();
+    if (!pass) {
+      showToast('⚠️ Please enter admin password', 'error');
+      return;
     }
+    adminPassword = pass;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-panel').style.display   = 'block';
   }
   document.getElementById('admin-pass').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doLogin();
@@ -415,7 +415,8 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'x-admin-key': adminPassword,
         },
         body: JSON.stringify(payload),
       });

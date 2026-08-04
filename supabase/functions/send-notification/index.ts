@@ -143,12 +143,25 @@ async function sendFcmV1(
 Deno.serve(async (req) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-admin-key',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // ── Authentication Check ──────────────────────────────────────────────────
+  const adminKey = req.headers.get('x-admin-key');
+  const authHeader = req.headers.get('authorization');
+  const expectedAdminKey = Deno.env.get('ADMIN_KEY') ?? 'xaie-admin-2026';
+  const isServiceRole = authHeader?.includes(SUPABASE_SERVICE_ROLE_KEY);
+
+  if (!isServiceRole && adminKey !== expectedAdminKey) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized: Invalid admin password' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   }
 
   try {
