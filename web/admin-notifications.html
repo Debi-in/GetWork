@@ -416,12 +416,13 @@
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'x-admin-key': adminPassword,
         },
         body: JSON.stringify(payload),
       });
 
-      const result = await res.json();
+      const result = await res.json().catch(() => ({ error: 'Invalid response from server' }));
 
       if (res.ok && result.success) {
         showToast(`✅ Sent to ${result.sent} device${result.sent !== 1 ? 's' : ''}`, 'success');
@@ -431,7 +432,8 @@
         document.getElementById('notif-jobid').value = '';
         updatePreview();
       } else {
-        showToast(`❌ Error: ${result.error ?? 'Unknown error'}`, 'error');
+        const errMsg = result.error || result.message || result.msg || `Server returned ${res.status}`;
+        showToast(`❌ Error: ${errMsg}`, 'error');
       }
     } catch (err) {
       showToast(`❌ Network error: ${err.message}`, 'error');

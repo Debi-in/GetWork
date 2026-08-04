@@ -37,10 +37,14 @@ const SERVICE_ACCOUNT_JSON = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON')!;
 
 /** Parse the service account JSON from the environment variable */
 function getServiceAccount() {
+  if (!SERVICE_ACCOUNT_JSON) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON secret is empty or missing');
+  }
   try {
-    return JSON.parse(SERVICE_ACCOUNT_JSON);
-  } catch {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is missing or invalid JSON');
+    const parsed = typeof SERVICE_ACCOUNT_JSON === 'string' ? JSON.parse(SERVICE_ACCOUNT_JSON) : SERVICE_ACCOUNT_JSON;
+    return typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
+  } catch (e: any) {
+    throw new Error(`FIREBASE_SERVICE_ACCOUNT_JSON parse error: ${e.message}`);
   }
 }
 

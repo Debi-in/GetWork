@@ -25,7 +25,11 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const SERVICE_ACCOUNT_JSON = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON')!;
 
-function getServiceAccount() { return JSON.parse(SERVICE_ACCOUNT_JSON); }
+function getServiceAccount() {
+  if (!SERVICE_ACCOUNT_JSON) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is missing');
+  const parsed = typeof SERVICE_ACCOUNT_JSON === 'string' ? JSON.parse(SERVICE_ACCOUNT_JSON) : SERVICE_ACCOUNT_JSON;
+  return typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
+}
 
 function base64url(data: Uint8Array): string {
   return btoa(String.fromCharCode(...data)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');

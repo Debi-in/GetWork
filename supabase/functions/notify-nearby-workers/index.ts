@@ -28,7 +28,9 @@ const SERVICE_ACCOUNT_JSON = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON')!;
 const NEARBY_RADIUS_KM = 5;
 
 function getServiceAccount() {
-  return JSON.parse(SERVICE_ACCOUNT_JSON);
+  if (!SERVICE_ACCOUNT_JSON) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is missing');
+  const parsed = typeof SERVICE_ACCOUNT_JSON === 'string' ? JSON.parse(SERVICE_ACCOUNT_JSON) : SERVICE_ACCOUNT_JSON;
+  return typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
 }
 
 function base64url(data: Uint8Array): string {
