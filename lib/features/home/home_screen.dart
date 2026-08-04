@@ -334,48 +334,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                  // Map Overlay Controls (Fades out when panning/rotating map)
-                  if (selectedJob == null)
-                    Positioned(
-                      right: 14,
-                      bottom: 130,
-                      child: AnimatedOpacity(
-                        opacity: _isMapInteracting ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 150),
-                        child: IgnorePointer(
-                          ignoring: _isMapInteracting,
-                          child: Column(
-                            children: [
-                              _mapControlButton(
-                                icon: _isLoadingLocation
-                                    ? Icons.sync_rounded
-                                    : Icons.my_location_rounded,
-                                color: _currentUserLocation != null
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
-                                onTap: () =>
-                                    _requestAndMoveToUserLocation(moveMap: true),
-                              ),
-                              const SizedBox(height: 10),
-                              _mapControlButton(
-                                icon: Icons.layers_outlined,
-                                color: AppColors.primary,
-                                onTap: _showMapStyleSelector,
-                              ),
-                              const SizedBox(height: 10),
-                              _mapControlButton(
-                                icon: Icons.filter_alt_rounded,
-                                color: Colors.white,
-                                bgColor: AppColors.primary,
-                                size: 48,
-                                onTap: () => JobFilterModal.show(context),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
                   // Bottom Horizontal Job Carousel (Fades out when panning/rotating map)
                   if (selectedJob == null && jobs.isNotEmpty)
                     Positioned(
@@ -490,6 +448,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 );
                               },
                             ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Map Overlay Controls (Positioned above job carousel to avoid overlap)
+                  if (selectedJob == null)
+                    Positioned(
+                      right: 14,
+                      bottom: 232, // placed above job carousel (104 + 114 + 14 = 232)
+                      child: AnimatedOpacity(
+                        opacity: _isMapInteracting ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 150),
+                        child: IgnorePointer(
+                          ignoring: _isMapInteracting,
+                          child: Column(
+                            children: [
+                              _mapControlButton(
+                                icon: _isLoadingLocation
+                                    ? Icons.sync_rounded
+                                    : Icons.my_location_rounded,
+                                color: _currentUserLocation != null
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                                onTap: () =>
+                                    _requestAndMoveToUserLocation(moveMap: true),
+                              ),
+                              const SizedBox(height: 10),
+                              _mapControlButton(
+                                icon: Icons.layers_outlined,
+                                color: AppColors.primary,
+                                onTap: _showMapStyleSelector,
+                              ),
+                              const SizedBox(height: 10),
+                              _mapControlButton(
+                                icon: Icons.filter_alt_rounded,
+                                color: Colors.white,
+                                bgColor: AppColors.primary,
+                                size: 48,
+                                onTap: () => JobFilterModal.show(context),
+                              ),
+                            ],
                           ),
                         ),
                       ),
