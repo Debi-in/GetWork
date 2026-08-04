@@ -22,7 +22,6 @@ class BusinessDashboardScreen extends StatefulWidget {
 
 class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
   int _currentNavIndex = 0; // 0:Dashboard, 1:Messages, 2:Analytics, 3:Settings
-  bool _speedDialOpen = false;
 
   @override
   Widget build(BuildContext context) {
@@ -225,15 +224,6 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
               ),
             ),
 
-            // ── SPEED DIAL OVERLAY (backdrop tap to close) ─────────────
-            if (_speedDialOpen)
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () => setState(() => _speedDialOpen = false),
-                  child: Container(color: Colors.black.withValues(alpha: 0.18)),
-                ),
-              ),
-
             // ── FLOATING ISLAND NAV: split-pill | FAB | split-pill ─────
             Positioned(
               bottom: 16,
@@ -276,40 +266,35 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
 
-                  // ── CENTER: Speed Dial FAB ───────────────────────────
-                  _SpeedDial(
-                    open: _speedDialOpen,
-                    onToggle: () => setState(() => _speedDialOpen = !_speedDialOpen),
-                    actions: [
-                      _SpeedDialAction(
-                        icon: Icons.edit_rounded,
-                        label: 'Post Job',
-                        color: AppColors.primary,
-                        bgColor: AppColors.primaryContainer,
-                        onTap: () {
-                          setState(() => _speedDialOpen = false);
-                          context.push(AppRoutes.postJob);
-                        },
-                      ),
-                      _SpeedDialAction(
-                        icon: Icons.bookmark_outline_rounded,
-                        label: 'Drafts',
-                        color: const Color(0xFF7C4DFF),
-                        bgColor: const Color(0xFFEDE7F6),
-                        onTap: () => setState(() => _speedDialOpen = false),
-                      ),
-                      _SpeedDialAction(
-                        icon: Icons.people_outline_rounded,
-                        label: 'Applicants',
-                        color: AppColors.accent,
-                        bgColor: AppColors.accentContainer,
-                        onTap: () => setState(() => _speedDialOpen = false),
-                      ),
-                    ],
+                  // ── CENTER: Raised Spring Speed Dial FAB ─────────────
+                  Transform.translate(
+                    offset: const Offset(0, -10),
+                    child: _SpeedDial(
+                      actions: [
+                        _SpeedDialAction(
+                          icon: Icons.edit_rounded,
+                          color: AppColors.primary,
+                          bgColor: AppColors.primaryContainer,
+                          onTap: () => context.push(AppRoutes.postJob),
+                        ),
+                        _SpeedDialAction(
+                          icon: Icons.bookmark_outline_rounded,
+                          color: const Color(0xFF7C4DFF),
+                          bgColor: const Color(0xFFEDE7F6),
+                          onTap: () {},
+                        ),
+                        _SpeedDialAction(
+                          icon: Icons.people_outline_rounded,
+                          color: AppColors.accent,
+                          bgColor: AppColors.accentContainer,
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
 
                   // ── Right pill: Analytics + Settings ────────────────
                   Expanded(
@@ -610,95 +595,174 @@ class _BusinessJobCard extends StatelessWidget {
 // ── Speed Dial Action Model ────────────────────────────────────
 class _SpeedDialAction {
   final IconData icon;
-  final String label;
   final Color color;
   final Color bgColor;
   final VoidCallback onTap;
   const _SpeedDialAction({
     required this.icon,
-    required this.label,
     required this.color,
     required this.bgColor,
     required this.onTap,
   });
 }
 
-// ── Speed Dial FAB Widget ──────────────────────────────────────
-class _SpeedDial extends StatelessWidget {
-  final bool open;
-  final VoidCallback onToggle;
+// ── Stateful Speed Dial FAB Widget with Spring Animation ───────
+class _SpeedDial extends StatefulWidget {
   final List<_SpeedDialAction> actions;
 
-  // Fan offsets for 3 actions arcing up (left, top, right)
-  static const List<Offset> _fanOffsets = [
-    Offset(-54, -62),
-    Offset(0, -80),
-    Offset(54, -62),
-  ];
-  static const List<double> _delays = [0.0, 0.05, 0.10];
+  const _SpeedDial({required this.actions});
 
-  const _SpeedDial({
-    required this.open,
-    required this.onToggle,
-    required this.actions,
-  });
+  @override
+  State<_SpeedDial> createState() => _SpeedDialState();
+}
+
+class _SpeedDialState extends State<_SpeedDial> with SingleTickerProviderStateMixin {
+  bool _isOpen = false;
+  late AnimationController _controller;
+  late Animation<double> _rotationAnimation;
+
+  // Exact spring cubic bezier matching spec: cubic-bezier(0.34, 1.56, 0.64, 1)
+  static const Curve _springCurve = Cubic(0.34, 1.56, 0.64, 1.0);
+
+  // Exact target fan offsets: upper-left (-54, -58), top (0, -80), upper-right (54, -58)
+  static const List<Offset> _fanTargets = [
+    Offset(-54, -58),
+    Offset(0, -80),
+    Offset(54, -58),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.125).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() {
+      _isOpen = !_isOpen;
+      if (_isOpen) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 64,
-      height: 64,
+      width: 60,
+      height: 60,
       child: Stack(
-        alignment: Alignment.bottomCenter,
+        alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
-          // ── Fan action buttons ───────────────────────────────
-          ...List.generate(actions.length, (i) {
-            final action = actions[i];
-            final offset = _fanOffsets[i];
-            return AnimatedPositioned(
-              duration: const Duration(milliseconds: 380),
-              curve: Curves.easeOutBack,
-              bottom: open ? -offset.dy : 0,
-              left: 32 + offset.dx - 24, // center 48px button
-              child: AnimatedOpacity(
-                duration: Duration(milliseconds: open ? 280 : 150),
-                opacity: open ? 1.0 : 0.0,
-                child: IgnorePointer(
-                  ignoring: !open,
-                  child: _SpeedDialItem(action: action, delay: _delays[i]),
-                ),
+          // ── 3 Mini Action Buttons Emerging from Center ────────
+          ...List.generate(widget.actions.length, (i) {
+            final action = widget.actions[i];
+            final targetOffset = _fanTargets[i];
+            final delayFraction = (i * 0.08).clamp(0.0, 0.25);
+
+            final scaleAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+              CurvedAnimation(
+                parent: _controller,
+                curve: Interval(delayFraction, 1.0, curve: _springCurve),
               ),
+            );
+
+            final opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(
+                parent: _controller,
+                curve: Interval(delayFraction, (delayFraction + 0.4).clamp(0.0, 1.0), curve: Curves.easeOut),
+              ),
+            );
+
+            final translateAnimation = Tween<Offset>(begin: Offset.zero, end: targetOffset).animate(
+              CurvedAnimation(
+                parent: _controller,
+                curve: Interval(delayFraction, 1.0, curve: _springCurve),
+              ),
+            );
+
+            return AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                final offset = translateAnimation.value;
+                final scale = scaleAnimation.value;
+                final opacity = opacityAnimation.value;
+
+                return Transform.translate(
+                  offset: offset,
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Opacity(
+                      opacity: opacity.clamp(0.0, 1.0),
+                      child: IgnorePointer(
+                        ignoring: !_isOpen,
+                        child: GestureDetector(
+                          onTap: () {
+                            _toggle();
+                            action.onTap();
+                          },
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: action.bgColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: action.color.withValues(alpha: 0.35),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: action.color.withValues(alpha: 0.25),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Icon(action.icon, color: action.color, size: 22),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             );
           }),
 
-          // ── Central FAB (+/×) ────────────────────────────────
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
+          // ── Central FAB Button (+) Always Emerald Green ────────
+          Positioned.fill(
             child: GestureDetector(
-              onTap: onToggle,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeInOut,
-                width: 64,
-                height: 64,
+              onTap: _toggle,
+              child: Container(
                 decoration: BoxDecoration(
-                  color: open ? AppColors.textPrimary : AppColors.primary,
+                  color: AppColors.primary,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: (open ? AppColors.textPrimary : AppColors.primary)
-                          .withValues(alpha: 0.40),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
+                      color: AppColors.primary.withValues(alpha: 0.40),
+                      blurRadius: 16,
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-                child: AnimatedRotation(
-                  duration: const Duration(milliseconds: 280),
-                  turns: open ? 0.125 : 0.0, // 45° rotation
+                child: RotationTransition(
+                  turns: _rotationAnimation,
                   child: const Icon(
                     Icons.add_rounded,
                     color: Colors.white,
@@ -710,62 +774,6 @@ class _SpeedDial extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── Individual Speed Dial Item ─────────────────────────────────
-class _SpeedDialItem extends StatelessWidget {
-  final _SpeedDialAction action;
-  final double delay;
-
-  const _SpeedDialItem({required this.action, required this.delay});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Label
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          margin: const EdgeInsets.only(bottom: 4),
-          decoration: BoxDecoration(
-            color: AppColors.textPrimary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            action.label,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        // Icon button
-        GestureDetector(
-          onTap: action.onTap,
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: action.bgColor,
-              shape: BoxShape.circle,
-              border: Border.all(color: action.color.withValues(alpha: 0.3), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: action.color.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(action.icon, color: action.color, size: 22),
-          ),
-        ),
-      ],
     );
   }
 }
