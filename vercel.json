@@ -4,6 +4,7 @@
   "cleanUrls": true,
   "outputDirectory": "build/web",
   "framework": null,
+  "buildCommand": "echo 'Using pre-built Flutter web output'",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -22,3 +23,4 @@
     }
   ]
 }
+

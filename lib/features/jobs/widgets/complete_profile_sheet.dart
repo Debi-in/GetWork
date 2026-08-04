@@ -215,7 +215,7 @@ class _CompleteProfileSheetState extends State<CompleteProfileSheet> {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                initialValue: _selectedExperience,
+                value: _selectedExperience,
                 items: _experienceOptions
                     .map((exp) => DropdownMenuItem(value: exp, child: Text(exp)))
                     .toList(),

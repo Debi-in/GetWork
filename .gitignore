@@ -32,11 +32,9 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-# Flutter build outputs — exclude native, include web for Vercel static deploy
-/build/*
-!/build/web/
-# NOTE: build/web is intentionally NOT ignored — it's committed for Vercel deployment
-/coverage/
+/build/
+!build/web/
+
 
 # Symbolication related
 app.*.symbols
