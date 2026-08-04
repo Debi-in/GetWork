@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../router.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -34,7 +35,24 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _navigate() async {
     await Future.delayed(const Duration(seconds: 2));
-    if (mounted) context.go(AppRoutes.onboarding);
+    if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final seenOnboarding = prefs.getBool('seen_onboarding') ?? false;
+    final savedRole = prefs.getString('user_role'); // 'worker' or 'business'
+
+    if (!mounted) return;
+
+    if (seenOnboarding) {
+      // Already onboarded — go straight to the right home screen
+      if (savedRole == 'business') {
+        context.go(AppRoutes.businessDashboard);
+      } else {
+        context.go(AppRoutes.home);
+      }
+    } else {
+      context.go(AppRoutes.onboarding);
+    }
   }
 
   @override

@@ -67,6 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   DateTime? _lastBackPressTime;
   LatLng? _currentUserLocation;
   bool _isLoadingLocation = false;
+  bool _locationServiceDisabled = false; // drives top inline banner
 
   bool _isMapInteracting = false;
   Timer? _mapInteractionTimer;
@@ -104,19 +105,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Location services are disabled on your phone.'),
-              action: SnackBarAction(
-                label: 'SETTINGS',
-                onPressed: () => Geolocator.openLocationSettings(),
-              ),
-            ),
-          );
+          setState(() {
+            _locationServiceDisabled = true;
+            _isLoadingLocation = false;
+          });
         }
-        setState(() => _isLoadingLocation = false);
         return;
       }
+      // Location is now enabled — clear banner if shown
+      if (mounted) setState(() => _locationServiceDisabled = false);
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -545,17 +542,85 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
 
                   // Floating header — fast fade when panning map
+                  // Floating header — hidden when map is panning OR a job sheet is open
                   Positioned(
                     top: 0, left: 0, right: 0,
                     child: AnimatedOpacity(
-                      opacity: _isMapInteracting ? 0.0 : 1.0,
+                      opacity: (_isMapInteracting || selectedJob != null) ? 0.0 : 1.0,
                       duration: const Duration(milliseconds: 120),
                       child: IgnorePointer(
-                        ignoring: _isMapInteracting,
+                        ignoring: _isMapInteracting || selectedJob != null,
                         child: _buildTopHeader(topPadding),
                       ),
                     ),
                   ),
+
+                  // ── Location Services Disabled — Top Inline Banner ───────
+                  if (_locationServiceDisabled && selectedJob == null)
+                    Positioned(
+                      top: topPadding + 130, // below header
+                      left: 14,
+                      right: 14,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3CD),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFFCA28), width: 1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              )
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.location_off_rounded,
+                                  color: Color(0xFFE65100), size: 20),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Text(
+                                  'Location services are disabled on your phone.',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF5D4037),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () async {
+                                  await Geolocator.openLocationSettings();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'SETTINGS',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
 
                   // ── Floating Pill Navigation Bar ─────────────────
                   if (selectedJob == null)
