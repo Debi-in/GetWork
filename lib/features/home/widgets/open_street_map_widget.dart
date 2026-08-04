@@ -252,7 +252,7 @@ class OpenStreetMapWidget extends StatelessWidget {
         TileLayer(
           urlTemplate: _tileUrl,
           subdomains: const ['a', 'b', 'c', 'd'],
-          userAgentPackageName: 'com.getwork.app',
+          userAgentPackageName: 'com.xaie.getwork',
           maxZoom: 19,
         ),
 

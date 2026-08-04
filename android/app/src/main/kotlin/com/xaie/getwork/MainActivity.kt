@@ -1,4 +1,4 @@
-package com.getwork.getwork
+package com.xaie.getwork
 
 import io.flutter.embedding.android.FlutterActivity
 
