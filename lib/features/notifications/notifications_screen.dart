@@ -15,7 +15,7 @@ class NotificationItem {
   final IconData icon;
   final Color iconBgColor;
   bool isRead;
-  final bool isMention;
+  final bool isSystem; // true = System tab, false = For You tab
 
   NotificationItem({
     required this.id,
@@ -25,7 +25,7 @@ class NotificationItem {
     required this.icon,
     required this.iconBgColor,
     this.isRead = false,
-    this.isMention = false,
+    this.isSystem = false,
   });
 }
 
@@ -37,45 +37,58 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  int _selectedTab = 0; // 0: Updates, 1: Mentions
+  int _selectedTab = 0; // 0: For You, 1: System
 
   final List<NotificationItem> _notifications = [
     NotificationItem(
       id: '1',
-      title: 'Account Security',
-      message: 'Your profile security details were successfully updated.',
-      timeAgo: '2m ago',
-      icon: Icons.cloud_upload_rounded,
-      iconBgColor: const Color(0xFF3F64D8),
+      title: '3 New Jobs Nearby',
+      message: 'We found 3 new shifts within 5 km of your location! Check them out now.',
+      timeAgo: '10m ago',
+      icon: Icons.near_me_rounded,
+      iconBgColor: const Color(0xFF5B8A6F),
       isRead: false,
+      isSystem: false,
     ),
     NotificationItem(
       id: '2',
-      title: 'New Nearby Job',
-      message: 'Himalayan Mart posted a new Retail Assistant shift (Rs. 900/day).',
-      timeAgo: '2h ago',
-      icon: Icons.shopping_bag_rounded,
-      iconBgColor: const Color(0xFFE89F2A),
+      title: 'Application Accepted! 🎉',
+      message: 'Daraz Nepal accepted your application for Delivery Rider shift!',
+      timeAgo: '1h ago',
+      icon: Icons.check_circle_rounded,
+      iconBgColor: const Color(0xFF4CAF50),
       isRead: false,
+      isSystem: false,
     ),
     NotificationItem(
       id: '3',
-      title: 'Application Accepted',
-      message: 'Daraz Nepal accepted your application for Delivery Rider!',
-      timeAgo: '1d ago',
-      icon: Icons.check_circle_rounded,
-      iconBgColor: const Color(0xFF67B066),
+      title: 'System Maintenance Update',
+      message: 'GetWork platform updates scheduled tonight at 12:00 AM. Services will remain active.',
+      timeAgo: '3h ago',
+      icon: Icons.campaign_rounded,
+      iconBgColor: const Color(0xFF7C4DFF),
       isRead: true,
+      isSystem: true,
     ),
     NotificationItem(
       id: '4',
-      title: 'New Message',
-      message: 'BhatBhateni Supermarket sent you a shift confirmation message.',
-      timeAgo: '3d ago',
-      icon: Icons.chat_bubble_rounded,
-      iconBgColor: const Color(0xFF7C4DFF),
+      title: 'Account Security Alert',
+      message: 'Your login security preferences were successfully updated.',
+      timeAgo: '1d ago',
+      icon: Icons.shield_rounded,
+      iconBgColor: const Color(0xFF3F64D8),
       isRead: true,
-      isMention: true,
+      isSystem: false,
+    ),
+    NotificationItem(
+      id: '5',
+      title: 'Welcome to GetWork Xaie!',
+      message: 'Complete your profile details to increase your chances of getting hired by 80%.',
+      timeAgo: '2d ago',
+      icon: Icons.info_rounded,
+      iconBgColor: const Color(0xFFE89F2A),
+      isRead: true,
+      isSystem: true,
     ),
   ];
 
@@ -90,8 +103,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredNotifications = _selectedTab == 0
-        ? _notifications
-        : _notifications.where((n) => n.isMention).toList();
+        ? _notifications.where((n) => !n.isSystem).toList()
+        : _notifications.where((n) => n.isSystem).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -133,12 +146,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    // Tab 0: Updates
-                    _buildTabButton(0, 'Updates'),
+                    // Tab 0: For You
+                    _buildTabButton(0, 'For You'),
                     const SizedBox(width: 20),
-                    // Tab 1: Mentions
-                    _buildTabButton(1, 'Mentions'),
+                    // Tab 1: System
+                    _buildTabButton(1, 'System'),
                     const Spacer(),
+
                     // Mark all as read button
                     GestureDetector(
                       onTap: _markAllAsRead,
