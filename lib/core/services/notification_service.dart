@@ -214,16 +214,15 @@ class NotificationService {
   Future<void> _saveFcmTokenToSupabase(String token) async {
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) return; // not logged in yet — skip
-
       final prefs = await SharedPreferences.getInstance();
       final role = prefs.getString('user_role') ?? 'worker';
+      final platform = kIsWeb ? 'web' : (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android');
 
       await Supabase.instance.client.from('user_fcm_tokens').upsert(
         {
           'user_id': userId,
           'token': token,
-          'platform': 'android',
+          'platform': platform,
           'user_role': role,
           'updated_at': DateTime.now().toIso8601String(),
         },
@@ -231,7 +230,7 @@ class NotificationService {
       );
 
       if (kDebugMode) {
-        print('✅ [FCM Token saved to Supabase for user $userId / role: $role]');
+        print('✅ [FCM Token saved to Supabase: user=${userId ?? "guest"} | role=$role | platform=$platform]');
       }
     } catch (e) {
       // Non-fatal — token will be saved on next launch
