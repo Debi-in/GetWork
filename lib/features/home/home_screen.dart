@@ -514,23 +514,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                  // ── Job detail sheet (Fast slide-up & fade, crash-free) ─────
+                  // ── Job detail sheet (Smooth slide-up & slide-down animation) ─────
                   Positioned(
                     bottom: 12,
                     left: 0,
                     right: 0,
                     child: AnimatedSlide(
-                      duration: const Duration(milliseconds: 180),
+                      duration: const Duration(milliseconds: 260),
                       curve: Curves.easeOutCubic,
-                      offset: selectedJob != null ? Offset.zero : const Offset(0, 1.4),
+                      offset: selectedJob != null ? Offset.zero : const Offset(0, 1.3),
                       child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 150),
+                        duration: const Duration(milliseconds: 200),
                         opacity: selectedJob != null ? 1.0 : 0.0,
                         child: IgnorePointer(
                           ignoring: selectedJob == null,
-                          child: selectedJob != null
+                          child: (selectedJob ?? _lastSelectedJob) != null
                               ? JobBottomSheet(
-                                  job: selectedJob,
+                                  job: (selectedJob ?? _lastSelectedJob)!,
                                   onClose: () => ref
                                       .read(selectedJobProvider.notifier)
                                       .selectJob(null),

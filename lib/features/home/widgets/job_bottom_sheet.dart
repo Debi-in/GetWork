@@ -8,8 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/user_profile_service.dart';
 import '../../../models/job_model.dart';
 import '../../jobs/jobs_provider.dart';
+import '../../jobs/widgets/complete_profile_sheet.dart';
 
 class JobBottomSheet extends ConsumerStatefulWidget {
   final JobModel job;
@@ -366,8 +368,25 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                           child: ElevatedButton.icon(
                             onPressed: isApplied
                                 ? null
-                                : () {
-                                    context.push('/job/${widget.job.id}/apply');
+                                : () async {
+                                    final profile = await UserProfileService.getProfile();
+                                    if (profile == null || !profile.isFullProfileComplete) {
+                                      if (!context.mounted) return;
+                                      showModalBottomSheet(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        backgroundColor: Colors.transparent,
+                                        builder: (_) => CompleteProfileSheet(
+                                          onProfileCompleted: () {
+                                            if (context.mounted) {
+                                              context.push('/job/${widget.job.id}/apply');
+                                            }
+                                          },
+                                        ),
+                                      );
+                                    } else {
+                                      context.push('/job/${widget.job.id}/apply');
+                                    }
                                   },
                             icon: const Icon(Icons.bolt_rounded, size: 20),
                             label: Text(isApplied ? 'Applied ✓' : 'Apply Now'),
