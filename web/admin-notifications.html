@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GetWork Admin — Notification Center</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:  #5B8A6F;
+      --primary-dark: #3d6b53;
+      --accent:   #E89F2A;
+      --danger:   #e05252;
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --card:     #21253a;
+      --border:   #2c3050;
+      --text:     #e8eaf6;
+      --muted:    #7b7f9e;
+      --radius:   14px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* ── LOGIN SCREEN ── */
+    #login-screen {
+      width: 100%;
+      max-width: 400px;
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 40px;
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    }
+    #login-screen .logo { text-align: center; margin-bottom: 28px; }
+    #login-screen .logo-icon {
+      width: 64px; height: 64px;
+      background: var(--primary);
+      border-radius: 20px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 28px; margin-bottom: 12px;
+    }
+    #login-screen h2 { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+    #login-screen p  { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 28px; }
+
+    /* ── MAIN PANEL ── */
+    #main-panel { display: none; width: 100%; max-width: 860px; }
+
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    header h1 { font-size: 26px; font-weight: 800; }
+    header h1 span { color: var(--primary); }
+    .badge {
+      background: var(--primary);
+      color: white; font-size: 11px; font-weight: 700;
+      padding: 4px 10px; border-radius: 20px; margin-left: 10px;
+    }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .card h3 { font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
+    input[type="text"], input[type="password"], textarea, select {
+      width: 100%; background: var(--card);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 14px; padding: 12px 14px;
+      outline: none; transition: border 0.2s;
+      margin-bottom: 16px;
+      resize: vertical;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--primary); }
+    textarea { min-height: 80px; }
+
+    /* Target pills */
+    .target-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .target-pill {
+      padding: 8px 16px; border-radius: 20px; cursor: pointer;
+      font-size: 13px; font-weight: 600;
+      border: 1.5px solid var(--border);
+      background: transparent; color: var(--muted);
+      transition: all 0.15s;
+    }
+    .target-pill.selected { border-color: var(--primary); background: rgba(91,138,111,0.15); color: var(--primary); }
+    .target-pill:hover { border-color: var(--primary); color: var(--text); }
+
+    /* Notification type toggle */
+    .tab-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab-btn {
+      flex: 1; padding: 10px; border-radius: 10px; cursor: pointer;
+      font-size: 13px; font-weight: 700;
+      border: 1.5px solid var(--border);
+      background: transparent; color: var(--muted);
+      transition: all 0.15s;
+    }
+    .tab-btn.selected { border-color: var(--accent); background: rgba(232,159,42,0.12); color: var(--accent); }
+
+    /* Send button */
+    .btn-send {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, var(--primary), #3d6b53);
+      border: none; border-radius: var(--radius);
+      color: white; font-family: 'Inter', sans-serif;
+      font-size: 16px; font-weight: 800;
+      cursor: pointer; transition: all 0.2s;
+      margin-top: 4px;
+    }
+    .btn-send:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(91,138,111,0.35); }
+    .btn-send:active { transform: translateY(0); }
+    .btn-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-logout { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: #232740; border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 22px; font-size: 14px; font-weight: 600;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      white-space: nowrap; z-index: 999;
+      display: flex; align-items: center; gap: 10px;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--primary); }
+    #toast.error   { border-color: var(--danger); }
+
+    /* Log table */
+    #log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    #log-table th { color: var(--muted); font-weight: 600; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    #log-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    #log-table tr:last-child td { border-bottom: none; }
+    .pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .pill.workers   { background: rgba(91,138,111,0.2); color: var(--primary); }
+    .pill.businesses { background: rgba(63,100,216,0.2); color: #7fa0ff; }
+    .pill.all       { background: rgba(232,159,42,0.2); color: var(--accent); }
+    .pill.system    { background: rgba(124,77,255,0.2); color: #b39dff; }
+
+    /* Preview */
+    .preview {
+      background: #1a1d2e; border: 1px solid #2c3050;
+      border-radius: 18px; padding: 16px; margin-top: 4px;
+    }
+    .preview-title { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+    .preview-body  { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .preview-meta  { font-size: 11px; color: #555; margin-top: 8px; }
+
+    #char-count { font-size: 11px; color: var(--muted); text-align: right; margin-top: -12px; margin-bottom: 16px; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ LOGIN ═══ -->
+<div id="login-screen">
+  <div class="logo">
+    <div class="logo-icon">🔔</div>
+    <h2>GetWork Admin</h2>
+    <p>Notification Control Center — Xaie</p>
+  </div>
+  <label for="admin-pass">Admin Password</label>
+  <input type="password" id="admin-pass" placeholder="Enter admin password…" autocomplete="current-password" />
+  <button class="btn-send" id="login-btn" onclick="doLogin()">Sign In</button>
+  <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:16px;">Only authorized Xaie team members can access this panel.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════ MAIN ═══ -->
+<div id="main-panel">
+
+  <header>
+    <div>
+      <h1>GetWork <span>Notifications</span><span class="badge">Admin</span></h1>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;">Xaie Notification Control Center</div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Sign Out</button>
+  </header>
+
+  <div class="grid">
+
+    <!-- ── COMPOSE PANEL ── -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <h3>📢 Compose & Broadcast</h3>
+      <div class="grid">
+        <div>
+          <label>Notification Title</label>
+          <input type="text" id="notif-title" placeholder="New Jobs Near You!" maxlength="65" oninput="updatePreview()" />
+
+          <label>Body Message</label>
+          <textarea id="notif-body" placeholder="We found 3 new shifts within 5km of your location. Check them out now!" maxlength="240" oninput="updatePreview()"></textarea>
+          <div id="char-count">0 / 240</div>
+
+          <label>Target Audience</label>
+          <div class="target-grid">
+            <div class="target-pill selected" data-target="all"        onclick="selectTarget(this)">🌐 All Users</div>
+            <div class="target-pill"           data-target="workers"   onclick="selectTarget(this)">👷 Workers Only</div>
+            <div class="target-pill"           data-target="businesses" onclick="selectTarget(this)">🏢 Businesses Only</div>
+            <div class="target-pill"           data-target="topic:workers" onclick="selectTarget(this)">📡 Topic: Workers</div>
+          </div>
+
+          <label>Notification Tab</label>
+          <div class="tab-row">
+            <button class="tab-btn selected" data-tab="for_you"  onclick="selectTab(this)">👤 For You</button>
+            <button class="tab-btn"           data-tab="system"   onclick="selectTab(this)">📡 System</button>
+          </div>
+
+          <button class="btn-send" id="send-btn" onclick="sendNotification()">🚀 Send Notification</button>
+        </div>
+
+        <!-- Preview -->
+        <div>
+          <label>Live Preview</label>
+          <div class="preview">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <div style="width:36px;height:36px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">💼</div>
+              <div style="font-size:12px;color:var(--muted);">GetWork · just now</div>
+            </div>
+            <div class="preview-title" id="prev-title">Your notification title</div>
+            <div class="preview-body"  id="prev-body">Your notification body will appear here…</div>
+            <div class="preview-meta"  id="prev-meta">Target: All Users · Tab: For You</div>
+          </div>
+
+          <div style="margin-top:16px;">
+            <label>Custom Data Payload (optional)</label>
+            <input type="text" id="notif-jobid" placeholder="Job ID (for deep-link to job screen)" />
+            <label>Notification Type</label>
+            <select id="notif-type">
+              <option value="system">system (go to Notifications screen)</option>
+              <option value="new_job">new_job (go to Home / Job detail)</option>
+              <option value="application_status">application_status</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── QUICK TEMPLATES ── -->
+    <div class="card">
+      <h3>⚡ Quick Templates</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="target-pill" style="border-radius:10px;padding:12px 14px;" onclick="useTemplate('jobs')">
+          📍 New Jobs Nearby
+        </div>
+        <div class="target-pill" style="border-radius:10px;padding:12px 14px;" onclick="useTemplate('weekend')">
+          🎉 Weekend Surge Pay
+        </div>
+        <div class="target-pill" style="border-radius:10px;padding:12px 14px;" onclick="useTemplate('business')">
+          🏢 Post Jobs Faster (Business)
+        </div>
+        <div class="target-pill" style="border-radius:10px;padding:12px 14px;" onclick="useTemplate('maintenance')">
+          🔧 System Maintenance
+        </div>
+        <div class="target-pill" style="border-radius:10px;padding:12px 14px;" onclick="useTemplate('profile')">
+          👤 Complete Your Profile
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SEND LOG ── -->
+    <div class="card">
+      <h3>📋 Recent Sends</h3>
+      <table id="log-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Target</th>
+            <th>Sent</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="log-body">
+          <tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px;">No sends yet this session</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /grid -->
+</div><!-- /main-panel -->
+
+<!-- ── TOAST ── -->
+<div id="toast"><span id="toast-icon"></span><span id="toast-msg"></span></div>
+
+<script>
+  // ── CONFIG ─────────────────────────────────────────────────────
+  // Replace these with your actual values from Supabase Dashboard
+  const SUPABASE_URL      = 'https://umoyvhkzsomfyjriexcn.supabase.co';
+  const SUPABASE_SERVICE_KEY = 'YOUR_SERVICE_ROLE_KEY_HERE'; // ⚠️ NEVER commit this publicly
+  const ADMIN_PASSWORD    = 'xaie-admin-2026'; // Change this!
+
+  // ── STATE ──────────────────────────────────────────────────────
+  let selectedTarget = 'all';
+  let selectedTab    = 'for_you';
+  const sendLog      = [];
+
+  // ── LOGIN ──────────────────────────────────────────────────────
+  function doLogin() {
+    const pass = document.getElementById('admin-pass').value;
+    if (pass === ADMIN_PASSWORD) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-panel').style.display   = 'block';
+    } else {
+      showToast('❌ Wrong password', 'error');
+    }
+  }
+  document.getElementById('admin-pass').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doLogin();
+  });
+  function logout() {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-panel').style.display   = 'none';
+    document.getElementById('admin-pass').value = '';
+  }
+
+  // ── TARGET & TAB ───────────────────────────────────────────────
+  function selectTarget(el) {
+    document.querySelectorAll('.target-pill').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedTarget = el.dataset.target;
+    updatePreview();
+  }
+  function selectTab(el) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedTab = el.dataset.tab;
+    updatePreview();
+  }
+
+  // ── LIVE PREVIEW ───────────────────────────────────────────────
+  function updatePreview() {
+    const title = document.getElementById('notif-title').value || 'Your notification title';
+    const body  = document.getElementById('notif-body').value  || 'Your notification body will appear here…';
+    const charLen = document.getElementById('notif-body').value.length;
+
+    document.getElementById('prev-title').textContent = title;
+    document.getElementById('prev-body').textContent  = body;
+    document.getElementById('prev-meta').textContent  = `Target: ${targetLabel(selectedTarget)} · Tab: ${selectedTab === 'for_you' ? 'For You' : 'System'}`;
+    document.getElementById('char-count').textContent = `${charLen} / 240`;
+  }
+  function targetLabel(t) {
+    const map = { all: 'All Users', workers: 'Workers Only', businesses: 'Businesses Only', 'topic:workers': 'Topic: Workers' };
+    return map[t] ?? t;
+  }
+
+  // ── TEMPLATES ──────────────────────────────────────────────────
+  const templates = {
+    jobs: { title: '📍 New Jobs Near You!', body: 'We found new shifts within 5km of your location. Open GetWork to see them now!', target: 'workers', tab: 'for_you', type: 'new_job' },
+    weekend: { title: '🎉 Weekend Surge Pay!', body: 'Earn double this weekend on retail & delivery shifts. Limited spots available!', target: 'workers', tab: 'system', type: 'system' },
+    business: { title: '⚡ Post Jobs in 2 Minutes', body: 'Reach 100+ workers near your location instantly. Use our 1-click job templates!', target: 'businesses', tab: 'system', type: 'system' },
+    maintenance: { title: '🔧 Scheduled Maintenance', body: 'GetWork will undergo a brief maintenance tonight at 12:00 AM. Services remain active.', target: 'all', tab: 'system', type: 'system' },
+    profile: { title: '👤 Complete Your Profile', body: 'Workers with complete profiles get hired 80% faster. Add your skills & experience now!', target: 'workers', tab: 'for_you', type: 'system' },
+  };
+
+  function useTemplate(key) {
+    const t = templates[key];
+    document.getElementById('notif-title').value = t.title;
+    document.getElementById('notif-body').value  = t.body;
+    document.getElementById('notif-type').value  = t.type;
+    // Select target pill
+    document.querySelectorAll('.target-pill').forEach(p => {
+      p.classList.toggle('selected', p.dataset.target === t.target);
+    });
+    selectedTarget = t.target;
+    // Select tab
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.tab === t.tab);
+    });
+    selectedTab = t.tab;
+    updatePreview();
+  }
+
+  // ── SEND ───────────────────────────────────────────────────────
+  async function sendNotification() {
+    const title  = document.getElementById('notif-title').value.trim();
+    const body   = document.getElementById('notif-body').value.trim();
+    const jobId  = document.getElementById('notif-jobid').value.trim();
+    const type   = document.getElementById('notif-type').value;
+    const btn    = document.getElementById('send-btn');
+
+    if (!title || !body) {
+      showToast('⚠️ Title and body are required', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Sending…';
+
+    try {
+      const payload = {
+        title, body,
+        target: selectedTarget,
+        tab:    selectedTab,
+        data: { type, ...(jobId ? { jobId } : {}) },
+      };
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+
+      if (res.ok && result.success) {
+        showToast(`✅ Sent to ${result.sent} device${result.sent !== 1 ? 's' : ''}`, 'success');
+        addToLog(title, selectedTarget, result.sent);
+        document.getElementById('notif-title').value = '';
+        document.getElementById('notif-body').value  = '';
+        document.getElementById('notif-jobid').value = '';
+        updatePreview();
+      } else {
+        showToast(`❌ Error: ${result.error ?? 'Unknown error'}`, 'error');
+      }
+    } catch (err) {
+      showToast(`❌ Network error: ${err.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '🚀 Send Notification';
+    }
+  }
+
+  // ── LOG ────────────────────────────────────────────────────────
+  function addToLog(title, target, sent) {
+    sendLog.unshift({ title, target, sent, time: new Date().toLocaleTimeString() });
+    const tbody = document.getElementById('log-body');
+    tbody.innerHTML = sendLog.slice(0, 8).map(r => `
+      <tr>
+        <td style="font-weight:600;">${r.title}</td>
+        <td><span class="pill ${r.target.includes('worker') ? 'workers' : r.target.includes('business') ? 'businesses' : 'all'}">${targetLabel(r.target)}</span></td>
+        <td>${r.sent}</td>
+        <td style="color:var(--muted);">${r.time}</td>
+      </tr>
+    `).join('');
+  }
+
+  // ── TOAST ──────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    el.className = `show ${type}`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  // Init preview
+  updatePreview();
+</script>
+</body>
+</html>

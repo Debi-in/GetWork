@@ -9,6 +9,8 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../router.dart';
 
 /// Top-level background message handler for FCM
@@ -102,15 +104,15 @@ class NotificationService {
       );
 
       // 3. Fetch & Print FCM Token
-      await _fetchFcmToken();
+      await _fetchAndSaveFcmToken();
 
       // Listen for token refresh
-      _fcm.onTokenRefresh.listen((newToken) {
+      _fcm.onTokenRefresh.listen((newToken) async {
         _fcmToken = newToken;
         if (kDebugMode) {
           print('🔑 [FCM Token Refreshed]: $newToken');
         }
-        // TODO: Send updated token to Supabase / Backend database
+        await _saveFcmTokenToSupabase(newToken);
       });
 
       // 4. Handle Foreground Messages (app active)
@@ -181,8 +183,8 @@ class NotificationService {
     }
   }
 
-  /// Get current device FCM token
-  Future<String?> _fetchFcmToken() async {
+  /// Get current device FCM token, save to Supabase, subscribe to FCM topics
+  Future<String?> _fetchAndSaveFcmToken() async {
     try {
       _fcmToken = await _fcm.getToken();
       if (kDebugMode) {
@@ -191,12 +193,79 @@ class NotificationService {
         print(_fcmToken);
         print('==================================================');
       }
+
+      if (_fcmToken != null) {
+        // Save to Supabase (non-blocking, best effort)
+        await _saveFcmTokenToSupabase(_fcmToken!);
+        // Subscribe to FCM topics based on saved user role
+        await _subscribeToTopics();
+      }
+
       return _fcmToken;
     } catch (e) {
       if (kDebugMode) {
         print('⚠️ [FCM Token Error]: $e');
       }
       return null;
+    }
+  }
+
+  /// Save FCM token to Supabase `user_fcm_tokens` table
+  Future<void> _saveFcmTokenToSupabase(String token) async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return; // not logged in yet — skip
+
+      final prefs = await SharedPreferences.getInstance();
+      final role = prefs.getString('user_role') ?? 'worker';
+
+      await Supabase.instance.client.from('user_fcm_tokens').upsert(
+        {
+          'user_id': userId,
+          'token': token,
+          'platform': 'android',
+          'user_role': role,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'token',
+      );
+
+      if (kDebugMode) {
+        print('✅ [FCM Token saved to Supabase for user $userId / role: $role]');
+      }
+    } catch (e) {
+      // Non-fatal — token will be saved on next launch
+      if (kDebugMode) print('⚠️ [FCM Token Supabase Save Error]: $e');
+    }
+  }
+
+  /// Subscribe device to FCM topics based on user role.
+  /// Topics allow 1-call broadcasts without needing a token list.
+  ///   Topic 'workers'    → all worker devices
+  ///   Topic 'businesses' → all business devices
+  ///   Topic 'all'        → everyone
+  Future<void> _subscribeToTopics() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final role = prefs.getString('user_role') ?? 'worker';
+
+      // Always subscribe to 'all' topic for system broadcasts
+      await _fcm.subscribeToTopic('all');
+
+      // Subscribe to role-specific topic
+      if (role == 'worker') {
+        await _fcm.subscribeToTopic('workers');
+        await _fcm.unsubscribeFromTopic('businesses');
+      } else {
+        await _fcm.subscribeToTopic('businesses');
+        await _fcm.unsubscribeFromTopic('workers');
+      }
+
+      if (kDebugMode) {
+        print('✅ [FCM Topics] Subscribed to: all + $role${role == 'worker' ? 's' : 'es'}');
+      }
+    } catch (e) {
+      if (kDebugMode) print('⚠️ [FCM Topic Subscribe Error]: $e');
     }
   }
 
