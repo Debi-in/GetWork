@@ -45,3 +45,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# 🔐 SECRET KEYS — NEVER commit these to git
+*firebase-adminsdk*.json
+*service-account*.json
+*service_account*.json
+docs/*.json
