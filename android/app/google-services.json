@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "177958592881",
+    "project_id": "getwork-1db43",
+    "storage_bucket": "getwork-1db43.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:177958592881:android:3ac0286d5bc3e8d9d916d0",
+        "android_client_info": {
+          "package_name": "com.xaie.getwork"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_CBZduS8hT6nus4rlJGjfZvfiIrQ6ozg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
