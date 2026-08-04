@@ -51,3 +51,6 @@ app.*.map.json
 *service-account*.json
 *service_account*.json
 docs/*.json
+
+# Supabase CLI local cache
+supabase/.temp/
