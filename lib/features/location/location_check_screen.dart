@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_colors.dart';
 
@@ -53,8 +52,10 @@ class _LocationCheckScreenState extends State<LocationCheckScreen> {
 
       // 2. Fetch Position
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 8),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 8),
+        ),
       ).catchError((_) => Position(
             latitude: 27.7172,
             longitude: 85.3240,
@@ -68,16 +69,7 @@ class _LocationCheckScreenState extends State<LocationCheckScreen> {
             headingAccuracy: 0,
           ));
 
-      // 3. Reverse Geocode to get Placemark / City Name
       String placeName = 'Kathmandu Valley';
-      try {
-        final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
-        if (placemarks.isNotEmpty) {
-          final pm = placemarks.first;
-          placeName = pm.locality ?? pm.subAdministrativeArea ?? pm.administrativeArea ?? 'Kathmandu';
-        }
-      } catch (_) {}
-
       _evaluateCoordinates(position.latitude, position.longitude, placeName);
     } catch (e) {
       // Fallback

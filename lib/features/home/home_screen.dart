@@ -66,6 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   DateTime? _lastBackPressTime;
   LatLng? _currentUserLocation;
+  JobModel? _lastSelectedJob;
   bool _isLoadingLocation = false;
   bool _locationServiceDisabled = false; // drives top inline banner
 
@@ -257,6 +258,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final jobs = ref.watch(filteredJobsProvider);
     ref.watch(allJobsProvider); // keep provider alive for applied-jobs tab
     final selectedJob = ref.watch(selectedJobProvider);
+    if (selectedJob != null) {
+      _lastSelectedJob = selectedJob;
+    }
     final topPadding = MediaQuery.of(context).padding.top;
 
     return PopScope(

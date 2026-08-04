@@ -4,7 +4,6 @@
   "cleanUrls": true,
   "outputDirectory": "build/web",
   "framework": null,
-  "buildCommand": "if [ -d \"flutter\" ]; then cd flutter && git pull; else git clone https://github.com/flutter/flutter.git -b stable --depth 1; fi && ./flutter/bin/flutter build web --release",
   "rewrites": [
     {
       "source": "/(.*)",

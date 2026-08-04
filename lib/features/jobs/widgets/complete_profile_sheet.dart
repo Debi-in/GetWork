@@ -124,7 +124,7 @@ class _CompleteProfileSheetState extends State<CompleteProfileSheet> {
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 13,
-                  color: AppColors.textSecondary,,
+                  color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 20),
@@ -215,7 +215,7 @@ class _CompleteProfileSheetState extends State<CompleteProfileSheet> {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: _selectedExperience,
+                initialValue: _selectedExperience,
                 items: _experienceOptions
                     .map((exp) => DropdownMenuItem(value: exp, child: Text(exp)))
                     .toList(),
