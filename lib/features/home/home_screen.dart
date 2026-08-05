@@ -21,6 +21,9 @@ import 'widgets/category_filter_bar.dart';
 import 'widgets/job_bottom_sheet.dart';
 import 'widgets/job_filter_modal.dart';
 import 'widgets/open_street_map_widget.dart';
+import '../business/chat_provider.dart';
+import '../business/chat_repository.dart';
+import '../business/chat_screen.dart';
 
 // ── Category color helper ─────────────────────────────────────
 Color _categoryColor(JobCategory cat) {
@@ -795,7 +798,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: _currentNavIndex == 1
                     ? _buildJobsTab(jobs)
                     : _currentNavIndex == 2
-                        ? _buildMessagesPlaceholder()
+                        ? _buildMessagesTab()
                         : _buildProfilePlaceholder(),
               ),
             ),
@@ -1692,38 +1695,226 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildMessagesPlaceholder() {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+  String _formatTimeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays}d';
+    if (diff.inHours > 0) return '${diff.inHours}h';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m';
+    return 'Just now';
+  }
+
+  Widget _buildMessagesTab() {
+    final convsAsync = ref.watch(conversationsProvider);
+
+    return convsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.chat_bubble_outline_rounded,
-                size: 64, color: AppColors.textHint),
-            SizedBox(height: 16),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off_rounded, color: AppColors.textSecondary, size: 40),
+            const SizedBox(height: 12),
             Text(
-              'Messages',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Your conversations will appear here',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              'Could not load messages: $e',
               textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => ref.read(conversationsProvider.notifier).refresh(),
+              child: const Text('Retry'),
             ),
           ],
         ),
       ),
+      data: (convs) {
+        if (convs.isEmpty) {
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.chat_bubble_outline_rounded,
+                      size: 64, color: AppColors.textHint),
+                  SizedBox(height: 16),
+                  Text(
+                    'No Messages Yet',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Chat with employers by tapping "Chat" on any job listing!',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => ref.read(conversationsProvider.notifier).refresh(),
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+            itemCount: convs.length,
+            separatorBuilder: (_, _) => const Divider(height: 1, indent: 68),
+            itemBuilder: (context, i) {
+              final c = convs[i];
+              final isSystem = c.isSystem;
+              final avatarColor = isSystem
+                  ? AppColors.primary
+                  : [
+                      AppColors.accent,
+                      const Color(0xFF7C4DFF),
+                      const Color(0xFFFF5722),
+                      const Color(0xFF2196F3)
+                    ][i % 4];
+
+              return ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                leading: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: avatarColor.withValues(alpha: 0.15),
+                      child: Text(
+                        isSystem
+                            ? 'G'
+                            : (c.businessName.isNotEmpty
+                                ? c.businessName.substring(0, 1).toUpperCase()
+                                : 'B'),
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w800,
+                          color: avatarColor,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    if (isSystem)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.check_rounded,
+                              size: 9, color: Colors.white),
+                        ),
+                      ),
+                  ],
+                ),
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        isSystem ? 'GetWork System' : c.businessName,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: c.unreadCount > 0
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      _formatTimeAgo(c.lastMessageAt),
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        color: c.unreadCount > 0
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                        fontWeight: c.unreadCount > 0
+                            ? FontWeight.w700
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.lock_rounded,
+                          size: 11, color: AppColors.primary),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          c.lastMessage,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            color: c.unreadCount > 0
+                                ? AppColors.textPrimary
+                                : AppColors.textSecondary,
+                            fontWeight: c.unreadCount > 0
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      if (c.unreadCount > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Text(
+                            '${c.unreadCount}',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ChatScreen(
+                        conversationId: c.id,
+                        workerName: isSystem ? 'GetWork' : c.businessName,
+                        workerPhone: c.workerPhone,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
