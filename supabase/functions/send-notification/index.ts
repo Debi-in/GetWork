@@ -72,11 +72,25 @@ async function createJWT(serviceAccount: Record<string, string>): Promise<string
   const sigInput   = `${headerB64}.${payloadB64}`;
 
   // Import private key (PEM → CryptoKey)
-  const pemBody = serviceAccount.private_key
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
-    .replace(/\n/g, '');
-  const keyDer = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+  let rawKey = serviceAccount.private_key || '';
+  // Handle double-escaped newlines (\n as literal string) and Windows CRLF (\r)
+  rawKey = rawKey.replace(/\\n/g, '\n').replace(/\\r/g, '');
+  let pemBody = rawKey
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, ''); // Removes all newlines, carriage returns, and spaces
+
+  // Add Base64 padding if needed
+  while (pemBody.length % 4 !== 0) {
+    pemBody += '=';
+  }
+
+  let keyDer: Uint8Array;
+  try {
+    keyDer = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+  } catch (e: any) {
+    throw new Error(`Failed to decode base64 private_key: ${e.message}. Please check FIREBASE_SERVICE_ACCOUNT_JSON secret in Supabase.`);
+  }
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
     keyDer,
