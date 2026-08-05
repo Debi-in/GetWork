@@ -78,14 +78,16 @@ ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS content TEXT DEFAULT '';
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
--- Safely handle legacy constraints if present from old schemas
+-- Safely drop legacy foreign key & NOT NULL constraints on sender_id if present
+ALTER TABLE public.messages DROP CONSTRAINT IF EXISTS messages_sender_id_fkey;
+
 DO $$ BEGIN
   ALTER TABLE public.messages ALTER COLUMN sender_id DROP NOT NULL;
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  ALTER TABLE public.messages ALTER COLUMN sender_id SET DEFAULT '00000000-0000-0000-0000-000000000000'::uuid;
+  ALTER TABLE public.messages ALTER COLUMN sender_id DROP DEFAULT;
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
