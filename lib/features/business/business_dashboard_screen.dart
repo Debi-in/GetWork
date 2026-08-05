@@ -16,6 +16,8 @@ import '../../router.dart';
 import '../jobs/jobs_provider.dart';
 import '../../models/job_model.dart';
 import '../../core/constants/supabase_config.dart';
+import 'chat_provider.dart';
+import 'chat_screen.dart';
 
 class BusinessDashboardScreen extends ConsumerStatefulWidget {
   const BusinessDashboardScreen({super.key});
@@ -945,18 +947,12 @@ class _NavItem extends StatelessWidget {
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
-// ║  TAB 1 — MESSAGES                                           ║
+// ║  TAB 1 — MESSAGES (Real Supabase Data)                      ║
 // ╚══════════════════════════════════════════════════════════════╝
-class _MessagesTab extends StatelessWidget {
+class _MessagesTab extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
-    // Placeholder chats — replace with Supabase realtime in Phase 2
-    final chats = [
-      _ChatPreview(name: 'Ramesh Tamang', snippet: 'Can you start Monday morning?', time: '2m ago', unread: 2, avatarColor: AppColors.primary),
-      _ChatPreview(name: 'Sita Rai', snippet: 'I have experience in retail.', time: '18m ago', unread: 0, avatarColor: AppColors.accent),
-      _ChatPreview(name: 'Bikash KC', snippet: 'Thank you for accepting me!', time: '1h ago', unread: 1, avatarColor: const Color(0xFF7C4DFF)),
-      _ChatPreview(name: 'Anita Shrestha', snippet: 'What time should I arrive?', time: '3h ago', unread: 0, avatarColor: const Color(0xFFFF5722)),
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final convsAsync = ref.watch(conversationsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -976,21 +972,28 @@ class _MessagesTab extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: const Text(
-                  '3 unread',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryDark,
-                  ),
-                ),
+              convsAsync.maybeWhen(
+                data: (convs) {
+                  final unread = convs.fold<int>(0, (s, c) => s + c.unreadCount);
+                  if (unread == 0) return const SizedBox.shrink();
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      '$unread unread',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  );
+                },
+                orElse: () => const SizedBox.shrink(),
               ),
             ],
           ),
@@ -1025,121 +1028,178 @@ class _MessagesTab extends StatelessWidget {
           ),
         ),
 
-        // Chat list
+        // Live conversation list
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-            itemCount: chats.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, indent: 68),
-            itemBuilder: (context, i) {
-              final c = chats[i];
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                leading: CircleAvatar(
-                  radius: 24,
-                  backgroundColor: c.avatarColor.withValues(alpha: 0.15),
-                  child: Text(
-                    c.name.substring(0, 1),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w800,
-                      color: c.avatarColor,
-                      fontSize: 16,
-                    ),
+          child: convsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.wifi_off_rounded, color: AppColors.textSecondary, size: 40),
+                  const SizedBox(height: 12),
+                  Text('Could not load messages: $e',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => ref.read(conversationsProvider.notifier).refresh(),
+                    child: const Text('Retry'),
                   ),
-                ),
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      c.name,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontWeight: c.unread > 0 ? FontWeight.w800 : FontWeight.w600,
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      c.time,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        color: c.unread > 0 ? AppColors.primary : AppColors.textSecondary,
-                        fontWeight: c.unread > 0 ? FontWeight.w700 : FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-                subtitle: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        c.snippet,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 13,
-                          color: c.unread > 0 ? AppColors.textPrimary : AppColors.textSecondary,
-                          fontWeight: c.unread > 0 ? FontWeight.w600 : FontWeight.w400,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (c.unread > 0) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
+                ],
+              ),
+            ),
+            data: (convs) => RefreshIndicator(
+              onRefresh: () => ref.read(conversationsProvider.notifier).refresh(),
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                itemCount: convs.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, indent: 68),
+                itemBuilder: (context, i) {
+                  final c = convs[i];
+                  final isSystem = c.isSystem;
+                  final avatarColor = isSystem
+                      ? AppColors.primary
+                      : [AppColors.accent, const Color(0xFF7C4DFF),
+                         const Color(0xFFFF5722), const Color(0xFF2196F3)]
+                           [i % 4];
+
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    leading: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: avatarColor.withValues(alpha: 0.15),
                           child: Text(
-                            '${c.unread}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
+                            isSystem ? 'G' : c.workerName.substring(0, 1).toUpperCase(),
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontWeight: FontWeight.w800,
+                              color: avatarColor,
+                              fontSize: 16,
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
-                onTap: () {
-                  // Phase 2: Navigate to ChatScreen(workerId)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('💬 Chat with ${c.name} — coming in Phase 2!'),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        if (isSystem)
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.check_rounded,
+                                  size: 9, color: Colors.white),
+                            ),
+                          ),
+                      ],
                     ),
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            isSystem ? 'GetWork' : c.workerName,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontWeight: c.unreadCount > 0
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          _timeAgo(c.lastMessageAt),
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            color: c.unreadCount > 0
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                            fontWeight: c.unreadCount > 0
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    subtitle: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            c.lastMessage,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              color: c.unreadCount > 0
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
+                              fontWeight: c.unreadCount > 0
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (c.unreadCount > 0) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${c.unreadCount}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => ChatScreen(
+                          conversationId: c.id,
+                          workerName: isSystem ? 'GetWork' : c.workerName,
+                          workerPhone: c.workerPhone,
+                        ),
+                      ));
+                    },
                   );
                 },
-              );
-            },
+              ),
+            ),
           ),
         ),
       ],
     );
   }
+
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
 }
 
-class _ChatPreview {
-  final String name, snippet, time;
-  final int unread;
-  final Color avatarColor;
-  const _ChatPreview({
-    required this.name,
-    required this.snippet,
-    required this.time,
-    required this.unread,
-    required this.avatarColor,
-  });
-}
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  TAB 2 — ANALYTICS                                          ║
