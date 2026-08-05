@@ -12,6 +12,8 @@ import '../../../core/services/user_profile_service.dart';
 import '../../../models/job_model.dart';
 import '../../jobs/jobs_provider.dart';
 import '../../jobs/widgets/complete_profile_sheet.dart';
+import '../../business/chat_repository.dart';
+import '../../business/chat_screen.dart';
 
 class JobBottomSheet extends ConsumerStatefulWidget {
   final JobModel job;
@@ -29,6 +31,41 @@ class JobBottomSheet extends ConsumerStatefulWidget {
 
 class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
   bool _isSaved = false;
+
+  Future<void> _openChatWithBusiness(BuildContext context) async {
+    final profile = await UserProfileService.getProfile();
+    final workerName =
+        (profile != null && profile.fullName.isNotEmpty) ? profile.fullName : 'Worker';
+    final workerPhone =
+        (profile != null && profile.phone.isNotEmpty) ? profile.phone : '+977-9800000000';
+
+    final convId = await ChatRepository.instance.createOrGetConversation(
+      jobId: widget.job.id,
+      businessName: widget.job.businessName,
+      workerName: workerName,
+      workerPhone: workerPhone,
+    );
+
+    if (!context.mounted) return;
+
+    if (convId != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            conversationId: convId,
+            workerName: widget.job.businessName,
+            workerPhone: widget.job.category.name,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to connect to chat. Please check your network.'),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +209,7 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                         Container(
                           width: 38,
                           height: 38,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.accentContainer,
                             shape: BoxShape.circle,
                           ),
@@ -189,34 +226,65 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.job.businessName,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.job.businessName,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    '4.8 (24) • ${widget.job.distanceKm ?? 0.5} km away',
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Quick Chat Button
+                        InkWell(
+                          onTap: () => _openChatWithBusiness(context),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryContainer.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                             ),
-                            const SizedBox(height: 2),
-                            Row(
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                                const SizedBox(width: 2),
+                                Icon(Icons.chat_bubble_outline_rounded, size: 14, color: AppColors.primaryDark),
+                                SizedBox(width: 4),
                                 Text(
-                                  '4.8 (24) • ${widget.job.distanceKm ?? 0.5} km away',
-                                  style: const TextStyle(
+                                  'Chat',
+                                  style: TextStyle(
                                     fontFamily: 'Inter',
                                     fontSize: 12,
-                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryDark,
                                   ),
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
