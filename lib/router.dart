@@ -16,6 +16,7 @@ import 'features/profile/profile_screen.dart';
 import 'features/profile/manage_profile_screen.dart';
 import 'features/business/business_dashboard_screen.dart';
 import 'features/business/post_job_screen.dart';
+import 'features/business/applicants_screen.dart';
 import 'features/notifications/notifications_screen.dart';
 import 'features/settings/settings_screen.dart';
 
@@ -36,6 +37,7 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String settings = '/settings';
   static const String manageProfile = '/manage-profile';
+  static const String applicants = '/business/job/:jobId/applicants';
 }
 
 // ── Router Configuration ─────────────────────────────────────
@@ -113,6 +115,14 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.manageProfile,
       name: 'manageProfile',
       builder: (context, state) => const ManageProfileScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.applicants,
+      name: 'applicants',
+      builder: (context, state) {
+        final jobId = state.pathParameters['jobId'] ?? '';
+        return ApplicantsScreen(jobId: jobId);
+      },
     ),
   ],
 

@@ -233,6 +233,7 @@ class _BusinessDashboardScreenState
                                   padding:
                                       const EdgeInsets.only(bottom: 12),
                                   child: _BusinessJobCard(
+                                    jobId: job.id,
                                     title: job.title,
                                     rate: job.salaryDisplay,
                                     status: job.isUrgent ? 'Urgent' : job.status.name,
@@ -512,6 +513,7 @@ class _MetricCard extends StatelessWidget {
 
 // ── Job Post Card with Visual Progress Bar ─────────────────────
 class _BusinessJobCard extends StatelessWidget {
+  final String jobId;
   final String title;
   final String rate;
   final String status;
@@ -522,6 +524,7 @@ class _BusinessJobCard extends StatelessWidget {
   final String shiftDate;
 
   const _BusinessJobCard({
+    this.jobId = '',
     required this.title,
     required this.rate,
     required this.status,
@@ -661,7 +664,11 @@ class _BusinessJobCard extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    if (jobId.isNotEmpty) {
+                      context.push('/business/job/$jobId/applicants');
+                    }
+                  },
                   icon: const Icon(Icons.people_rounded, size: 16),
                   label: Text('Applicants ($appliedCount)'),
                   style: ElevatedButton.styleFrom(

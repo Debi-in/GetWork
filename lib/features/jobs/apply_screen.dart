@@ -1,13 +1,14 @@
 // ============================================================
 // APPLY SCREEN — GetWork App
-// Confirm profile details & submit application
+// Confirm profile details & submit live application to Supabase
 // ============================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../models/user_model.dart';
+import '../../../core/services/supabase_jobs_service.dart';
+import '../../../core/services/user_profile_service.dart';
 import 'jobs_provider.dart';
 
 class ApplyScreen extends ConsumerStatefulWidget {
@@ -25,6 +26,20 @@ class ApplyScreen extends ConsumerStatefulWidget {
 class _ApplyScreenState extends ConsumerState<ApplyScreen> {
   final TextEditingController _noteController = TextEditingController();
   bool _isSubmitting = false;
+  UserProfile? _profile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await UserProfileService.getProfile();
+    if (mounted) {
+      setState(() => _profile = profile);
+    }
+  }
 
   @override
   void dispose() {
@@ -35,9 +50,22 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
   void _submitApplication() async {
     setState(() => _isSubmitting = true);
 
-    await Future.delayed(const Duration(milliseconds: 600));
+    final workerName = _profile?.fullName.isNotEmpty == true
+        ? _profile!.fullName
+        : 'Worker Candidate';
+    final workerPhone = _profile?.phone.isNotEmpty == true
+        ? _profile!.phone
+        : '+977 9800000000';
 
-    // Register application in state
+    // Submit live application to Supabase `job_applications`
+    await SupabaseJobsService.applyForJob(
+      jobId: widget.jobId,
+      workerName: workerName,
+      workerPhone: workerPhone,
+      coverNote: _noteController.text.trim(),
+    );
+
+    // Register application in Riverpod state
     ref.read(appliedJobsProvider.notifier).applyToJob(widget.jobId);
     ref.read(allJobsProvider.notifier).incrementAppliedCount(widget.jobId);
 
@@ -54,7 +82,12 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
       orElse: () => jobList.first,
     );
 
-    final dummyWorker = UserModel.dummyWorker();
+    final workerName = _profile?.fullName.isNotEmpty == true
+        ? _profile!.fullName
+        : 'Worker Candidate';
+    final workerSkill = (_profile?.primarySkill != null && _profile!.primarySkill!.isNotEmpty)
+        ? _profile!.primarySkill!
+        : 'General Helper';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -99,7 +132,9 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        job.businessName[0].toUpperCase(),
+                        job.businessName.isNotEmpty
+                            ? job.businessName[0].toUpperCase()
+                            : 'G',
                         style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 20,
@@ -166,7 +201,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                         radius: 24,
                         backgroundColor: AppColors.primary,
                         child: Text(
-                          dummyWorker.name[0],
+                          workerName[0].toUpperCase(),
                           style: const TextStyle(
                             fontFamily: 'Inter',
                             color: Colors.white,
@@ -175,44 +210,39 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                         ),
                       ),
                       const SizedBox(width: 14),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            dummyWorker.name,
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(Icons.star_rounded,
-                                  size: 16, color: Colors.amber),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${dummyWorker.rating} (${dummyWorker.completedJobs} jobs completed)',
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              workerName,
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Phone: ${_profile?.phone.isNotEmpty == true ? _profile!.phone : "+977 98XXXXXXXX"}',
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   const Divider(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
-                  // Skills List
+                  // Primary Skill Tag
                   const Text(
-                    'Skills',
+                    'Primary Skill',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
@@ -220,20 +250,15 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: dummyWorker.skills
-                        .map(
-                          (skill) => Chip(
-                            label: Text(skill),
-                            backgroundColor: AppColors.surfaceVariant,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                          ),
-                        )
-                        .toList(),
+                  const SizedBox(height: 6),
+                  Chip(
+                    label: Text(workerSkill),
+                    backgroundColor: AppColors.primaryContainer,
+                    labelStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
                 ],
               ),
@@ -256,7 +281,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
               maxLines: 3,
               decoration: const InputDecoration(
                 hintText:
-                    'Introduce yourself or specify your availability (e.g. "I can start immediately").',
+                    'Introduce yourself or specify your availability (e.g. "I am punctual and can start immediately").',
               ),
             ),
             const SizedBox(height: 32),
