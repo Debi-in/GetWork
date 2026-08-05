@@ -6,6 +6,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/services/encryption_service.dart';
 
 // ── Models ────────────────────────────────────────────────────
 
@@ -33,13 +34,18 @@ class ConversationModel {
   });
 
   factory ConversationModel.fromRow(Map<String, dynamic> row) {
+    final convId = row['id']?.toString() ?? '';
+    final rawLastMsg = row['last_message']?.toString() ?? '';
+    final decryptedLastMsg =
+        EncryptionService.instance.decryptMessage(rawLastMsg, convId);
+
     return ConversationModel(
-      id: row['id']?.toString() ?? '',
+      id: convId,
       jobId: row['job_id']?.toString() ?? '',
       businessName: row['business_name']?.toString() ?? '',
       workerName: row['worker_name']?.toString() ?? '',
       workerPhone: row['worker_phone']?.toString() ?? '',
-      lastMessage: row['last_message']?.toString() ?? '',
+      lastMessage: decryptedLastMsg,
       lastMessageAt: row['last_message_at'] != null
           ? DateTime.parse(row['last_message_at'].toString())
           : DateTime.now(),
@@ -72,12 +78,17 @@ class MessageModel {
   bool get isMe => senderType == 'business';
 
   factory MessageModel.fromRow(Map<String, dynamic> row) {
+    final convId = row['conversation_id']?.toString() ?? '';
+    final rawBody = row['body']?.toString() ?? '';
+    final decryptedBody =
+        EncryptionService.instance.decryptMessage(rawBody, convId);
+
     return MessageModel(
       id: row['id']?.toString() ?? '',
-      conversationId: row['conversation_id']?.toString() ?? '',
+      conversationId: convId,
       senderType: row['sender_type']?.toString() ?? 'system',
       senderName: row['sender_name']?.toString() ?? 'GetWork',
-      body: row['body']?.toString() ?? '',
+      body: decryptedBody,
       createdAt: row['created_at'] != null
           ? DateTime.parse(row['created_at'].toString())
           : DateTime.now(),
@@ -152,7 +163,7 @@ class ChatRepository {
     }
   }
 
-  // ── Send a message ─────────────────────────────────────────
+  // ── Send a message (End-to-End Encrypted) ────────────────────
   Future<bool> sendMessage({
     required String conversationId,
     required String body,
@@ -160,15 +171,19 @@ class ChatRepository {
     String senderName = 'Himalayan Mart',
   }) async {
     try {
+      // 🔒 Encrypt body before writing to Supabase DB
+      final encryptedBody =
+          EncryptionService.instance.encryptMessage(body, conversationId);
+
       await _db.from('messages').insert({
         'conversation_id': conversationId,
         'sender_type': senderType,
         'sender_name': senderName,
-        'body': body,
+        'body': encryptedBody,
       });
-      // Update last_message on conversation
+      // Update encrypted last_message on conversation
       await _db.from('conversations').update({
-        'last_message': body,
+        'last_message': encryptedBody,
         'last_message_at': DateTime.now().toIso8601String(),
       }).eq('id', conversationId);
       return true;
@@ -229,12 +244,16 @@ class ChatRepository {
           'body':
               '👋 Hi! $workerName just applied for your job. You can chat here to coordinate shift details.',
         });
-        // Then add the worker's first message
+        // Then add the worker's first message (End-to-End Encrypted)
+        final workerMsgText = 'Hi! I just applied for the position.';
+        final encryptedWorkerMsg = EncryptionService.instance
+            .encryptMessage(workerMsgText, convId);
+
         await _db.from('messages').insert({
           'conversation_id': convId,
           'sender_type': 'worker',
           'sender_name': workerName,
-          'body': 'Hi! I just applied for the position.',
+          'body': encryptedWorkerMsg,
         });
       }
       return convId;

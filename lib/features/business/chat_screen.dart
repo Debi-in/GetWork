@@ -119,15 +119,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                if (widget.workerPhone.isNotEmpty)
-                  Text(
-                    widget.workerPhone,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
+                Row(
+                  children: [
+                    if (widget.workerPhone.isNotEmpty)
+                      Text(
+                        '${widget.workerPhone} • ',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    const Icon(Icons.lock_rounded, size: 10, color: AppColors.primary),
+                    const SizedBox(width: 2),
+                    const Text(
+                      'E2EE Encrypted',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
+                  ],
+                ),
               ],
             ),
           ],
