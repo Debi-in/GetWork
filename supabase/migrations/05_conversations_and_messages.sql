@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS public.messages (
   sender_type     TEXT NOT NULL DEFAULT 'system',   -- 'system' | 'business' | 'worker'
   sender_name     TEXT NOT NULL DEFAULT 'GetWork',
   body            TEXT NOT NULL DEFAULT '',
+  content         TEXT DEFAULT '',
   read_at         TIMESTAMPTZ,
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
@@ -73,10 +74,11 @@ ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS conversation_id UUID REFERE
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS sender_type TEXT NOT NULL DEFAULT 'system';
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS sender_name TEXT NOT NULL DEFAULT 'GetWork';
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS body TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS content TEXT DEFAULT '';
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
--- Safely handle legacy sender_id column if present from old schemas
+-- Safely handle legacy constraints if present from old schemas
 DO $$ BEGIN
   ALTER TABLE public.messages ALTER COLUMN sender_id DROP NOT NULL;
 EXCEPTION WHEN OTHERS THEN NULL;
@@ -84,6 +86,16 @@ END $$;
 
 DO $$ BEGIN
   ALTER TABLE public.messages ALTER COLUMN sender_id SET DEFAULT '00000000-0000-0000-0000-000000000000'::uuid;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE public.messages ALTER COLUMN content DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE public.messages ALTER COLUMN content SET DEFAULT '';
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
@@ -143,12 +155,13 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.messages (
-  conversation_id, sender_type, sender_name, body, created_at
+  conversation_id, sender_type, sender_name, body, content, created_at
 )
 VALUES (
   '00000000-0000-0000-0000-000000000001',
   'system',
   'GetWork',
+  '👋 Welcome to GetWork Business! Here you''ll see messages from workers who apply to your jobs. Post your first shift to get started — workers in your area will apply within minutes.',
   '👋 Welcome to GetWork Business! Here you''ll see messages from workers who apply to your jobs. Post your first shift to get started — workers in your area will apply within minutes.',
   NOW()
 )

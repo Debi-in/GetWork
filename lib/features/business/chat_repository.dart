@@ -79,7 +79,7 @@ class MessageModel {
 
   factory MessageModel.fromRow(Map<String, dynamic> row) {
     final convId = row['conversation_id']?.toString() ?? '';
-    final rawBody = row['body']?.toString() ?? '';
+    final rawBody = (row['body'] ?? row['content'])?.toString() ?? '';
     final decryptedBody =
         EncryptionService.instance.decryptMessage(rawBody, convId);
 
@@ -180,6 +180,7 @@ class ChatRepository {
         'sender_type': senderType,
         'sender_name': senderName,
         'body': encryptedBody,
+        'content': encryptedBody,
       });
       // Update encrypted last_message on conversation
       await _db.from('conversations').update({
