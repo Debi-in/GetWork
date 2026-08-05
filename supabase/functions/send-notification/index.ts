@@ -140,6 +140,8 @@ async function sendFcmV1(
     }),
   });
   return res.ok;
+}
+
 /** Send an FCM V1 message to a topic (e.g. "all", "workers", "businesses") */
 async function sendFcmV1Topic(
   accessToken: string,
