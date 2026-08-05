@@ -3,11 +3,10 @@
 -- Run this in Supabase SQL Editor → New Query → Run All
 -- ============================================================
 
--- Enable UUID extension (already enabled but safe to repeat)
+-- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ── conversations table ──────────────────────────────────────
--- One row per worker↔business pair for a job
+-- ── 1. conversations table ───────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.conversations (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   job_id          UUID REFERENCES public.jobs(id) ON DELETE SET NULL,
@@ -19,6 +18,16 @@ CREATE TABLE IF NOT EXISTS public.conversations (
   unread_count    INT NOT NULL DEFAULT 0,
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure all columns exist in case the table already existed previously
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS job_id UUID REFERENCES public.jobs(id) ON DELETE SET NULL;
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS business_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS worker_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS worker_phone TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS last_message TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS last_message_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS unread_count INT NOT NULL DEFAULT 0;
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 
@@ -48,7 +57,7 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- ── messages table ───────────────────────────────────────────
+-- ── 2. messages table ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.messages (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE,
@@ -58,6 +67,14 @@ CREATE TABLE IF NOT EXISTS public.messages (
   read_at         TIMESTAMPTZ,
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure all columns exist in case table already existed
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE;
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS sender_type TEXT NOT NULL DEFAULT 'system';
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS sender_name TEXT NOT NULL DEFAULT 'GetWork';
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS body TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
@@ -87,13 +104,18 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- ── Realtime: enable for live updates ───────────────────────
-ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+-- ── 3. Realtime Enablement ──────────────────────────────────
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
--- ── Seed: system "Welcome" message for any existing conversations ──
--- This ensures every new business always sees at least one message
--- (You can re-run safely — DO NOTHING on conflict)
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- ── 4. Seed Welcome Conversation & Message ────────────────────
 INSERT INTO public.conversations (
   id, business_name, worker_name, worker_phone,
   last_message, last_message_at, unread_count
