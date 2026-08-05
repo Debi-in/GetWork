@@ -22,7 +22,6 @@ import 'widgets/job_bottom_sheet.dart';
 import 'widgets/job_filter_modal.dart';
 import 'widgets/open_street_map_widget.dart';
 import '../business/chat_provider.dart';
-import '../business/chat_repository.dart';
 import '../business/chat_screen.dart';
 
 // ── Category color helper ─────────────────────────────────────

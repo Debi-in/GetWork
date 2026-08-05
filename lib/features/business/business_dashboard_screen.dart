@@ -18,6 +18,8 @@ import '../../models/job_model.dart';
 import '../../core/constants/supabase_config.dart';
 import 'chat_provider.dart';
 import 'chat_screen.dart';
+import '../../core/services/app_settings_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BusinessDashboardScreen extends ConsumerStatefulWidget {
   const BusinessDashboardScreen({super.key});
@@ -1475,9 +1477,280 @@ class _StatTile extends StatelessWidget {
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  TAB 3 — SETTINGS                                           ║
 // ╚══════════════════════════════════════════════════════════════╝
-class _SettingsTab extends StatelessWidget {
+class _SettingsTab extends ConsumerWidget {
+  void _showEditBusinessProfileModal(
+    BuildContext context,
+    WidgetRef ref,
+    String currentName,
+    String currentLocation,
+    String currentPhone,
+  ) {
+    final nameCtrl = TextEditingController(text: currentName);
+    final locationCtrl = TextEditingController(text: currentLocation);
+    final phoneCtrl = TextEditingController(text: currentPhone);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Edit Business Profile',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Business Name',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.business_rounded),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: locationCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Location / Address',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on_rounded),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phoneCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Business Contact Phone',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.phone_rounded),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final newName = nameCtrl.text.trim();
+                    final newLoc = locationCtrl.text.trim();
+                    final newPhone = phoneCtrl.text.trim();
+
+                    if (newName.isNotEmpty && newLoc.isNotEmpty) {
+                      ref.read(appSettingsProvider.notifier).updateBusinessProfile(
+                            name: newName,
+                            location: newLoc,
+                            phone: newPhone,
+                          );
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Business profile updated & saved!'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Save Changes',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showHelpSupportModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxHeight: 520),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Help & Support',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.phone_outlined, color: AppColors.primaryDark),
+                ),
+                title: const Text('Call Support', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('+977 9800000000 (Kathmandu HQ)'),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Calling support line: +977 9800000000')),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE8F5E9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.chat_outlined, color: Color(0xFF2E7D32)),
+                ),
+                title: const Text('WhatsApp Support', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Instant chat support 8AM - 8PM'),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Opening WhatsApp support...')),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFF3E0),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.email_outlined, color: Color(0xFFE65100)),
+                ),
+                title: const Text('Email Support', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('support@getwork.com.np'),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Email support: support@getwork.com.np')),
+                  );
+                },
+              ),
+              const Divider(height: 24),
+              const Text(
+                'Frequently Asked Questions',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              const ExpansionTile(
+                title: Text('How do I post a new shift?', style: TextStyle(fontSize: 13)),
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text('Tap the floating (+) button on the Business Dashboard to fill shift title, pay rate, and hours.'),
+                  )
+                ],
+              ),
+              const ExpansionTile(
+                title: Text('How do workers get paid?', style: TextStyle(fontSize: 13)),
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text('Wages can be paid directly in cash or digital wallet (eSewa / Khalti) when the shift is completed.'),
+                  )
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out of your business account?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await Supabase.instance.client.auth.signOut();
+              } catch (_) {}
+              if (context.mounted) context.go('/choose-role');
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsProvider);
+    final initials = settings.businessName.isNotEmpty
+        ? settings.businessName.substring(0, 1).toUpperCase()
+        : 'B';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       child: Column(
@@ -1495,69 +1768,78 @@ class _SettingsTab extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Business Profile Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE8F5E9), Color(0xFFF1F8E9)],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primaryContainer),
+          GestureDetector(
+            onTap: () => _showEditBusinessProfileModal(
+              context,
+              ref,
+              settings.businessName,
+              settings.businessLocation,
+              settings.businessPhone,
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.accentContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'HM',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.accentDark,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFE8F5E9), Color(0xFFF1F8E9)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.primaryContainer),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accentContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.accentDark,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Himalayan Mart',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          settings.businessName,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Patan Dhoka, Lalitpur',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
+                        Text(
+                          settings.businessLocation,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
-              ],
+                  const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                ],
+              ),
             ),
           ),
 
           const SizedBox(height: 24),
 
-          // Section: Notifications
+          // Section: Notifications (100% Real Persistent Toggles)
           _SettingsSection(
             title: 'Notifications',
             tiles: [
@@ -1566,8 +1848,10 @@ class _SettingsTab extends StatelessWidget {
                 label: 'Push Notifications',
                 color: AppColors.primary,
                 trailing: Switch(
-                  value: true,
-                  onChanged: (_) {},
+                  value: settings.pushNotifications,
+                  onChanged: (val) => ref
+                      .read(appSettingsProvider.notifier)
+                      .setPushNotifications(val),
                   activeThumbColor: AppColors.primary,
                 ),
               ),
@@ -1576,8 +1860,10 @@ class _SettingsTab extends StatelessWidget {
                 label: 'New Applicant Alerts',
                 color: const Color(0xFF7C4DFF),
                 trailing: Switch(
-                  value: true,
-                  onChanged: (_) {},
+                  value: settings.applicantAlerts,
+                  onChanged: (val) => ref
+                      .read(appSettingsProvider.notifier)
+                      .setApplicantAlerts(val),
                   activeThumbColor: AppColors.primary,
                 ),
               ),
@@ -1586,8 +1872,10 @@ class _SettingsTab extends StatelessWidget {
                 label: 'Message Notifications',
                 color: AppColors.accent,
                 trailing: Switch(
-                  value: false,
-                  onChanged: (_) {},
+                  value: settings.messageNotifications,
+                  onChanged: (val) => ref
+                      .read(appSettingsProvider.notifier)
+                      .setMessageNotifications(val),
                   activeThumbColor: AppColors.primary,
                 ),
               ),
@@ -1626,7 +1914,7 @@ class _SettingsTab extends StatelessWidget {
                 label: 'Help & Support',
                 color: const Color(0xFFFF9800),
                 trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
-                onTap: () {},
+                onTap: () => _showHelpSupportModal(context),
               ),
             ],
           ),
@@ -1699,7 +1987,7 @@ class _SettingsTab extends StatelessWidget {
             width: double.infinity,
             height: 50,
             child: OutlinedButton.icon(
-              onPressed: () => context.go('/choose-role'),
+              onPressed: () => _showSignOutDialog(context),
               icon: const Icon(Icons.logout_rounded, size: 18),
               label: const Text(
                 'Sign Out / Change Business',

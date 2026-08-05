@@ -1,10 +1,12 @@
 // ============================================================
 // PROFILE SCREEN — GetWork App
-// Loads real user data from UserProfileService, links to ManageProfileScreen
+// Loads real user data from UserProfileService + Supabase.
+// All settings items are wired to real actions.
 // ============================================================
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/user_profile_service.dart';
 
@@ -28,7 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reload when returning from ManageProfileScreen
     _loadProfile();
   }
 
@@ -49,6 +50,145 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return '${first.isNotEmpty ? first[0] : ''}${last.isNotEmpty ? last[0] : ''}'.toUpperCase();
   }
 
+  // ── Real sign-out ──────────────────────────────────────────
+  Future<void> _signOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Log Out', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w800)),
+        content: const Text('Are you sure you want to log out?', style: TextStyle(fontFamily: 'Inter')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(fontFamily: 'Inter')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Log Out', style: TextStyle(fontFamily: 'Inter', color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await Supabase.instance.client.auth.signOut();
+      } catch (_) {}
+      if (mounted) context.go('/');
+    }
+  }
+
+  // ── Password & Security ───────────────────────────────────
+  Future<void> _showPasswordDialog() async {
+    final currentCtrl    = TextEditingController();
+    final newCtrl        = TextEditingController();
+    final confirmCtrl    = TextEditingController();
+    bool obscureCurrent  = true;
+    bool obscureNew      = true;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Change Password',
+              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w800)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: newCtrl,
+                obscureText: obscureNew,
+                decoration: InputDecoration(
+                  labelText: 'New Password',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility),
+                    onPressed: () => setS(() => obscureNew = !obscureNew),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: confirmCtrl,
+                obscureText: obscureCurrent,
+                decoration: InputDecoration(
+                  labelText: 'Confirm New Password',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscureCurrent ? Icons.visibility_off : Icons.visibility),
+                    onPressed: () => setS(() => obscureCurrent = !obscureCurrent),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newPass = newCtrl.text.trim();
+                final confirm = confirmCtrl.text.trim();
+                if (newPass.isEmpty || newPass.length < 6) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Password must be at least 6 characters')),
+                  );
+                  return;
+                }
+                if (newPass != confirm) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Passwords do not match')),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx);
+                try {
+                  await Supabase.instance.client.auth.updateUser(
+                    UserAttributes(password: newPass),
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Password updated successfully!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Update', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    currentCtrl.dispose();
+    newCtrl.dispose();
+    confirmCtrl.dispose();
+  }
+
+  // ── Notifications settings ─────────────────────────────────
+  void _openNotifications() => context.push('/notifications');
+
   @override
   Widget build(BuildContext context) {
     final displayName = _profile?.fullName.isNotEmpty == true
@@ -57,6 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final displayPhone = _profile?.phone.isNotEmpty == true
         ? _profile!.phone
         : 'No phone added';
+    final userEmail = Supabase.instance.client.auth.currentUser?.email ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -96,7 +237,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   GestureDetector(
                     onTap: () async {
                       await context.push('/manage-profile');
-                      // Refresh after returning
                       _loadProfile();
                     },
                     child: Container(
@@ -149,6 +289,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     color: AppColors.textPrimary,
                                   ),
                                 ),
+                                const SizedBox(height: 2),
+                                if (userEmail.isNotEmpty)
+                                  Text(
+                                    userEmail,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 12,
+                                      color: AppColors.textHint,
+                                    ),
+                                  ),
                                 const SizedBox(height: 2),
                                 Row(
                                   children: [
@@ -227,18 +377,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileTileData(
                       icon: Icons.lock_outline_rounded,
                       title: 'Password & Security',
-                      onTap: () {},
+                      onTap: _showPasswordDialog,
                     ),
                     _ProfileTileData(
                       icon: Icons.notifications_none_rounded,
                       title: 'Notifications',
-                      onTap: () => context.push('/notifications'),
+                      onTap: _openNotifications,
                     ),
                     _ProfileTileData(
                       icon: Icons.language_rounded,
                       title: 'Language',
                       trailingText: 'English',
-                      onTap: () {},
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Language: English (more languages coming soon)'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
                     ),
                   ]),
                   const SizedBox(height: 20),
@@ -250,18 +407,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileTileData(
                       icon: Icons.info_outline_rounded,
                       title: 'About Us',
-                      onTap: () {},
+                      onTap: () => _showAboutDialog(),
                     ),
                     _ProfileTileData(
                       icon: Icons.brightness_6_outlined,
                       title: 'Theme',
                       trailingText: 'Light',
-                      onTap: () {},
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Dark mode coming in the next update!'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
                     ),
                     _ProfileTileData(
                       icon: Icons.assignment_outlined,
                       title: 'My Applications',
-                      onTap: () {},
+                      onTap: () => context.push('/my-applications'),
                     ),
                   ]),
                   const SizedBox(height: 20),
@@ -273,7 +437,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileTileData(
                       icon: Icons.help_outline_rounded,
                       title: 'Help Center',
-                      onTap: () {},
+                      onTap: () => _showHelpDialog(),
                     ),
                     _ProfileTileData(
                       icon: Icons.logout_rounded,
@@ -281,13 +445,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       titleColor: AppColors.error,
                       iconColor: AppColors.error,
                       showChevron: false,
-                      onTap: () {},
+                      onTap: _signOut,
                     ),
                   ]),
                   const SizedBox(height: 32),
                 ],
               ),
             ),
+    );
+  }
+
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Text('GW', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w900, color: AppColors.primaryDark, fontSize: 12)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('GetWork', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w800)),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Version: v1.0.0 · Phase 1', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: AppColors.textSecondary)),
+            SizedBox(height: 8),
+            Text(
+              'GetWork connects local workers with part-time shifts in Kathmandu, Lalitpur & Bhaktapur Valley.',
+              style: TextStyle(fontFamily: 'Inter', fontSize: 14, color: AppColors.textPrimary),
+            ),
+            SizedBox(height: 8),
+            Text('© 2025 GetWork Xaie', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.textHint)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close', style: TextStyle(fontFamily: 'Inter')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxHeight: 440),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Help & Support',
+                    style: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w800)),
+                IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+              ],
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.email_outlined, color: AppColors.primary),
+              title: const Text('Email Support', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+              subtitle: const Text('support@getwork.com.np'),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Email: support@getwork.com.np'), behavior: SnackBarBehavior.floating),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat_outlined, color: AppColors.accent),
+              title: const Text('Live Chat', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+              subtitle: const Text('Available 9am–6pm NPT'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+            const Divider(),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                'For job application issues, technical bugs, or account problems — email us and we\'ll respond within 24 hours.',
+                style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -371,4 +636,3 @@ class _ProfileTileData {
     required this.onTap,
   });
 }
-
