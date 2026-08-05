@@ -15,6 +15,7 @@ import '../../core/constants/app_colors.dart';
 import '../../router.dart';
 import '../jobs/jobs_provider.dart';
 import '../../models/job_model.dart';
+import '../../core/constants/supabase_config.dart';
 
 class BusinessDashboardScreen extends ConsumerStatefulWidget {
   const BusinessDashboardScreen({super.key});
@@ -38,13 +39,17 @@ class _BusinessDashboardScreenState
       body: SafeArea(
         child: Stack(
           children: [
-            // ── Main Dashboard Scrollable Content ─────────────────
-            SingleChildScrollView(
-              padding: const EdgeInsets.only(
-                  top: 16, bottom: 100, left: 16, right: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            // ── Tab Content via IndexedStack ───────────────────────
+            IndexedStack(
+              index: _currentNavIndex,
+              children: [
+                // ── Tab 0: Dashboard ────────────────────────────────
+                SingleChildScrollView(
+                  padding: const EdgeInsets.only(
+                      top: 16, bottom: 100, left: 16, right: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   // ── Business Header & Role Switcher ──────────────────
                   Row(
                     children: [
@@ -254,6 +259,17 @@ class _BusinessDashboardScreenState
                   ),
                 ],
               ),
+            ),
+
+                // ── Tab 1: Messages ─────────────────────────────────
+                _MessagesTab(),
+
+                // ── Tab 2: Analytics ────────────────────────────────
+                _AnalyticsTab(jobsAsync: ref.watch(allJobsProvider)),
+
+                // ── Tab 3: Settings ─────────────────────────────────
+                _SettingsTab(),
+              ],
             ),
 
             // ── FLOATING ISLAND NAV: split-pill | FAB | split-pill ─────
@@ -924,6 +940,813 @@ class _NavItem extends StatelessWidget {
           size: 22,
         ),
       ),
+    );
+  }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  TAB 1 — MESSAGES                                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+class _MessagesTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Placeholder chats — replace with Supabase realtime in Phase 2
+    final chats = [
+      _ChatPreview(name: 'Ramesh Tamang', snippet: 'Can you start Monday morning?', time: '2m ago', unread: 2, avatarColor: AppColors.primary),
+      _ChatPreview(name: 'Sita Rai', snippet: 'I have experience in retail.', time: '18m ago', unread: 0, avatarColor: AppColors.accent),
+      _ChatPreview(name: 'Bikash KC', snippet: 'Thank you for accepting me!', time: '1h ago', unread: 1, avatarColor: const Color(0xFF7C4DFF)),
+      _ChatPreview(name: 'Anita Shrestha', snippet: 'What time should I arrive?', time: '3h ago', unread: 0, avatarColor: const Color(0xFFFF5722)),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Messages',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: const Text(
+                  '3 unread',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Search box
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Container(
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(width: 12),
+                Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Search conversations…',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Chat list
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+            itemCount: chats.length,
+            separatorBuilder: (_, __) => const Divider(height: 1, indent: 68),
+            itemBuilder: (context, i) {
+              final c = chats[i];
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                leading: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: c.avatarColor.withValues(alpha: 0.15),
+                  child: Text(
+                    c.name.substring(0, 1),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w800,
+                      color: c.avatarColor,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      c.name,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: c.unread > 0 ? FontWeight.w800 : FontWeight.w600,
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      c.time,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        color: c.unread > 0 ? AppColors.primary : AppColors.textSecondary,
+                        fontWeight: c.unread > 0 ? FontWeight.w700 : FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+                subtitle: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        c.snippet,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          color: c.unread > 0 ? AppColors.textPrimary : AppColors.textSecondary,
+                          fontWeight: c.unread > 0 ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (c.unread > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${c.unread}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                onTap: () {
+                  // Phase 2: Navigate to ChatScreen(workerId)
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('💬 Chat with ${c.name} — coming in Phase 2!'),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChatPreview {
+  final String name, snippet, time;
+  final int unread;
+  final Color avatarColor;
+  const _ChatPreview({
+    required this.name,
+    required this.snippet,
+    required this.time,
+    required this.unread,
+    required this.avatarColor,
+  });
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  TAB 2 — ANALYTICS                                          ║
+// ╚══════════════════════════════════════════════════════════════╝
+class _AnalyticsTab extends StatelessWidget {
+  final AsyncValue<List<JobModel>> jobsAsync;
+  const _AnalyticsTab({required this.jobsAsync});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+      child: jobsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => _analyticsContent(context, [], 0, 0, 0, 0),
+        data: (jobs) {
+          final active = jobs.where((j) => j.status == JobStatus.active).length;
+          final applied = jobs.fold<int>(0, (s, j) => s + j.workersApplied);
+          final hired = jobs.fold<int>(0, (s, j) => s + j.workersApplied.clamp(0, j.workersNeeded));
+          final today = jobs.where((j) => j.isToday && j.status == JobStatus.active).length;
+          return _analyticsContent(context, jobs, active, applied, hired, today);
+        },
+      ),
+    );
+  }
+
+  Widget _analyticsContent(BuildContext context, List<JobModel> jobs,
+      int active, int applied, int hired, int today) {
+    final fillRate = applied > 0 ? (hired / applied * 100).toInt() : 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Analytics',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Real-time hiring performance',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Big fill rate dial
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            children: [
+              const Text(
+                'Hiring Fill Rate',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '$fillRate%',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 52,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(100),
+                child: LinearProgressIndicator(
+                  value: fillRate / 100,
+                  minHeight: 10,
+                  backgroundColor: Colors.white24,
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF52B788)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '$hired hired of $applied applicants',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: Colors.white60,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Stats row
+        Row(
+          children: [
+            _StatTile(label: 'Active Jobs', value: '$active', icon: Icons.work_rounded, color: AppColors.primary),
+            const SizedBox(width: 12),
+            _StatTile(label: 'Today\'s Shifts', value: '$today', icon: Icons.today_rounded, color: const Color(0xFF7C4DFF)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _StatTile(label: 'Total Applied', value: '$applied', icon: Icons.people_rounded, color: AppColors.accent),
+            const SizedBox(width: 12),
+            _StatTile(label: 'Workers Hired', value: '$hired', icon: Icons.check_circle_rounded, color: const Color(0xFF2196F3)),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+
+        // Category breakdown
+        if (jobs.isNotEmpty) ...[
+          const Text(
+            'Jobs by Category',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ..._buildCategoryBars(jobs),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _buildCategoryBars(List<JobModel> jobs) {
+    final catMap = <String, int>{};
+    for (final j in jobs) {
+      final cat = j.category.name;
+      catMap[cat] = (catMap[cat] ?? 0) + 1;
+    }
+    final sorted = catMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final max = sorted.isEmpty ? 1 : sorted.first.value;
+
+    return sorted.take(5).map((e) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  e.key[0].toUpperCase() + e.key.substring(1),
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  '${e.value} job${e.value == 1 ? '' : 's'}',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: LinearProgressIndicator(
+                value: e.value / max,
+                minHeight: 8,
+                backgroundColor: AppColors.surfaceVariant,
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadowLight,
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  TAB 3 — SETTINGS                                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+class _SettingsTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Settings',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Business Profile Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFE8F5E9), Color(0xFFF1F8E9)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.primaryContainer),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.accentContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'HM',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.accentDark,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Himalayan Mart',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Patan Dhoka, Lalitpur',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Section: Notifications
+          _SettingsSection(
+            title: 'Notifications',
+            tiles: [
+              _SettingsTile(
+                icon: Icons.notifications_active_rounded,
+                label: 'Push Notifications',
+                color: AppColors.primary,
+                trailing: Switch(
+                  value: true,
+                  onChanged: (_) {},
+                  activeColor: AppColors.primary,
+                ),
+              ),
+              _SettingsTile(
+                icon: Icons.person_add_rounded,
+                label: 'New Applicant Alerts',
+                color: const Color(0xFF7C4DFF),
+                trailing: Switch(
+                  value: true,
+                  onChanged: (_) {},
+                  activeColor: AppColors.primary,
+                ),
+              ),
+              _SettingsTile(
+                icon: Icons.chat_bubble_outline_rounded,
+                label: 'Message Notifications',
+                color: AppColors.accent,
+                trailing: Switch(
+                  value: false,
+                  onChanged: (_) {},
+                  activeColor: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Section: Account
+          _SettingsSection(
+            title: 'Account',
+            tiles: [
+              _SettingsTile(
+                icon: Icons.swap_horiz_rounded,
+                label: 'Switch to Worker Mode',
+                color: AppColors.accent,
+                trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                onTap: () => context.go('/choose-role'),
+              ),
+              _SettingsTile(
+                icon: Icons.admin_panel_settings_outlined,
+                label: 'Admin Panel',
+                color: const Color(0xFF2196F3),
+                trailing: const Icon(Icons.open_in_new_rounded, size: 18, color: AppColors.textSecondary),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Admin panel available at /admin'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+              _SettingsTile(
+                icon: Icons.help_outline_rounded,
+                label: 'Help & Support',
+                color: const Color(0xFFFF9800),
+                trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                onTap: () {},
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // App info
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'App Version',
+                      style: TextStyle(fontFamily: 'Inter', fontSize: 14, color: AppColors.textSecondary),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: const Text(
+                        'v1.0.0 • Phase 1',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Supabase Project',
+                      style: TextStyle(fontFamily: 'Inter', fontSize: 14, color: AppColors.textSecondary),
+                    ),
+                    Text(
+                      SupabaseConfig.supabaseUrl.replaceAll('https://', '').split('.').first,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Sign out
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton.icon(
+              onPressed: () => context.go('/choose-role'),
+              icon: const Icon(Icons.logout_rounded, size: 18),
+              label: const Text(
+                'Sign Out / Change Business',
+                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red, width: 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  final String title;
+  final List<_SettingsTile> tiles;
+
+  const _SettingsSection({required this.title, required this.tiles});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: tiles.indexed.map((entry) {
+              final (i, tile) = entry;
+              return Column(
+                children: [
+                  tile,
+                  if (i < tiles.length - 1)
+                    const Divider(height: 1, indent: 56),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Widget trailing;
+  final VoidCallback? onTap;
+
+  const _SettingsTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: color, size: 18),
+      ),
+      title: Text(
+        label,
+        style: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      trailing: trailing,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
     );
   }
 }
