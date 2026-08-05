@@ -230,7 +230,7 @@ class ChatRepository {
         'business_name': businessName,
         'worker_name': workerName,
         'worker_phone': workerPhone,
-        'last_message': '${workerName} applied for the job.',
+        'last_message': '$workerName applied for the job.',
         'unread_count': 1,
       }).select('id').single();
 

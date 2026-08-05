@@ -530,7 +530,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ignoring: selectedJob == null,
                           child: selectedJob != null
                               ? JobBottomSheet(
-                                  job: selectedJob!,
+                                  job: selectedJob,
                                   onClose: () => ref
                                       .read(selectedJobProvider.notifier)
                                       .selectJob(null),

@@ -71,7 +71,7 @@ class _ApplicantsScreenState extends ConsumerState<ApplicantsScreen> {
             body: {
               'title': '🎉 You Were Hired!',
               'body':
-                  '$workerName, you have been accepted for the ${_jobTitle} shift. Open GetWork to see details.',
+                  '$workerName, you have been accepted for the $_jobTitle shift. Open GetWork to see details.',
               'target': 'all',
               'tab': 'for_you',
               'data': {'type': 'hired', 'jobId': widget.jobId},

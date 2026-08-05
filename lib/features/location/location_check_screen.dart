@@ -52,8 +52,10 @@ class _LocationCheckScreenState extends State<LocationCheckScreen> {
 
       // 2. Fetch Position
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 8),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 8),
+        ),
       ).catchError((_) => Position(
             latitude: 27.7172,
             longitude: 85.3240,

@@ -385,6 +385,7 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                                         ),
                                       );
                                     } else {
+                                      if (!context.mounted) return;
                                       context.push('/job/${widget.job.id}/apply');
                                     }
                                   },

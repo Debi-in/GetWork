@@ -1054,7 +1054,7 @@ class _MessagesTab extends ConsumerWidget {
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
                 itemCount: convs.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, indent: 68),
+                separatorBuilder: (_, _) => const Divider(height: 1, indent: 68),
                 itemBuilder: (context, i) {
                   final c = convs[i];
                   final isSystem = c.isSystem;
@@ -1214,7 +1214,7 @@ class _AnalyticsTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       child: jobsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => _analyticsContent(context, [], 0, 0, 0, 0),
+        error: (_, _) => _analyticsContent(context, [], 0, 0, 0, 0),
         data: (jobs) {
           final active = jobs.where((j) => j.status == JobStatus.active).length;
           final applied = jobs.fold<int>(0, (s, j) => s + j.workersApplied);
