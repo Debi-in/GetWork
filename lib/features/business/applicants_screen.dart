@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/supabase_config.dart';
 import '../jobs/services/job_repository.dart';
 import '../jobs/jobs_provider.dart';
 
@@ -61,6 +62,28 @@ class _ApplicantsScreenState extends ConsumerState<ApplicantsScreen> {
         await db.rpc('increment_workers_applied', params: {'job_id': widget.jobId});
         // Refresh provider
         ref.read(allJobsProvider.notifier).refresh();
+
+        // 🔔 Send push notification to all workers about a new job being filled
+        // (in production, you'd target by worker_id — for now broadcast to topic)
+        try {
+          await Supabase.instance.client.functions.invoke(
+            'send-notification',
+            body: {
+              'title': '🎉 You Were Hired!',
+              'body':
+                  '$workerName, you have been accepted for the ${_jobTitle} shift. Open GetWork to see details.',
+              'target': 'all',
+              'tab': 'for_you',
+              'data': {'type': 'hired', 'jobId': widget.jobId},
+            },
+            headers: {
+              'x-admin-key': 'xaie-admin-2026',
+              'apikey': SupabaseConfig.supabaseAnonKey,
+            },
+          );
+        } catch (_) {
+          // Notification failure should not block the hire action
+        }
       }
 
       if (!mounted) return;
