@@ -238,12 +238,13 @@ class ChatRepository {
 
       // Seed system welcome for this conversation
       if (convId != null) {
+        final systemMsg = '👋 Hi! $workerName just applied for your job. You can chat here to coordinate shift details.';
         await _db.from('messages').insert({
           'conversation_id': convId,
           'sender_type': 'system',
           'sender_name': 'GetWork',
-          'body':
-              '👋 Hi! $workerName just applied for your job. You can chat here to coordinate shift details.',
+          'body': systemMsg,
+          'content': systemMsg,
         });
         // Then add the worker's first message (End-to-End Encrypted)
         final workerMsgText = 'Hi! I just applied for the position.';
@@ -255,6 +256,7 @@ class ChatRepository {
           'sender_type': 'worker',
           'sender_name': workerName,
           'body': encryptedWorkerMsg,
+          'content': encryptedWorkerMsg,
         });
       }
       return convId;

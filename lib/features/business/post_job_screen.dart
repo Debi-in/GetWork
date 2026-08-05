@@ -244,7 +244,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                     Switch(
                       value: _isUrgent,
                       onChanged: (v) => setState(() => _isUrgent = v),
-                      activeColor: AppColors.accent,
+                      activeThumbColor: AppColors.accent,
                     ),
                   ],
                 ),

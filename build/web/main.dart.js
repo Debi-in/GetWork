@@ -17317,17 +17317,16 @@ _.as=l
 _.at=m
 _.ax=n},
 abU:function abU(){},
-a2Z(a,b,c,d){return new A.a2Y(d,c,a,b,null)},
+a2Z(a,b,c){return new A.a2Y(c,b,a,null)},
 b7H(a){var s=null
 return new A.ac4(a,s,s,s,s,s,s,s,s,s,s)},
 b_b:function b_b(a,b){this.a=a
 this.b=b},
-a2Y:function a2Y(a,b,c,d,e){var _=this
+a2Y:function a2Y(a,b,c,d){var _=this
 _.c=a
 _.d=b
-_.e=c
-_.f=d
-_.a=e},
+_.f=c
+_.a=d},
 QD:function QD(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,a0,a1,a2,a3,a4,a5,a6,a7,a8){var _=this
 _.c=a
 _.d=b
@@ -31182,6 +31181,7 @@ return new A.f2(i,j,q,r,p,o,(n==null?m:J.b0(n))==="GetWork System")},
 bu2(a){var s,r,q,p,o=null,n="created_at",m=a.i(0,"conversation_id"),l=m==null?o:J.b0(m)
 if(l==null)l=""
 m=a.i(0,"body")
+if(m==null)m=a.i(0,"content")
 s=m==null?o:J.b0(m)
 if(s==null)s=""
 r=$.b4e().a9j(s,l)
@@ -72779,12 +72779,9 @@ break
 case 1:s=new A.C(o.gYh()+n.ge1(),o.gam9()+(n.gc6()+n.gc8()))
 break
 default:s=null}return s},
-H(a){var s,r,q,p=this,o=null
-switch(0){case 0:s=p.e
-break}r=p.ati(a)
-q=p.f
-if(q==null)q=s
-return new A.QD(p.c,p.d,q,o,o,o,o,o,o,o,o,o,o,o,o,B.L,o,o,o,o,o,o,o,!1,r,!1,B.agE,o)}}
+H(a){var s,r=this,q=null
+switch(0){case 0:break}s=r.ati(a)
+return new A.QD(r.c,r.d,r.f,q,q,q,q,q,q,q,q,q,q,q,q,B.L,q,q,q,q,q,q,q,!1,s,!1,B.agE,q)}}
 A.QD.prototype={
 a8(){var s=null
 return new A.QE(new A.SJ(A.pU(s,s,s,s,s,B.aN,s,s,B.dK,B.aO),$.ax()),$,$,$,$,$,$,$,$,B.aX,$,s,!1,!1,s,s)}}
@@ -110744,7 +110741,7 @@ A.abx.prototype={
 H(a){var s,r,q,p,o=null,n=A.ab(20),m=A.cd(B.as,1),l=t.p
 n=A.ag(o,A.aD(A.a([A.ag(o,B.Lr,B.j,o,o,new A.a8(B.bX,o,o,o,o,o,B.a4),o,52,o,o,o,o,52),B.dz,B.PO,A.dd(B.uq,B.p,o,20)],l),B.m,B.k,B.i,0,o),B.j,o,o,new A.a8(o,o,m,n,o,B.ve,B.t),o,o,o,B.b2,o,o,o)
 m=t.R6
-s=A.a([new A.ky(B.uF,"Push Notifications",B.p,A.a2Z(B.p,o,new A.aZb(),!0),o,o),new A.ky(B.R9,"New Applicant Alerts",B.cG,A.a2Z(B.p,o,new A.aZc(),!0),o,o),new A.ky(B.kl,"Message Notifications",B.aq,A.a2Z(B.p,o,new A.aZd(),!1),o,o)],m)
+s=A.a([new A.ky(B.uF,"Push Notifications",B.p,A.a2Z(B.p,new A.aZb(),!0),o,o),new A.ky(B.R9,"New Applicant Alerts",B.cG,A.a2Z(B.p,new A.aZc(),!0),o,o),new A.ky(B.kl,"Message Notifications",B.aq,A.a2Z(B.p,new A.aZd(),!1),o,o)],m)
 m=A.a([new A.ky(B.uM,"Switch to Worker Mode",B.aq,B.of,new A.aZe(a),o),new A.ky(B.Qn,"Admin Panel",B.dk,B.Ru,new A.aZf(a),o),new A.ky(B.o9,"Help & Support",B.MQ,B.of,new A.aZg(),o)],m)
 r=A.ab(16)
 q=A.cd(B.Z,1)
@@ -110926,7 +110923,7 @@ m=$.b4e().aMp(a,b)
 l=n.a
 k=t.N
 s=7
-return A.q(l.hF("messages").kQ(0,A.ad(["conversation_id",b,"sender_type",i,"sender_name",c,"body",m],k,k)),$async$z_)
+return A.q(l.hF("messages").kQ(0,A.ad(["conversation_id",b,"sender_type",i,"sender_name",c,"body",m,"content",m],k,k)),$async$z_)
 case 7:k=t.z
 s=8
 return A.q(l.hF("conversations").cE(A.ad(["last_message",m,"last_message_at",new A.bD(Date.now(),0,!1).my()],k,k)).na("id",b),$async$z_)
@@ -111171,7 +111168,7 @@ a1=c.dx
 s=a1?B.bX:B.by
 r=A.ab(16)
 q=A.dd(B.eC,a1?B.aq:B.S,b,b)
-s=A.ag(b,A.aD(A.a([q,B.bi,A.bQ(A.aR(A.a([A.a3("Mark as Urgent",b,b,b,A.cF(b,b,a1?B.dl:B.E,b,b,b,b,b,"Inter",b,b,b,b,b,B.K,b,b,!0,b,b,b,b,b,b,b,b),b,b,b),A.a3("Urgent jobs appear highlighted and first",b,b,b,A.cF(b,b,B.S,b,b,b,b,b,"Inter",b,b,12,b,b,b,b,b,!0,b,b,b,b,b,b,b,b),b,b,b)],a0),B.B,B.k,B.i),1),A.a2Z(B.aq,b,new A.aWg(c),c.dx)],a0),B.m,B.k,B.i,0,b),B.j,b,b,new A.a8(s,b,b,r,b,b,B.t),b,b,b,B.tL,b,b,b)
+s=A.ag(b,A.aD(A.a([q,B.bi,A.bQ(A.aR(A.a([A.a3("Mark as Urgent",b,b,b,A.cF(b,b,a1?B.dl:B.E,b,b,b,b,b,"Inter",b,b,b,b,b,B.K,b,b,!0,b,b,b,b,b,b,b,b),b,b,b),A.a3("Urgent jobs appear highlighted and first",b,b,b,A.cF(b,b,B.S,b,b,b,b,b,"Inter",b,b,12,b,b,b,b,b,!0,b,b,b,b,b,b,b,b),b,b,b)],a0),B.B,B.k,B.i),1),A.a2Z(B.aq,new A.aWg(c),c.dx)],a0),B.m,B.k,B.i,0,b),B.j,b,b,new A.a8(s,b,b,r,b,b,B.t),b,b,b,B.tL,b,b,b)
 r=A.SI(c.y,"e.g. Supermarket Cashier",B.eD,b,b,1,new A.aWh())
 q=A.SI(c.z,"Your business name",B.QL,b,b,1,new A.aWk())
 p=c.ay
@@ -112006,7 +112003,7 @@ q=A.cd(s?B.p:B.y,1.5)
 p=s?B.K:B.a1
 return A.bQ(A.d0(o,A.ag(o,A.cm(A.a3(b,o,o,o,A.cF(o,o,s?B.p:B.E,o,o,o,o,o,"Inter",o,o,13,o,o,p,o,o,!0,o,o,o,o,o,o,o,o),o,o,o),o,o),B.j,o,o,new A.a8(n,o,q,r,o,o,B.t),o,o,o,B.tD,o,o,o),B.L,!1,o,o,o,o,o,o,o,o,o,o,o,o,o,o,new A.aSO(this,a),o,o,o,o,o,o),1)},
 Zj(a,b,c,d,e,f){var s=null,r=A.ab(16),q=A.cd(B.Z,0.8),p=b.bk(0.15),o=t.p
-return A.ag(s,A.aD(A.a([A.ag(s,A.dd(a,b,s,20),B.j,s,s,new A.a8(p,s,s,s,s,s,B.a4),s,s,s,B.dW,s,s,s),B.ck,A.bQ(A.aR(A.a([A.a3(e,s,s,s,B.j1,s,s,s),A.a3(d,s,s,s,B.cT,s,s,s)],o),B.B,B.k,B.i),1),A.a2Z(s,B.p,c,f)],o),B.m,B.k,B.i,0,s),B.j,s,s,new A.a8(B.M_,s,q,r,s,s,B.t),s,s,s,B.k0,s,s,s)}}
+return A.ag(s,A.aD(A.a([A.ag(s,A.dd(a,b,s,20),B.j,s,s,new A.a8(p,s,s,s,s,s,B.a4),s,s,s,B.dW,s,s,s),B.ck,A.bQ(A.aR(A.a([A.a3(e,s,s,s,B.j1,s,s,s),A.a3(d,s,s,s,B.cT,s,s,s)],o),B.B,B.k,B.i),1),A.a2Z(B.p,c,f)],o),B.m,B.k,B.i,0,s),B.j,s,s,new A.a8(B.M_,s,q,r,s,s,B.t),s,s,s,B.k0,s,s,s)}}
 A.aSW.prototype={
 $0(){var s=this.a
 s.L(new A.aSV(s))

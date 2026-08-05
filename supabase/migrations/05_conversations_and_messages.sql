@@ -101,6 +101,11 @@ DO $$ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
+-- Backfill: set content = body for rows where content is NULL
+UPDATE public.messages SET content = body WHERE content IS NULL;
+-- Backfill: set body = content for rows where body is NULL or empty
+UPDATE public.messages SET body = content WHERE (body IS NULL OR body = '') AND content IS NOT NULL AND content != '';
+
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN

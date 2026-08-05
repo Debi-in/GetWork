@@ -1568,7 +1568,7 @@ class _SettingsTab extends StatelessWidget {
                 trailing: Switch(
                   value: true,
                   onChanged: (_) {},
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                 ),
               ),
               _SettingsTile(
@@ -1578,7 +1578,7 @@ class _SettingsTab extends StatelessWidget {
                 trailing: Switch(
                   value: true,
                   onChanged: (_) {},
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                 ),
               ),
               _SettingsTile(
@@ -1588,7 +1588,7 @@ class _SettingsTab extends StatelessWidget {
                 trailing: Switch(
                   value: false,
                   onChanged: (_) {},
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                 ),
               ),
             ],
