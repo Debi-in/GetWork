@@ -10,25 +10,30 @@ CREATE TABLE IF NOT EXISTS public.user_fcm_tokens (
   token        TEXT NOT NULL UNIQUE,
   platform     TEXT NOT NULL DEFAULT 'android', -- 'android' | 'ios' | 'web'
   user_role    TEXT NOT NULL DEFAULT 'worker',   -- 'worker' | 'business'
+  device_model TEXT,
+  last_active_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index for fast token lookups by user
+-- Index for fast token lookups
 CREATE INDEX IF NOT EXISTS idx_user_fcm_tokens_user_id ON public.user_fcm_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_fcm_tokens_role    ON public.user_fcm_tokens(user_role);
+CREATE INDEX IF NOT EXISTS idx_user_fcm_tokens_token   ON public.user_fcm_tokens(token);
 
 -- Row Level Security
 ALTER TABLE public.user_fcm_tokens ENABLE ROW LEVEL SECURITY;
 
--- Users can only read/write their own token
-CREATE POLICY "Users manage own FCM tokens"
+-- Drop old policy if exists
+DROP POLICY IF EXISTS "Users manage own FCM tokens" ON public.user_fcm_tokens;
+DROP POLICY IF EXISTS "Anyone can insert or update FCM tokens" ON public.user_fcm_tokens;
+
+-- Public / Anonymous + Authenticated users can insert and update their device tokens by token
+CREATE POLICY "Anyone can insert or update FCM tokens"
   ON public.user_fcm_tokens
   FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (true)
+  WITH CHECK (true);
 
--- Service role (Edge Functions) can read ALL tokens for sending notifications
--- (uses service_role key, bypasses RLS automatically)
 
 
 -- 2. Notification Log table (records every sent notification for history)

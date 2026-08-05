@@ -234,14 +234,20 @@ class NotificationService {
       final role = prefs.getString('user_role') ?? 'worker';
       final platform = kIsWeb ? 'web' : (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android');
 
+      final payload = <String, dynamic>{
+        'token': token,
+        'platform': platform,
+        'user_role': role,
+        'last_active_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      if (userId != null && userId.isNotEmpty) {
+        payload['user_id'] = userId;
+      }
+
       await Supabase.instance.client.from('user_fcm_tokens').upsert(
-        {
-          'user_id': userId,
-          'token': token,
-          'platform': platform,
-          'user_role': role,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
+        payload,
         onConflict: 'token',
       );
 

@@ -30,6 +30,77 @@ class SupabaseJobsService {
     }
   }
 
+  // ── Post a new job ────────────────────────────────────────
+  static Future<bool> postJob({
+    required String title,
+    required String category,
+    required double salary,
+    String salaryType = 'daily',
+    required String address,
+    required double latitude,
+    required double longitude,
+    DateTime? jobStartDate,
+    String shiftStartTime = '09:00 AM',
+    String shiftEndTime = '05:00 PM',
+    required int workersNeeded,
+    required String businessName,
+    String description = '',
+    List<String> requirements = const [],
+    bool isUrgent = false,
+  }) async {
+    try {
+      await _db.from('jobs').insert({
+        'title': title,
+        'category': category.toLowerCase(),
+        'salary': salary,
+        'salary_type': salaryType,
+        'address': address,
+        'latitude': latitude,
+        'longitude': longitude,
+        'job_start_date':
+            (jobStartDate ?? DateTime.now()).toIso8601String().split('T').first,
+        'shift_start_time': shiftStartTime,
+        'shift_end_time': shiftEndTime,
+        'workers_needed': workersNeeded,
+        'business_name': businessName,
+        'description': description,
+        'requirements_text': requirements,
+        'is_urgent': isUrgent,
+        'status': 'active',
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ── Submit an application ─────────────────────────────────
+  static Future<bool> applyForJob({
+    required String jobId,
+    required String workerName,
+    required String workerPhone,
+    String coverNote = '',
+  }) async {
+    try {
+      await _db.from('job_applications').insert({
+        'job_id': jobId,
+        'worker_name': workerName,
+        'worker_phone': workerPhone,
+        'cover_note': coverNote,
+        'status': 'pending',
+      });
+      // Increment workers_applied counter atomically via RPC
+      try {
+        await _db.rpc('increment_workers_applied', params: {'job_id': jobId});
+      } catch (_) {
+        // RPC might not exist yet — silently ignore
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // ── Fetch single job by id ────────────────────────────────
   static Future<JobModel?> fetchJobById(String id) async {
     try {

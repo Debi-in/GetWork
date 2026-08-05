@@ -3,28 +3,36 @@
 // Dedicated Business App Interface featuring:
 // - Floating Island Bottom Navigation Bar
 // - Separate Floating (+) Post Job Action Button (Matching Pinterest Spec)
-// - Metrics Cards (Active Jobs, Pending Applicants, Hired Workers)
-// - Visual Progress Bar Job Cards
+// - LIVE Metrics Cards (Active Jobs, Pending Applicants, Hired Workers)
+// - LIVE Posted Jobs from Supabase via allJobsProvider
 // - Dual Role Switcher ("Switch to Worker App")
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../router.dart';
+import '../jobs/jobs_provider.dart';
+import '../../models/job_model.dart';
 
-class BusinessDashboardScreen extends StatefulWidget {
+class BusinessDashboardScreen extends ConsumerStatefulWidget {
   const BusinessDashboardScreen({super.key});
 
   @override
-  State<BusinessDashboardScreen> createState() => _BusinessDashboardScreenState();
+  ConsumerState<BusinessDashboardScreen> createState() =>
+      _BusinessDashboardScreenState();
 }
 
-class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
+class _BusinessDashboardScreenState
+    extends ConsumerState<BusinessDashboardScreen> {
   int _currentNavIndex = 0; // 0:Dashboard, 1:Messages, 2:Analytics, 3:Settings
 
   @override
   Widget build(BuildContext context) {
+    // ── Watch live jobs from Supabase ─────────────────────────
+    final jobsAsync = ref.watch(allJobsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -32,7 +40,8 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
           children: [
             // ── Main Dashboard Scrollable Content ─────────────────
             SingleChildScrollView(
-              padding: const EdgeInsets.only(top: 16, bottom: 100, left: 16, right: 16),
+              padding: const EdgeInsets.only(
+                  top: 16, bottom: 100, left: 16, right: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -101,7 +110,8 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                         label: const Text('Worker Mode'),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(0, 36),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -122,44 +132,64 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 1.6,
-                    children: const [
-                      _MetricCard(
-                        title: 'Active Jobs',
-                        value: '12',
-                        icon: Icons.work_rounded,
-                        color: AppColors.primary,
-                        bgColor: AppColors.primaryContainer,
-                      ),
-                      _MetricCard(
-                        title: 'Pending Applicants',
-                        value: '18',
-                        icon: Icons.people_outline_rounded,
-                        color: AppColors.accent,
-                        bgColor: AppColors.accentContainer,
-                      ),
-                      _MetricCard(
-                        title: 'Workers Hired',
-                        value: '7',
-                        icon: Icons.check_circle_outline_rounded,
-                        color: Color(0xFF2196F3),
-                        bgColor: Color(0xFFE3F2FD),
-                      ),
-                      _MetricCard(
-                        title: 'Today\'s Shift',
-                        value: '4',
-                        icon: Icons.access_time_rounded,
-                        color: Color(0xFF7C4DFF),
-                        bgColor: Color(0xFFEDE7F6),
-                      ),
-                    ],
+
+                  // Live metrics derived from Supabase data
+                  jobsAsync.when(
+                    loading: () => GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 1.6,
+                      children: const [
+                        _MetricCard(title: 'Active Jobs', value: '—', icon: Icons.work_rounded, color: AppColors.primary, bgColor: AppColors.primaryContainer),
+                        _MetricCard(title: 'Total Applied', value: '—', icon: Icons.people_outline_rounded, color: AppColors.accent, bgColor: AppColors.accentContainer),
+                        _MetricCard(title: 'Workers Hired', value: '—', icon: Icons.check_circle_outline_rounded, color: Color(0xFF2196F3), bgColor: Color(0xFFE3F2FD)),
+                        _MetricCard(title: 'Today\'s Shifts', value: '—', icon: Icons.access_time_rounded, color: Color(0xFF7C4DFF), bgColor: Color(0xFFEDE7F6)),
+                      ],
+                    ),
+                    error: (e, _) => GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 1.6,
+                      children: const [
+                        _MetricCard(title: 'Active Jobs', value: '0', icon: Icons.work_rounded, color: AppColors.primary, bgColor: AppColors.primaryContainer),
+                        _MetricCard(title: 'Total Applied', value: '0', icon: Icons.people_outline_rounded, color: AppColors.accent, bgColor: AppColors.accentContainer),
+                        _MetricCard(title: 'Workers Hired', value: '0', icon: Icons.check_circle_outline_rounded, color: Color(0xFF2196F3), bgColor: Color(0xFFE3F2FD)),
+                        _MetricCard(title: 'Today\'s Shifts', value: '0', icon: Icons.access_time_rounded, color: Color(0xFF7C4DFF), bgColor: Color(0xFFEDE7F6)),
+                      ],
+                    ),
+                    data: (jobs) {
+                      final activeJobs =
+                          jobs.where((j) => j.status == JobStatus.active).length;
+                      final totalApplied = jobs.fold<int>(
+                          0, (sum, j) => sum + j.workersApplied);
+                      final totalHired = jobs.fold<int>(
+                          0, (sum, j) => sum + j.workersNeeded.clamp(0, j.workersApplied));
+                      final todayShifts =
+                          jobs.where((j) => j.isToday && j.status == JobStatus.active).length;
+
+                      return GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 1.6,
+                        children: [
+                          _MetricCard(title: 'Active Jobs', value: '$activeJobs', icon: Icons.work_rounded, color: AppColors.primary, bgColor: AppColors.primaryContainer),
+                          _MetricCard(title: 'Total Applied', value: '$totalApplied', icon: Icons.people_outline_rounded, color: AppColors.accent, bgColor: AppColors.accentContainer),
+                          _MetricCard(title: 'Workers Hired', value: '$totalHired', icon: Icons.check_circle_outline_rounded, color: const Color(0xFF2196F3), bgColor: const Color(0xFFE3F2FD)),
+                          _MetricCard(title: 'Today\'s Shifts', value: '$todayShifts', icon: Icons.access_time_rounded, color: const Color(0xFF7C4DFF), bgColor: const Color(0xFFEDE7F6)),
+                        ],
+                      );
+                    },
                   ),
+
                   const SizedBox(height: 24),
 
                   // ── Active Job Postings List ─────────────────────────
@@ -176,49 +206,50 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () {},
-                        child: const Text('View All'),
+                        onPressed: () {
+                          ref.read(allJobsProvider.notifier).refresh();
+                        },
+                        child: const Text('Refresh'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
 
-                  // Job Post Card 1
-                  _BusinessJobCard(
-                    title: 'Supermarket Cashier',
-                    rate: 'Rs. 700 /day',
-                    status: 'Active',
-                    statusColor: AppColors.primary,
-                    workersHired: 2,
-                    workersNeeded: 2,
-                    appliedCount: 8,
-                    shiftDate: 'Today, 10:00 AM - 06:00 PM',
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Job Post Card 2
-                  _BusinessJobCard(
-                    title: 'Delivery Rider',
-                    rate: 'Rs. 900 /day',
-                    status: 'Urgent',
-                    statusColor: AppColors.accent,
-                    workersHired: 1,
-                    workersNeeded: 3,
-                    appliedCount: 5,
-                    shiftDate: 'Today, 09:00 AM - 05:00 PM',
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Job Post Card 3
-                  _BusinessJobCard(
-                    title: 'Event Setup Staff',
-                    rate: 'Rs. 1,300 /day',
-                    status: 'Active',
-                    statusColor: AppColors.primary,
-                    workersHired: 4,
-                    workersNeeded: 10,
-                    appliedCount: 12,
-                    shiftDate: 'Tomorrow, 07:00 AM - 05:00 PM',
+                  // ── Live Job Cards from Supabase ─────────────────────
+                  jobsAsync.when(
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    error: (e, _) => _LiveJobsFallback(),
+                    data: (jobs) {
+                      if (jobs.isEmpty) return _LiveJobsFallback();
+                      return Column(
+                        children: jobs
+                            .take(10)
+                            .map((job) => Padding(
+                                  padding:
+                                      const EdgeInsets.only(bottom: 12),
+                                  child: _BusinessJobCard(
+                                    title: job.title,
+                                    rate: job.salaryDisplay,
+                                    status: job.isUrgent ? 'Urgent' : job.status.name,
+                                    statusColor: job.isUrgent
+                                        ? AppColors.accent
+                                        : AppColors.primary,
+                                    workersHired: job.workersApplied
+                                        .clamp(0, job.workersNeeded),
+                                    workersNeeded: job.workersNeeded,
+                                    appliedCount: job.workersApplied,
+                                    shiftDate:
+                                        '${_formatDate(job.shiftDate)}, ${job.shiftStartTime} - ${job.shiftEndTime}',
+                                  ),
+                                ))
+                            .toList(),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -240,7 +271,8 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: AppColors.border, width: 0.8),
+                        border:
+                            Border.all(color: AppColors.border, width: 0.8),
                         boxShadow: const [
                           BoxShadow(
                             color: AppColors.shadowMedium,
@@ -255,12 +287,14 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                           _NavItem(
                             icon: Icons.dashboard_rounded,
                             isSelected: _currentNavIndex == 0,
-                            onTap: () => setState(() => _currentNavIndex = 0),
+                            onTap: () =>
+                                setState(() => _currentNavIndex = 0),
                           ),
                           _NavItem(
                             icon: Icons.chat_bubble_outline_rounded,
                             isSelected: _currentNavIndex == 1,
-                            onTap: () => setState(() => _currentNavIndex = 1),
+                            onTap: () =>
+                                setState(() => _currentNavIndex = 1),
                           ),
                         ],
                       ),
@@ -304,7 +338,8 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: AppColors.border, width: 0.8),
+                        border:
+                            Border.all(color: AppColors.border, width: 0.8),
                         boxShadow: const [
                           BoxShadow(
                             color: AppColors.shadowMedium,
@@ -319,12 +354,14 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                           _NavItem(
                             icon: Icons.bar_chart_rounded,
                             isSelected: _currentNavIndex == 2,
-                            onTap: () => setState(() => _currentNavIndex = 2),
+                            onTap: () =>
+                                setState(() => _currentNavIndex = 2),
                           ),
                           _NavItem(
                             icon: Icons.settings_outlined,
                             isSelected: _currentNavIndex == 3,
-                            onTap: () => setState(() => _currentNavIndex = 3),
+                            onTap: () =>
+                                setState(() => _currentNavIndex = 3),
                           ),
                         ],
                       ),
@@ -336,6 +373,63 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final isToday = date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+    final tomorrow = now.add(const Duration(days: 1));
+    final isTomorrow = date.year == tomorrow.year &&
+        date.month == tomorrow.month &&
+        date.day == tomorrow.day;
+    if (isToday) return 'Today';
+    if (isTomorrow) return 'Tomorrow';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+}
+
+// ── Fallback when Supabase has no jobs yet ─────────────────────
+class _LiveJobsFallback extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _BusinessJobCard(
+          title: 'Supermarket Cashier',
+          rate: 'Rs. 700 /day',
+          status: 'Active',
+          statusColor: AppColors.primary,
+          workersHired: 2,
+          workersNeeded: 2,
+          appliedCount: 8,
+          shiftDate: 'Today, 10:00 AM - 06:00 PM',
+        ),
+        const SizedBox(height: 12),
+        _BusinessJobCard(
+          title: 'Delivery Rider',
+          rate: 'Rs. 900 /day',
+          status: 'Urgent',
+          statusColor: AppColors.accent,
+          workersHired: 1,
+          workersNeeded: 3,
+          appliedCount: 5,
+          shiftDate: 'Today, 09:00 AM - 05:00 PM',
+        ),
+        const SizedBox(height: 12),
+        _BusinessJobCard(
+          title: 'Event Setup Staff',
+          rate: 'Rs. 1,300 /day',
+          status: 'Active',
+          statusColor: AppColors.primary,
+          workersHired: 4,
+          workersNeeded: 10,
+          appliedCount: 12,
+          shiftDate: 'Tomorrow, 07:00 AM - 05:00 PM',
+        ),
+      ],
     );
   }
 }
@@ -440,7 +534,9 @@ class _BusinessJobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (workersHired / workersNeeded).clamp(0.0, 1.0);
+    final progress = workersNeeded > 0
+        ? (workersHired / workersNeeded).clamp(0.0, 1.0)
+        : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -463,36 +559,43 @@ class _BusinessJobCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: statusColor,
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Text(
                 rate,
                 style: const TextStyle(
@@ -616,7 +719,8 @@ class _SpeedDial extends StatefulWidget {
   State<_SpeedDial> createState() => _SpeedDialState();
 }
 
-class _SpeedDialState extends State<_SpeedDial> with SingleTickerProviderStateMixin {
+class _SpeedDialState extends State<_SpeedDial>
+    with SingleTickerProviderStateMixin {
   bool _isOpen = false;
   late AnimationController _controller;
   late Animation<double> _rotationAnimation;
@@ -682,14 +786,18 @@ class _SpeedDialState extends State<_SpeedDial> with SingleTickerProviderStateMi
               ),
             );
 
-            final opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+            final opacityAnimation =
+                Tween<double>(begin: 0.0, end: 1.0).animate(
               CurvedAnimation(
                 parent: _controller,
-                curve: Interval(delayFraction, (delayFraction + 0.4).clamp(0.0, 1.0), curve: Curves.easeOut),
+                curve: Interval(delayFraction,
+                    (delayFraction + 0.4).clamp(0.0, 1.0),
+                    curve: Curves.easeOut),
               ),
             );
 
-            final translateAnimation = Tween<Offset>(begin: Offset.zero, end: targetOffset).animate(
+            final translateAnimation =
+                Tween<Offset>(begin: Offset.zero, end: targetOffset).animate(
               CurvedAnimation(
                 parent: _controller,
                 curve: Interval(delayFraction, 1.0, curve: _springCurve),
@@ -734,7 +842,8 @@ class _SpeedDialState extends State<_SpeedDial> with SingleTickerProviderStateMi
                                 ),
                               ],
                             ),
-                            child: Icon(action.icon, color: action.color, size: 22),
+                            child:
+                                Icon(action.icon, color: action.color, size: 22),
                           ),
                         ),
                       ),

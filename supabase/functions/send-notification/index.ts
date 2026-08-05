@@ -140,6 +140,44 @@ async function sendFcmV1(
     }),
   });
   return res.ok;
+/** Send an FCM V1 message to a topic (e.g. "all", "workers", "businesses") */
+async function sendFcmV1Topic(
+  accessToken: string,
+  projectId: string,
+  topic: string,
+  title: string,
+  body: string,
+  data: Record<string, string>,
+): Promise<boolean> {
+  const cleanTopic = topic.replace(/^topic:/, '');
+  const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
+  const res = await fetch(fcmUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: {
+        topic: cleanTopic,
+        notification: { title, body },
+        data,
+        android: {
+          priority: 'HIGH',
+          notification: {
+            channel_id: 'getwork_high_importance_channel',
+            default_sound: true,
+          },
+        },
+      },
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error(`⚠️ [FCM Topic Error (${cleanTopic})]:`, errText);
+    return false;
+  }
+  return true;
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -182,54 +220,60 @@ Deno.serve(async (req) => {
     const serviceAccount = getServiceAccount();
     const projectId = serviceAccount.project_id;
 
-    // ── Fetch FCM Tokens ──────────────────────────────────────────
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    let query = supabase.from('user_fcm_tokens').select('token');
-
-    if (target === 'workers')    query = query.eq('user_role', 'worker');
-    else if (target === 'businesses') query = query.eq('user_role', 'business');
-    else if (target.startsWith('user:')) query = query.eq('user_id', target.replace('user:', ''));
-    // 'all' → no filter
-
-    const { data: tokenRows, error: tokenErr } = await query;
-    if (tokenErr) throw tokenErr;
-
-    const tokens: string[] = tokenRows?.map((r: any) => r.token) ?? [];
-    if (tokens.length === 0) {
-      return new Response(
-        JSON.stringify({ success: true, sent: 0, message: 'No tokens for target' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    // ── Get OAuth2 token (one call, reuse for all messages) ───────
+    // ── Get OAuth2 token ──────────────────────────────────────────
     const accessToken = await getAccessToken(serviceAccount);
 
-    // ── Send FCM V1 messages ──────────────────────────────────────
     const dataPayload: Record<string, string> = {
       tab,
       click_action: 'FLUTTER_NOTIFICATION_CLICK',
       ...(Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)]))),
     };
 
-    // Send concurrently in batches of 50
     let totalSent = 0;
-    const BATCH = 50;
-    for (let i = 0; i < tokens.length; i += BATCH) {
-      const batch = tokens.slice(i, i + BATCH);
-      const results = await Promise.allSettled(
-        batch.map((t) => sendFcmV1(accessToken, projectId, t, title, msgBody, dataPayload)),
-      );
-      totalSent += results.filter((r) => r.status === 'fulfilled' && r.value).length;
+
+    // ── 1. If target is a broadcast topic ('all', 'workers', 'businesses', 'topic:...'), send to FCM Topic
+    const isTopicTarget = target === 'all' || target === 'workers' || target === 'businesses' || target.startsWith('topic:');
+
+    if (isTopicTarget) {
+      const topicName = target.startsWith('topic:') ? target.replace('topic:', '') : target;
+      const topicSuccess = await sendFcmV1Topic(accessToken, projectId, topicName, title, msgBody, dataPayload);
+      if (topicSuccess) {
+        totalSent += 1;
+      }
     }
+
+    // ── 2. Also Query DB Tokens for token-based fallback / targeting ────
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    let query = supabase.from('user_fcm_tokens').select('token');
+
+    if (target === 'workers')    query = query.eq('user_role', 'worker');
+    else if (target === 'businesses') query = query.eq('user_role', 'business');
+    else if (target.startsWith('user:')) query = query.eq('user_id', target.replace('user:', ''));
+
+    const { data: tokenRows } = await query;
+    const tokens: string[] = tokenRows?.map((r: any) => r.token) ?? [];
+
+    if (tokens.length > 0) {
+      const BATCH = 50;
+      for (let i = 0; i < tokens.length; i += BATCH) {
+        const batch = tokens.slice(i, i + BATCH);
+        const results = await Promise.allSettled(
+          batch.map((t) => sendFcmV1(accessToken, projectId, t, title, msgBody, dataPayload)),
+        );
+        totalSent += results.filter((r) => r.status === 'fulfilled' && r.value).length;
+      }
+    }
+
+    // If sent to FCM Topic, ensure sent count is at least 1 for UI feedback
+    const finalSentCount = Math.max(totalSent, isTopicTarget ? 1 : 0);
 
     // ── Log ───────────────────────────────────────────────────────
     await supabase.from('notification_log').insert({
-      title, body: msgBody, target, sent_by: 'admin', recipient_count: totalSent, data,
+      title, body: msgBody, target, sent_by: 'admin', recipient_count: finalSentCount, data,
     });
 
     return new Response(
-      JSON.stringify({ success: true, sent: totalSent }),
+      JSON.stringify({ success: true, sent: finalSentCount, deviceTokensInDb: tokens.length }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
 

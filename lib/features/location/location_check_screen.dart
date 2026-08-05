@@ -52,10 +52,8 @@ class _LocationCheckScreenState extends State<LocationCheckScreen> {
 
       // 2. Fetch Position
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 8),
-        ),
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 8),
       ).catchError((_) => Position(
             latitude: 27.7172,
             longitude: 85.3240,
@@ -69,12 +67,35 @@ class _LocationCheckScreenState extends State<LocationCheckScreen> {
             headingAccuracy: 0,
           ));
 
-      String placeName = 'Kathmandu Valley';
+      // 3. Determine place name from coordinates (bounding-box based)
+      String placeName = _placeNameFromCoords(position.latitude, position.longitude);
+
       _evaluateCoordinates(position.latitude, position.longitude, placeName);
     } catch (e) {
       // Fallback
       _evaluateCoordinates(27.7172, 85.3240, 'Kathmandu');
     }
+  }
+
+  /// Returns a city name based on coordinates — no geocoding package needed.
+  String _placeNameFromCoords(double lat, double lng) {
+    // Bhaktapur: ~27.67, 85.43
+    if (lat >= 27.64 && lat <= 27.70 && lng >= 85.38 && lng <= 85.48) {
+      return 'Bhaktapur';
+    }
+    // Lalitpur / Patan: ~27.67, 85.32
+    if (lat >= 27.64 && lat <= 27.70 && lng >= 85.28 && lng <= 85.36) {
+      return 'Lalitpur';
+    }
+    // Kathmandu: ~27.72, 85.32
+    if (lat >= 27.68 && lat <= 27.78 && lng >= 85.28 && lng <= 85.36) {
+      return 'Kathmandu';
+    }
+    // Broader Kathmandu Valley
+    if (lat >= 27.50 && lat <= 27.85 && lng >= 85.15 && lng <= 85.60) {
+      return 'Kathmandu Valley';
+    }
+    return 'Unknown Location';
   }
 
   void _evaluateCoordinates(double lat, double lng, String placeName) {
