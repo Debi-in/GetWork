@@ -99,13 +99,14 @@ class AppSettingsNotifier extends Notifier<AppSettingsState> {
         if (user != null) {
           final row = await Supabase.instance.client
               .from('profiles')
-              .select('full_name, phone')
+              .select('full_name, phone, address')
               .eq('id', user.id)
               .maybeSingle();
 
           if (row != null) {
             final dbName = (row['full_name'] as String?)?.trim() ?? '';
             final dbPhone = (row['phone'] as String?)?.trim() ?? '';
+            final dbAddress = (row['address'] as String?)?.trim() ?? '';
             if (dbName.isNotEmpty) {
               s = s.copyWith(businessName: dbName);
               // Cache it so it's available offline
@@ -114,6 +115,10 @@ class AppSettingsNotifier extends Notifier<AppSettingsState> {
             if (dbPhone.isNotEmpty && s.businessPhone.isEmpty) {
               s = s.copyWith(businessPhone: dbPhone);
               await prefs.setString(_keyBizPhone, dbPhone);
+            }
+            if (dbAddress.isNotEmpty && s.businessLocation.isEmpty) {
+              s = s.copyWith(businessLocation: dbAddress);
+              await prefs.setString(_keyBizLocation, dbAddress);
             }
           }
         }
@@ -177,6 +182,7 @@ class AppSettingsNotifier extends Notifier<AppSettingsState> {
           'id': user.id,
           'full_name': name,
           'phone': phone,
+          'address': location,
           'updated_at': DateTime.now().toIso8601String(),
         });
       }

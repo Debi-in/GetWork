@@ -18,6 +18,7 @@ import '../../models/job_model.dart';
 import '../../core/constants/supabase_config.dart';
 import 'chat_provider.dart';
 import 'chat_screen.dart';
+import 'location_picker_sheet.dart';
 import '../../core/services/app_settings_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -1600,12 +1601,28 @@ class _SettingsTab extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: locationCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Location / Address',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.location_on_rounded),
+              InkWell(
+                onTap: () async {
+                  final result = await LocationPickerSheet.show(
+                    context,
+                    initialLabel: locationCtrl.text.isNotEmpty ? locationCtrl.text : null,
+                  );
+                  if (result != null) {
+                    locationCtrl.text = result.label;
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: IgnorePointer(
+                  child: TextField(
+                    controller: locationCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Location / Address',
+                      hintText: 'Tap to choose on map or current location',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.location_on_rounded, color: AppColors.primary),
+                      suffixIcon: Icon(Icons.map_rounded, color: AppColors.primary),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
