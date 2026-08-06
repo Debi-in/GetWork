@@ -161,11 +161,12 @@ class _ClusterBubbleState extends State<_ClusterBubble>
   @override
   Widget build(BuildContext context) {
     final hasUrgent = widget.cluster.hasUrgent;
-    final baseColor = hasUrgent ? AppColors.accent : AppColors.primary;
+    final gradient =
+        hasUrgent ? AppColors.urgentGradient : AppColors.buttonGradient;
     final count = widget.cluster.count;
 
     // Size scales with count
-    final size = count >= 10 ? 52.0 : count >= 5 ? 46.0 : 40.0;
+    final size = count >= 10 ? 54.w : count >= 5 ? 48.w : 42.w;
 
     return ScaleTransition(
       scale: _scaleAnim,
@@ -178,12 +179,12 @@ class _ClusterBubbleState extends State<_ClusterBubble>
               width: size,
               height: size,
               decoration: BoxDecoration(
-                color: baseColor,
+                gradient: gradient,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2.5),
                 boxShadow: [
                   BoxShadow(
-                    color: baseColor.withValues(alpha: 0.5),
+                    color: gradient.colors.first.withValues(alpha: 0.5),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -195,21 +196,21 @@ class _ClusterBubbleState extends State<_ClusterBubble>
                   children: [
                     Text(
                       '$count',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         height: 1.0,
                       ),
                     ),
-                    const Text(
+                    Text(
                       'jobs',
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 8,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white70,
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.9),
                         height: 1.1,
                       ),
                     ),
@@ -219,8 +220,8 @@ class _ClusterBubbleState extends State<_ClusterBubble>
             ),
             // Downward pointer
             CustomPaint(
-              size: const Size(10, 6),
-              painter: _TrianglePointerPainter(color: baseColor),
+              size: Size(10.w, 6.h),
+              painter: _TrianglePointerPainter(color: gradient.colors.last),
             ),
           ],
         ),
@@ -258,11 +259,62 @@ class OpenStreetMapWidget extends StatefulWidget {
   State<OpenStreetMapWidget> createState() => _OpenStreetMapWidgetState();
 }
 
-class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget> {
+class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget>
+    with TickerProviderStateMixin {
   double _currentZoom = 13.5;
+  AnimationController? _mapAnimController;
 
   // Kathmandu default centre
   static const LatLng kathmanduCenter = LatLng(27.7172, 85.3240);
+
+  @override
+  void dispose() {
+    _mapAnimController?.dispose();
+    super.dispose();
+  }
+
+  void _animatedMapMove(LatLng destLocation, double destZoom) {
+    if (widget.mapController == null) return;
+
+    _mapAnimController?.dispose();
+
+    final camera = widget.mapController!.camera;
+    final latTween =
+        Tween<double>(begin: camera.center.latitude, end: destLocation.latitude);
+    final lngTween = Tween<double>(
+        begin: camera.center.longitude, end: destLocation.longitude);
+    final zoomTween = Tween<double>(begin: camera.zoom, end: destZoom);
+
+    final controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _mapAnimController = controller;
+
+    final Animation<double> animation = CurvedAnimation(
+      parent: controller,
+      curve: Curves.fastOutSlowIn,
+    );
+
+    controller.addListener(() {
+      widget.mapController!.move(
+        LatLng(latTween.evaluate(animation), lngTween.evaluate(animation)),
+        zoomTween.evaluate(animation),
+      );
+    });
+
+    animation.addStatusListener((status) {
+      if (status == AnimationStatus.completed ||
+          status == AnimationStatus.dismissed) {
+        controller.dispose();
+        if (_mapAnimController == controller) {
+          _mapAnimController = null;
+        }
+      }
+    });
+
+    controller.forward();
+  }
 
   String get _tileUrl {
     switch (widget.mapStyle) {
@@ -375,14 +427,17 @@ class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget> {
         markers.add(
           Marker(
             point: cluster.center,
-            width: 140,
-            height: 72,
+            width: 160.w,
+            height: 75.h,
             alignment: Alignment.topCenter,
             child: _AnimatedMarkerWidget(
               key: ValueKey(job.id),
               job: job,
               isSelected: isSelected,
-              onTap: () => widget.onMarkerTap(job),
+              onTap: () {
+                _animatedMapMove(cluster.center, math.max(_currentZoom, 14.5));
+                widget.onMarkerTap(job);
+              },
               index: ci,
             ),
           ),
@@ -399,14 +454,17 @@ class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget> {
           markers.add(
             Marker(
               point: LatLng(lat, lng),
-              width: 140,
-              height: 72,
+              width: 160.w,
+              height: 75.h,
               alignment: Alignment.topCenter,
               child: _AnimatedMarkerWidget(
                 key: ValueKey('${job.id}_spider_$ki'),
                 job: job,
                 isSelected: isSelected,
-                onTap: () => widget.onMarkerTap(job),
+                onTap: () {
+                  _animatedMapMove(LatLng(lat, lng), 15.5);
+                  widget.onMarkerTap(job);
+                },
                 index: ci + ki,
               ),
             ),
@@ -417,15 +475,16 @@ class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget> {
         markers.add(
           Marker(
             point: cluster.center,
-            width: 60,
-            height: 66,
+            width: 70.w,
+            height: 70.h,
             alignment: Alignment.topCenter,
             child: _ClusterBubble(
               key: ValueKey('cluster_${cluster.lat}_${cluster.lng}_${cluster.count}'),
               cluster: cluster,
               onTap: () {
-                // Zoom into the cluster on tap
-                widget.mapController?.move(cluster.center, _currentZoom + 2.0);
+                // Smooth animated zoom into the cluster on tap
+                _animatedMapMove(
+                    cluster.center, math.min(_currentZoom + 2.2, 17.0));
               },
             ),
           ),
@@ -490,6 +549,56 @@ class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget> {
 }
 
 
+LinearGradient _getJobPinGradient(JobModel job, bool isSelected) {
+  if (isSelected) {
+    return const LinearGradient(
+      colors: [Color(0xFF06B6D4), Color(0xFF0284C7)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
+  if (job.isUrgent) {
+    return AppColors.urgentGradient;
+  }
+
+  switch (job.category) {
+    case JobCategory.tech:
+      return const LinearGradient(
+        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    case JobCategory.food:
+    case JobCategory.retail:
+      return const LinearGradient(
+        colors: [Color(0xFF059669), Color(0xFF047857)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    case JobCategory.delivery:
+      return const LinearGradient(
+        colors: [Color(0xFFD97706), Color(0xFFB45309)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    case JobCategory.events:
+      return const LinearGradient(
+        colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    case JobCategory.construction:
+    case JobCategory.cleaning:
+      return const LinearGradient(
+        colors: [Color(0xFFEA580C), Color(0xFFC2410C)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    default:
+      return AppColors.primaryGradient;
+  }
+}
+
 // ── Callout Pin Bubble with Downward Arrow Tip ────────────────
 class _MarkerCalloutPin extends StatelessWidget {
   final JobModel job;
@@ -502,13 +611,12 @@ class _MarkerCalloutPin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Orange/Red gradient = Urgent, Primary Warm Orange gradient = Standard
-    final gradient = isSelected || job.isUrgent
-        ? AppColors.urgentGradient
-        : AppColors.primaryGradient;
-    final shadowColor = isSelected || job.isUrgent
-        ? AppColors.accent.withValues(alpha: 0.45)
-        : AppColors.primary.withValues(alpha: 0.45);
+    final gradient = _getJobPinGradient(job, isSelected);
+    final shadowColor = isSelected
+        ? const Color(0xFF0284C7).withValues(alpha: 0.5)
+        : job.isUrgent
+            ? AppColors.accent.withValues(alpha: 0.45)
+            : gradient.colors.first.withValues(alpha: 0.45);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -516,6 +624,10 @@ class _MarkerCalloutPin extends StatelessWidget {
         // Bubble Body
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
+          constraints: BoxConstraints(
+            maxWidth: 155.w,
+            minWidth: 100.w,
+          ),
           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
           decoration: BoxDecoration(
             gradient: gradient,
@@ -537,34 +649,42 @@ class _MarkerCalloutPin extends StatelessWidget {
             children: [
               Text(
                 job.salaryDisplay,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   height: 1.1,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 1),
+              SizedBox(height: 2.h),
               Row(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (job.isUrgent) ...[
-                    const Icon(Icons.local_fire_department_rounded,
-                        size: 10, color: Colors.orangeAccent),
-                    const SizedBox(width: 2),
-                  ],
-                  Text(
-                    job.title,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white70,
-                      height: 1.1,
+                    const Icon(
+                      Icons.local_fire_department_rounded,
+                      size: 11,
+                      color: Colors.amberAccent,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    SizedBox(width: 3.w),
+                  ],
+                  Flexible(
+                    child: Text(
+                      job.title,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.95),
+                        height: 1.1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
@@ -574,11 +694,9 @@ class _MarkerCalloutPin extends StatelessWidget {
 
         // Downward Triangle Arrow Pointer Tip
         CustomPaint(
-          size: const Size(12, 7),
+          size: Size(12.w, 7.h),
           painter: _TrianglePointerPainter(
-            color: (isSelected || job.isUrgent)
-                ? const Color(0xFFFF6B35)
-                : const Color(0xFFF57C3F),
+            color: gradient.colors.last,
           ),
         ),
       ],
