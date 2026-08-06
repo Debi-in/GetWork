@@ -30,6 +30,70 @@ class BusinessDashboardScreen extends ConsumerStatefulWidget {
       _BusinessDashboardScreenState();
 }
 
+void _checkProfileAndPostJob(BuildContext context, WidgetRef ref) {
+  final settings = ref.read(appSettingsProvider);
+  final hasName = settings.businessName.isNotEmpty && settings.businessName != 'My Business';
+  final hasPhone = settings.businessPhone.isNotEmpty;
+  final hasLocation = settings.businessLocation.isNotEmpty;
+
+  if (!hasName || !hasPhone || !hasLocation) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.white),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Please complete your Business Profile setup (Name, Address & Contact Phone) before posting jobs.',
+                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.orange.shade800,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        action: SnackBarAction(
+          label: 'SETUP NOW',
+          textColor: Colors.white,
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (ctx) => _SettingsTab().buildEditProfileModal(
+                context,
+                ref,
+                settings.businessName == 'My Business' ? '' : settings.businessName,
+                settings.businessLocation,
+                settings.businessPhone,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _SettingsTab().buildEditProfileModal(
+        context,
+        ref,
+        settings.businessName == 'My Business' ? '' : settings.businessName,
+        settings.businessLocation,
+        settings.businessPhone,
+      ),
+    );
+  } else {
+    context.push(AppRoutes.postJobType);
+  }
+}
+
+
 class _BusinessDashboardScreenState
     extends ConsumerState<BusinessDashboardScreen> {
   int _currentNavIndex = 0; // 0:Dashboard, 1:Messages, 2:Analytics, 3:Settings
@@ -345,7 +409,7 @@ class _BusinessDashboardScreenState
                           icon: Icons.add_rounded,
                           color: AppColors.primary,
                           bgColor: AppColors.primaryContainer,
-                          onTap: () => context.push(AppRoutes.postJobType),
+                          onTap: () => _checkProfileAndPostJob(context, ref),
                         ),
                         _SpeedDialAction(
                           label: 'Saved Drafts',
@@ -428,9 +492,9 @@ class _BusinessDashboardScreenState
 }
 
 // ── Empty state when Supabase has no jobs yet ─────────────────
-class _LiveJobsFallback extends StatelessWidget {
+class _LiveJobsFallback extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
@@ -476,7 +540,7 @@ class _LiveJobsFallback extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: () => context.push(AppRoutes.postJobType),
+            onPressed: () => _checkProfileAndPostJob(context, ref),
             icon: const Icon(Icons.add_rounded, size: 18),
             label: const Text('Post a Job Now'),
             style: ElevatedButton.styleFrom(
@@ -1544,7 +1608,7 @@ class _StatTile extends StatelessWidget {
 // ║  TAB 3 — SETTINGS                                           ║
 // ╚══════════════════════════════════════════════════════════════╝
 class _SettingsTab extends ConsumerWidget {
-  void _showEditBusinessProfileModal(
+  Widget buildEditProfileModal(
     BuildContext context,
     WidgetRef ref,
     String currentName,
@@ -1555,15 +1619,11 @@ class _SettingsTab extends ConsumerWidget {
     final locationCtrl = TextEditingController(text: currentLocation);
     final phoneCtrl = TextEditingController(text: currentPhone);
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: Container(
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
           padding: const EdgeInsets.all(24),
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -1587,7 +1647,7 @@ class _SettingsTab extends ConsumerWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(ctx),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
@@ -1650,7 +1710,7 @@ class _SettingsTab extends ConsumerWidget {
                             location: newLoc,
                             phone: newPhone,
                           );
-                      Navigator.pop(ctx);
+                      Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Business profile updated & saved!'),
@@ -1678,7 +1738,6 @@ class _SettingsTab extends ConsumerWidget {
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -1851,12 +1910,17 @@ class _SettingsTab extends ConsumerWidget {
 
           // Business Profile Card
           GestureDetector(
-            onTap: () => _showEditBusinessProfileModal(
-              context,
-              ref,
-              settings.businessName,
-              settings.businessLocation,
-              settings.businessPhone,
+            onTap: () => showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (ctx) => buildEditProfileModal(
+                context,
+                ref,
+                settings.businessName,
+                settings.businessLocation,
+                settings.businessPhone,
+              ),
             ),
             child: Container(
               padding: const EdgeInsets.all(16),

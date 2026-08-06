@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/app_settings_service.dart';
 import '../../core/services/draft_service.dart';
 import '../../core/services/supabase_jobs_service.dart';
 import '../../models/job_model.dart';
@@ -107,8 +108,21 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       _isUrgent = d['isUrgent'] as bool? ?? false;
       _selectedDeadlineDays = d['deadlineDays'] as int? ?? 3;
       _postExpiryDays = d['postExpiryDays'] as int? ?? 7;
-    } else if (widget.type == JobType.instant) {
-      _isUrgent = true;
+    } else {
+      // Auto-fill from business profile settings if available
+      final settings = ref.read(appSettingsProvider);
+      if (settings.businessName.isNotEmpty && settings.businessName != 'My Business') {
+        _businessNameController.text = settings.businessName;
+      }
+      if (settings.businessPhone.isNotEmpty) {
+        _phoneController.text = settings.businessPhone;
+      }
+      if (settings.businessLocation.isNotEmpty) {
+        _selectedLocation = settings.businessLocation;
+      }
+      if (widget.type == JobType.instant) {
+        _isUrgent = true;
+      }
     }
   }
 
