@@ -548,7 +548,8 @@ class _MarkerCalloutPin extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (job.isUrgent) ...[
-                    const Text('🔥', style: TextStyle(fontSize: 9)),
+                    const Icon(Icons.local_fire_department_rounded,
+                        size: 10, color: Colors.orangeAccent),
                     const SizedBox(width: 2),
                   ],
                   Text(

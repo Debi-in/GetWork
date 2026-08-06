@@ -1141,8 +1141,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         content: Text(
           isWorkerTarget
-              ? '⚒️ Worker Mode lets you browse the job map, discover shifts near you, and apply with one tap. Your applications and chat history stay separate from business activity.'
-              : '🏢 Business Mode lets you post jobs, view applicants, and manage your hiring. Switch back to Worker Mode any time to look for shifts yourself.',
+              ? 'Worker Mode lets you browse the job map, discover shifts near you, and apply with one tap. Your applications and chat history stay separate from business activity.'
+              : 'Business Mode lets you post jobs, view applicants, and manage your hiring. Switch back to Worker Mode any time to look for shifts yourself.',
           style: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 13,
@@ -1193,31 +1193,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ────────────────────────────────────
+            // ── Header with Rich 3-Stop Gradient ────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primary,
-                    AppColors.primary.withValues(alpha: 0.8),
+                    Color(0xFF0F5132),
+                    Color(0xFF0D9488),
+                    Color(0xFF14B8A6),
                   ],
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Avatar circle
+                  // Avatar circle with app logo
                   Container(
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 2),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(32),
@@ -1242,7 +1250,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   const Text(
                     'user@getwork.app',
                     style: TextStyle(
@@ -1251,15 +1259,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Colors.white70,
                     ),
                   ),
+                  const SizedBox(height: 12),
+
+                  // Role badge gradient pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isWorker
+                            ? [const Color(0xFF2563EB), const Color(0xFF1D4ED8)]
+                            : [const Color(0xFFF97316), const Color(0xFFEA580C)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isWorker ? Icons.handyman_rounded : Icons.storefront_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isWorker ? 'Worker Mode' : 'Business Mode',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
-                  // ── Stats Row ──────────────────────────────
+
+                  // ── Stats Row with Vector Icons & Glassmorphic Gradient ──
                   Row(
                     children: [
-                      _statBadge('💼', '$appliedCount', 'Applied'),
+                      _statBadge(Icons.work_history_rounded, '$appliedCount', 'Applied'),
                       const SizedBox(width: 10),
-                      _statBadge('⭐', '4.8', 'Rating'),
+                      _statBadge(Icons.star_rounded, '4.8', 'Rating'),
                       const SizedBox(width: 10),
-                      _statBadge('✔️', '0', 'Hired'),
+                      _statBadge(Icons.verified_user_rounded, '0', 'Hired'),
                     ],
                   ),
                 ],
@@ -1309,25 +1359,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ── Stats badge for drawer header ──────────────────────
-  Widget _statBadge(String emoji, String value, String label) {
+  // ── Stats badge with vector icons & glassmorphic gradient backdrop ──
+  Widget _statBadge(IconData icon, String value, String label) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withValues(alpha: 0.22),
+              Colors.white.withValues(alpha: 0.08),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.25),
+            width: 1,
+          ),
         ),
         child: Column(
           children: [
-            Text(
-              '$emoji $value',
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 14, color: Colors.amber),
+                const SizedBox(width: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 2),
             Text(
@@ -1346,24 +1414,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _drawerItem(IconData icon, String label, VoidCallback onTap,
       {Color? color}) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Row(
-          children: [
-            Icon(icon, size: 22, color: color ?? AppColors.textPrimary),
-            const SizedBox(width: 14),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: color ?? AppColors.textPrimary,
-              ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 1.0, end: 1.0),
+      duration: const Duration(milliseconds: 120),
+      builder: (context, scale, child) => Transform.scale(
+        scale: scale,
+        child: child,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          splashColor: (color ?? AppColors.primary).withValues(alpha: 0.08),
+          highlightColor: (color ?? AppColors.primary).withValues(alpha: 0.04),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        (color ?? AppColors.primary).withValues(alpha: 0.12),
+                        (color ?? AppColors.primary).withValues(alpha: 0.06),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, size: 20, color: color ?? AppColors.textPrimary),
+                ),
+                const SizedBox(width: 14),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: color ?? AppColors.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: (color ?? AppColors.textHint).withValues(alpha: 0.5),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1668,23 +1770,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               '${job.shiftStartTime}–${job.shiftEndTime}',
                               AppColors.textHint,
                             ),
-                            // Urgent tag
+                            // Urgent tag with gradient
                             if (job.isUrgent)
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.accentContainer,
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFFF6B35), Color(0xFFE53935)],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
-                                child: const Text(
-                                  '🔥 Urgent',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.accent,
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.local_fire_department_rounded,
+                                        size: 12, color: Colors.white),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Urgent',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                           ],
