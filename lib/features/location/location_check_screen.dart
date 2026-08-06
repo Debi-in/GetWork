@@ -196,7 +196,7 @@ class _LocationCheckScreenState extends State<LocationCheckScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          'You are in $_detectedLocation! 📍',
+          'You are in $_detectedLocation!',
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontFamily: 'Inter',
@@ -215,7 +215,7 @@ class _LocationCheckScreenState extends State<LocationCheckScreen> {
             border: Border.all(color: AppColors.border),
           ),
           child: const Text(
-            '✅ GetWork supports your location (Kathmandu, Lalitpur, Bhaktapur)',
+            'GetWork supports your location (Kathmandu, Lalitpur, Bhaktapur)',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Inter',
@@ -295,7 +295,7 @@ class _LocationCheckScreenState extends State<LocationCheckScreen> {
         ),
         const SizedBox(height: 24),
         const Text(
-          'Location Not Supported 📍',
+          'Location Not Supported',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Inter',

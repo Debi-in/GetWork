@@ -270,17 +270,30 @@ class _ManageProfileScreenState extends State<ManageProfileScreen>
                           margin: const EdgeInsets.only(top: 6),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _userRole == 'business' ? AppColors.accentContainer : AppColors.primaryContainer,
+                            gradient: _userRole == 'business'
+                                ? AppColors.businessBadgeGradient
+                                : AppColors.workerBadgeGradient,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text(
-                            _userRole == 'business' ? '🏢 Business' : '💼 Worker',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: _userRole == 'business' ? AppColors.accentDark : AppColors.primaryDark,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _userRole == 'business' ? Icons.storefront_rounded : Icons.handyman_rounded,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _userRole == 'business' ? 'Business' : 'Worker',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),

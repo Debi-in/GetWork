@@ -69,7 +69,7 @@ class _ApplicantsScreenState extends ConsumerState<ApplicantsScreen> {
           await Supabase.instance.client.functions.invoke(
             'send-notification',
             body: {
-              'title': '🎉 You Were Hired!',
+              'title': 'You Were Hired!',
               'body':
                   '$workerName, you have been accepted for the $_jobTitle shift. Open GetWork to see details.',
               'target': 'all',
@@ -91,7 +91,7 @@ class _ApplicantsScreenState extends ConsumerState<ApplicantsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(status == 'accepted'
-              ? '🎉 $workerName accepted for the shift!'
+              ? '$workerName accepted for the shift!'
               : 'Application marked as declined'),
           backgroundColor:
               status == 'accepted' ? AppColors.primary : Colors.grey[700],
@@ -340,14 +340,20 @@ class _ApplicantCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      '📞 $phone',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
+                    Row(
+                      children: [
+                        const Icon(Icons.phone_rounded, size: 13, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          phone,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -363,14 +369,21 @@ class _ApplicantCard extends StatelessWidget {
                 color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                '💬 "$note"',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                  color: AppColors.textSecondary,
-                ),
+              child: Row(
+                children: [
+                  const Icon(Icons.chat_bubble_outline_rounded, size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '"$note"',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

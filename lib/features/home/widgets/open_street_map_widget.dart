@@ -9,6 +9,7 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/constants/app_colors.dart';
@@ -501,12 +502,13 @@ class _MarkerCalloutPin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Orange = Urgent, Primary blue-green = Standard
-    final bgColor = isSelected
-        ? AppColors.accent
-        : job.isUrgent
-            ? AppColors.accent
-            : AppColors.primary;
+    // Orange/Red gradient = Urgent, Primary Warm Orange gradient = Standard
+    final gradient = isSelected || job.isUrgent
+        ? AppColors.urgentGradient
+        : AppColors.primaryGradient;
+    final shadowColor = isSelected || job.isUrgent
+        ? AppColors.accent.withValues(alpha: 0.45)
+        : AppColors.primary.withValues(alpha: 0.45);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -514,17 +516,17 @@ class _MarkerCalloutPin extends StatelessWidget {
         // Bubble Body
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
           decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(14),
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(14.r),
             border: Border.all(
               color: Colors.white,
               width: isSelected ? 2.5 : 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: bgColor.withValues(alpha: 0.45),
+                color: shadowColor,
                 blurRadius: isSelected ? 16 : 8,
                 offset: const Offset(0, 4),
               ),
@@ -573,7 +575,11 @@ class _MarkerCalloutPin extends StatelessWidget {
         // Downward Triangle Arrow Pointer Tip
         CustomPaint(
           size: const Size(12, 7),
-          painter: _TrianglePointerPainter(color: bgColor),
+          painter: _TrianglePointerPainter(
+            color: (isSelected || job.isUrgent)
+                ? const Color(0xFFFF6B35)
+                : const Color(0xFFF57C3F),
+          ),
         ),
       ],
     );

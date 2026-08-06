@@ -8,6 +8,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
@@ -413,12 +414,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         _flyToJob(job);
                                       },
                                       child: Container(
-                                        width: 250,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 8),
+                                        width: 250.w,
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 12.w, vertical: 8.h),
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(18),
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Colors.white,
+                                              AppColors.background,
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(18.r),
                                           border: Border.all(
                                               color: AppColors.border, width: 0.8),
                                           boxShadow: const [
@@ -2752,7 +2760,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () => _onGotTheJob(job.id, job.title),
                       icon: const Icon(Icons.celebration_rounded, size: 15),
-                      label: const Text('Got the Job! 🎉'),
+                      label: const Text('Got the Job!'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -2784,7 +2792,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Congratulations! 🎉',
+          'Congratulations!',
           style: TextStyle(
             fontFamily: 'Inter',
             fontWeight: FontWeight.w800,

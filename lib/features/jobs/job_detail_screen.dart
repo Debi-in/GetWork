@@ -361,7 +361,7 @@ class JobDetailScreen extends ConsumerWidget {
                       isApplied ? AppColors.textHint : AppColors.primary,
                 ),
                 child: Text(
-                  isApplied ? 'Application Submitted ✓' : 'Apply Now',
+                  isApplied ? 'Application Submitted' : 'Apply Now',
                 ),
               ),
             ),

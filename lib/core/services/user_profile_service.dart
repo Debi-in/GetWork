@@ -179,7 +179,7 @@ class UserProfileService {
     try {
       final welcomeItem = NotificationItem(
         id: 'welcome_notif_${DateTime.now().millisecondsSinceEpoch}',
-        title: 'Welcome to GetWork! 🎉',
+        title: 'Welcome to GetWork!',
         message:
             'Hello ${name.isNotEmpty ? name : 'User'}! Thanks for joining GetWork Xaie. Discover part-time shifts and local jobs near you in Kathmandu, Lalitpur, and Bhaktapur.',
         createdAt: DateTime.now(),

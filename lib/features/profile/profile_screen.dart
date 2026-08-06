@@ -175,17 +175,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: isBusiness ? AppColors.accentContainer : AppColors.primaryContainer,
+                                        gradient: isBusiness
+                                            ? AppColors.businessBadgeGradient
+                                            : AppColors.workerBadgeGradient,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
-                                      child: Text(
-                                        isBusiness ? '🏢 Business Account' : '💼 Worker Account',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: isBusiness ? AppColors.accentDark : AppColors.primaryDark,
-                                        ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isBusiness ? Icons.storefront_rounded : Icons.handyman_rounded,
+                                            size: 13,
+                                            color: Colors.white,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            isBusiness ? 'Business Account' : 'Worker Account',
+                                            style: const TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -338,10 +351,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              _buildSkillChip('🛵 Delivery & Courier', true),
-                              _buildSkillChip('🛒 Retail & Sales', false),
-                              _buildSkillChip('☕ Food & Beverage', false),
-                              _buildSkillChip('📦 Warehouse & Packing', false),
+                              _buildSkillChip(Icons.two_wheeler_rounded, 'Delivery & Courier', true),
+                              _buildSkillChip(Icons.shopping_bag_rounded, 'Retail & Sales', false),
+                              _buildSkillChip(Icons.local_cafe_rounded, 'Food & Beverage', false),
+                              _buildSkillChip(Icons.inventory_2_rounded, 'Warehouse & Packing', false),
                             ],
                           ),
                         ],
@@ -489,24 +502,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSkillChip(String label, bool isPrimary) {
+  Widget _buildSkillChip(IconData icon, String label, bool isPrimary) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isPrimary ? AppColors.primaryContainer : AppColors.surfaceVariant,
+        gradient: isPrimary
+            ? AppColors.primaryGradient
+            : const LinearGradient(
+                colors: [Color(0xFFF3EFE9), Color(0xFFEBE5DC)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isPrimary ? AppColors.primary.withValues(alpha: 0.3) : AppColors.border,
-        ),
+        boxShadow: [
+          if (isPrimary)
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.25),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+        ],
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 12,
-          fontWeight: isPrimary ? FontWeight.w700 : FontWeight.w500,
-          color: isPrimary ? AppColors.primaryDark : AppColors.textPrimary,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: isPrimary ? Colors.white : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: isPrimary ? FontWeight.w700 : FontWeight.w500,
+              color: isPrimary ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }

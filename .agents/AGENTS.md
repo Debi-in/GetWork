@@ -1,111 +1,56 @@
-# GetWork App — Development Rules
-
-## Rule 1: NO EMOJIS — USE ICONS & ASSETS ONLY
-
-**Never** use Unicode emoji characters anywhere in the Flutter codebase — not in UI labels, badges, snackbars, buttons, titles, tags, or any widget text.
-
-**Always** replace emojis with one of the following:
-- `Icon(Icons.<name>)` — Material Design vector icons
-- `Icon(CupertinoIcons.<name>)` — Cupertino icons
-- `Image.asset(...)` or `SvgPicture.asset(...)` — custom SVG/PNG logo assets
-
-**Examples of WRONG usage:**
-```dart
-// ❌ NEVER DO THIS
-Text('🔥 Urgent')
-Text('✅ Applied!')
-Text('⚒️ Worker Mode')
-Text('🏢 Business Mode')
-Text('💼 Applied')
-Text('⭐ Rating')
-```
-
-**Examples of CORRECT usage:**
-```dart
-// ✅ ALWAYS DO THIS
-Row(children: [
-  Icon(Icons.local_fire_department_rounded, color: Colors.orangeAccent, size: 14),
-  SizedBox(width: 4),
-  Text('Urgent'),
-])
-
-Icon(Icons.check_circle_rounded, color: AppColors.success)
-Icon(Icons.handyman_rounded)   // Worker Mode
-Icon(Icons.storefront_rounded) // Business Mode
-Icon(Icons.work_history_rounded) // Applied count
-Icon(Icons.star_rounded)       // Rating
-```
-
-This applies to ALL files in `lib/` including:
-- Screens, widgets, dialogs, bottom sheets
-- Snackbar messages and toast content
-- Map pin labels and cluster overlays
-- Category tags and status badges
-- Debug print statements (use `[DEBUG]` prefix instead)
+# GetWork — UI Build Rules
+Read this before building or editing ANY screen, widget, or layout. These are non-negotiable defaults for this app.
 
 ---
 
-## Rule 2: NO PLAIN/FLAT COLORS — USE GRADIENTS ALWAYS
+## 1. Screen sizing — always responsive, never hardcoded
+- Every widget must use `flutter_screenutil` (`.w`, `.h`, `.sp`, `.r`) instead of raw numbers.
+  - ✅ `width: 200.w` `fontSize: 16.sp` `padding: EdgeInsets.all(12.r)`
+  - ❌ `width: 200` `fontSize: 16`
+- Exception: don't wrap values already inside `Expanded`, `Flexible`, `Spacer`, or `MediaQuery` percentage-based sizing — those are already responsive, adding `.w`/`.h` there is redundant.
+- `ScreenUtilInit` must wrap the app root in `main.dart` with `designSize` matching whatever Figma/design frame this UI was designed at (confirm the frame size before assuming 375x812).
 
-**Never** use a solid flat `color:` for any significant UI surface. Every background, badge, pill, button, container, card, or header **must** use a `LinearGradient` or `RadialGradient`.
+## 2. Text — must never overflow, at any device or font-scale setting
+- Any `Text` widget sitting next to another widget (in a `Row`, near screen edges, in a card) must have:
+  - `overflow: TextOverflow.ellipsis`
+  - `maxLines:` set explicitly (usually 1 or 2)
+  - Wrapped in `Expanded` or `Flexible` if inside a `Row`
+- Clamp system text scale so accessibility settings can't break layouts, but never disable it fully:
+  `textScaler: MediaQuery.of(context).textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.2)`
 
-**Plain colors are only acceptable for:**
-- Text color (`style: TextStyle(color: ...)`)
-- Icon color (`Icon(..., color: ...)`)
-- `Colors.transparent`
-- Border colors
+## 3. Map pins / markers — never allow raw overlap
+- If two or more pins would render within ~40px of each other at the current zoom level, they must **cluster** into a single "N jobs" bubble instead of stacking raw and unreadable.
+- Pin color must follow a fixed, documented meaning — do not introduce a new color without updating the legend below.
+  - 🟧 Orange = urgent / hiring now
+  - 🟩 Green = standard job
+  - Never mix meanings across the same color.
 
-**Examples of WRONG usage:**
-```dart
-// ❌ NEVER DO THIS
-decoration: BoxDecoration(color: AppColors.primary)
-decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15))
-ElevatedButton.styleFrom(backgroundColor: AppColors.primary)
-Container(color: AppColors.accentContainer)
-```
+## 4. Consent-sensitive actions — never default to automatic
+- Any feature that takes an action on the user's behalf (auto-apply, auto-accept, auto-message) must:
+  - Require an explicit opt-in tap, never be the default/primary CTA
+  - Show exactly what it's about to do before doing it (which jobs, which employer) — never a black-box "apply to 6 jobs" with no preview
+- This applies to worker-side AND business-side automation equally.
 
-**Examples of CORRECT usage:**
-```dart
-// ✅ ALWAYS DO THIS
-decoration: BoxDecoration(
-  gradient: LinearGradient(
-    colors: [Color(0xFF0F5132), Color(0xFF14B8A6)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  ),
-  borderRadius: BorderRadius.circular(16),
-)
+## 5. Placeholder / test data
+- No test strings (`hi`, `jhgfzdfxghj`, `test123`) may ship in any build shown to a real user or reviewer. Use realistic placeholder content or an actual empty-state design instead.
+- Any icon (like a 🔒 lock) shown to the user must have an obvious meaning or a tooltip — never decorative-but-unexplained.
 
-// Glassmorphic overlay gradient (for cards on gradient backgrounds)
-decoration: BoxDecoration(
-  gradient: LinearGradient(
-    colors: [
-      Colors.white.withValues(alpha: 0.22),
-      Colors.white.withValues(alpha: 0.08),
-    ],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  ),
-  borderRadius: BorderRadius.circular(14),
-  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-)
+## 6. Empty space / unfinished sections
+- No screen should ship with large unexplained blank areas (e.g. empty space below a profile menu). If content isn't ready yet, use a proper empty-state (icon + short message), not blank space.
 
-// Urgent gradient pill
-gradient: LinearGradient(
-  colors: [Color(0xFFFF6B35), Color(0xFFE53935)],
-)
+## 7. No emoji characters — icons/assets only
+- Never use Unicode emoji anywhere in the codebase (labels, badges, snackbars, buttons, titles, tags, debug prints).
+- Always use `Icon(Icons.<name>)`, `Icon(CupertinoIcons.<name>)`, or `Image.asset()`/`SvgPicture.asset()` instead.
+- Debug prints use a `[DEBUG]` text prefix, never an emoji.
+  - ❌ `Text('🔥 Urgent')` → ✅ `Icon(Icons.local_fire_department_rounded)` + `Text('Urgent')`
+  - ❌ `Text('⭐ Rating')` → ✅ `Icon(Icons.star_rounded)` + `Text('Rating')`
 
-// Buttons — use ShaderMask or gradient container wrapping
-Container(
-  decoration: BoxDecoration(
-    gradient: LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
-    borderRadius: BorderRadius.circular(16),
-  ),
-  child: ElevatedButton(...),
-)
-```
+## 8. No flat/plain colors on surfaces — gradients only
+- Never use a solid `color:` for a background, badge, pill, button, container, card, or header. Use `LinearGradient` or `RadialGradient` via `BoxDecoration(gradient: ...)` instead.
+- Plain color is only acceptable for: text color, icon color, `Colors.transparent`, and border colors.
+- Buttons get their gradient via a wrapping `Container` + `BoxDecoration(gradient:)`, not `backgroundColor:` on the button itself.
 
-### Recommended Gradient Palettes for GetWork:
+**Reference gradient palette:**
 
 | Usage | Colors |
 |---|---|
@@ -119,12 +64,27 @@ Container(
 | Dark card | `#1E293B` → `#0F172A` |
 | Salary/Money pill | `#D1FAE5` → `#A7F3D0` (tinted light) |
 
+## 9. Before marking any UI task "done"
+- [ ] Tested on at least 3 device/DPI presets (small phone, standard phone, tablet)
+- [ ] No yellow/black overflow banners on any screen
+- [ ] No hardcoded pixel values outside of exempted responsive widgets
+- [ ] All interactive text has overflow handling
+- [ ] Any automation feature has explicit opt-in + preview
+- [ ] No placeholder/test strings visible
+- [ ] Color usage matches the documented meaning (pin colors, badge colors, etc.)
+- [ ] Zero emoji characters in any file
+- [ ] Every background/badge/button/card uses a gradient, not a flat color
+
 ---
 
-## Summary Checklist Before Every Commit
+## Color reference (keep in sync with design system)
+- Primary / action: `#F57C3F` (warm orange)
+- Trust / verified / success: `#22C55E` or `#1D6B4A`
+- Background: `#FAF8F5`
+- Cards/surface: `#FFFFFF`
+- Text primary: `#1F2933`
+- Text secondary: `#6B7280`
+- Warning: `#F59E0B`
+- Error: `#EF4444`
 
-- [ ] Zero emoji characters in any `.dart` file
-- [ ] All `BoxDecoration` backgrounds use `gradient:` not `color:`
-- [ ] All buttons have gradient treatment (via container wrap or `ShaderMask`)
-- [ ] All badges/pills use gradient backgrounds
-- [ ] All icons use Material/Cupertino `Icon()` widgets or SVG assets
+Rule of thumb: 60% warm neutrals, 30% primary action color, 10% accent/urgent highlights.

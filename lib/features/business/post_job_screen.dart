@@ -40,13 +40,13 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   bool _isUrgent = false;
 
   final Map<String, String> _categoryLabels = {
-    'delivery': '🛵 Delivery',
-    'retail': '🛍️ Retail',
-    'food': '🍳 Food',
-    'construction': '🏗️ Construction',
-    'cleaning': '🧹 Cleaning',
-    'tech': '💻 Tech',
-    'events': '🎉 Events',
+    'delivery': 'Delivery',
+    'retail': 'Retail',
+    'food': 'Food & Beverage',
+    'construction': 'Construction',
+    'cleaning': 'Cleaning',
+    'tech': 'Tech',
+    'events': 'Events',
   };
 
   final Map<String, (double, double)> _locationCoords = {
@@ -132,7 +132,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('✅ Job posted successfully!'),
+          content: const Text('Job posted successfully!'),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
           shape:
@@ -143,7 +143,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('❌ Failed to post job. Please try again.'),
+          content: const Text('Failed to post job. Please try again.'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape:

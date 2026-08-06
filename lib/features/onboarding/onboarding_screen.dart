@@ -14,24 +14,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<_OnboardingPage> _pages = const [
-    _OnboardingPage(
-      emoji: '🗺️',
+  final List<_OnboardingData> _pages = const [
+    _OnboardingData(
+      icon: Icons.map_rounded,
       title: 'Find Jobs Near You',
       subtitle: 'Discover part-time and temporary jobs on an interactive map right in your neighborhood',
-      color: Color(0xFF5B8A6F),
+      gradientColors: [Color(0xFF0F5132), Color(0xFF14B8A6)],
     ),
-    _OnboardingPage(
-      emoji: '⚡',
+    _OnboardingData(
+      icon: Icons.bolt_rounded,
       title: 'Apply in Seconds',
       subtitle: 'One tap to apply. Get hired by businesses nearby without lengthy processes',
-      color: Color(0xFFE8773A),
+      gradientColors: [Color(0xFFF57C3F), Color(0xFFFF9D66)],
     ),
-    _OnboardingPage(
-      emoji: '🤝',
+    _OnboardingData(
+      icon: Icons.handshake_rounded,
       title: 'Hire Trusted Workers',
       subtitle: 'Post a job and find reliable local workers in your area fast',
-      color: Color(0xFF5B8A6F),
+      gradientColors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
     ),
   ];
 
@@ -71,7 +71,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 controller: _pageController,
                 onPageChanged: (i) => setState(() => _currentPage = i),
                 itemCount: _pages.length,
-                itemBuilder: (context, i) => _pages[i].build(context),
+                itemBuilder: (context, i) => _OnboardingPage(data: _pages[i]),
               ),
             ),
             Padding(
@@ -116,19 +116,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-class _OnboardingPage {
-  final String emoji;
+class _OnboardingData {
+  final IconData icon;
   final String title;
   final String subtitle;
-  final Color color;
+  final List<Color> gradientColors;
 
-  const _OnboardingPage({
-    required this.emoji,
+  const _OnboardingData({
+    required this.icon,
     required this.title,
     required this.subtitle,
-    required this.color,
+    required this.gradientColors,
   });
+}
 
+class _OnboardingPage extends StatelessWidget {
+  final _OnboardingData data;
+
+  const _OnboardingPage({required this.data});
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -139,16 +146,27 @@ class _OnboardingPage {
             width: 160,
             height: 160,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              gradient: LinearGradient(
+                colors: data.gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: data.gradientColors.first.withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 72)),
+              child: Icon(data.icon, size: 72, color: Colors.white),
             ),
           ),
           const SizedBox(height: 48),
           Text(
-            title,
+            data.title,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 28,
@@ -160,7 +178,7 @@ class _OnboardingPage {
           ),
           const SizedBox(height: 16),
           Text(
-            subtitle,
+            data.subtitle,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 16,

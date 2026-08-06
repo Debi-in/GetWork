@@ -171,15 +171,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
               data: (messages) {
                 if (messages.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No messages yet.\nSay hello! 👋',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        color: AppColors.textSecondary,
-                        fontSize: 15,
-                      ),
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.chat_bubble_outline_rounded,
+                            size: 48, color: AppColors.textHint),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No messages yet.\nSend a message to get started.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            color: AppColors.textSecondary,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }

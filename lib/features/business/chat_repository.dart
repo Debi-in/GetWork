@@ -227,7 +227,7 @@ class ChatRepository {
 
       // Seed system welcome for this conversation
       if (convId != null) {
-        final systemMsg = '👋 Hi! $workerName just applied for your job. You can chat here to coordinate shift details.';
+        final systemMsg = 'Hi! $workerName just applied for your job. You can chat here to coordinate shift details.';
         await _db.from('messages').insert({
           'conversation_id': convId,
           'sender_type': 'system',

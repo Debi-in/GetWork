@@ -273,7 +273,7 @@ class _ApplySuccessScreenState extends State<ApplySuccessScreen>
                       child: Column(
                         children: [
                           const Text(
-                            'Application Sent! 🎉',
+                            'Application Sent!',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: 'Inter',

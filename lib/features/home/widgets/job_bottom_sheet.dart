@@ -457,8 +457,10 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                                       context.push('/job/${widget.job.id}/apply');
                                     }
                                   },
-                            icon: const Icon(Icons.bolt_rounded, size: 20),
-                            label: Text(isApplied ? 'Applied ✓' : 'Apply Now'),
+                            icon: isApplied
+                                ? const Icon(Icons.check_circle_rounded, size: 20)
+                                : const Icon(Icons.bolt_rounded, size: 20),
+                            label: Text(isApplied ? 'Applied' : 'Apply Now'),
                             style: ElevatedButton.styleFrom(
                               minimumSize: const Size(0, 50),
                               backgroundColor: isApplied
