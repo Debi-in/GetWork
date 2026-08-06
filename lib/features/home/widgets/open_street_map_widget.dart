@@ -272,6 +272,19 @@ class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant OpenStreetMapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedJob != null &&
+        widget.selectedJob?.id != oldWidget.selectedJob?.id) {
+      final job = widget.selectedJob!;
+      _animatedMapMove(
+        LatLng(job.latitude, job.longitude),
+        math.max(_currentZoom, 15.0),
+      );
+    }
+  }
+
   void _animatedMapMove(LatLng destLocation, double destZoom) {
     if (widget.mapController == null) return;
 

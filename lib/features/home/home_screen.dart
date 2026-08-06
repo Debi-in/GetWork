@@ -643,30 +643,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                  // ── Job detail sheet (Smooth slide-up & slide-down animation) ─────
+                  // ── Job detail sheet (PowerPoint Morph Scale & Spring Expand/Collapse) ──
                   Positioned(
                     bottom: 12,
                     left: 0,
                     right: 0,
-                    child: AnimatedSlide(
-                      duration: const Duration(milliseconds: 260),
-                      curve: Curves.easeOutCubic,
-                      offset: selectedJob != null ? Offset.zero : const Offset(0, 1.3),
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 200),
-                        opacity: selectedJob != null ? 1.0 : 0.0,
-                        child: IgnorePointer(
-                          ignoring: selectedJob == null,
-                          child: selectedJob != null
-                              ? JobBottomSheet(
-                                  job: selectedJob,
-                                  onClose: () => ref
-                                      .read(selectedJobProvider.notifier)
-                                      .selectJob(null),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                      ),
+                    child: _MorphicJobBottomSheetWrapper(
+                      job: selectedJob,
+                      onClose: () => ref
+                          .read(selectedJobProvider.notifier)
+                          .selectJob(null),
                     ),
                   ),
 
@@ -3076,6 +3062,113 @@ class _MapStyleOption extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Morphic Job Detail Sheet Container — PowerPoint style Morph Expand/Collapse ──
+class _MorphicJobBottomSheetWrapper extends StatefulWidget {
+  final JobModel? job;
+  final VoidCallback onClose;
+
+  const _MorphicJobBottomSheetWrapper({
+    required this.job,
+    required this.onClose,
+  });
+
+  @override
+  State<_MorphicJobBottomSheetWrapper> createState() =>
+      __MorphicJobBottomSheetWrapperState();
+}
+
+class __MorphicJobBottomSheetWrapperState
+    extends State<_MorphicJobBottomSheetWrapper>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _anim;
+  late Animation<double> _scale;
+  late Animation<Offset> _slide;
+  late Animation<double> _opacity;
+  JobModel? _cachedJob;
+
+  @override
+  void initState() {
+    super.initState();
+    _cachedJob = widget.job;
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
+
+    _scale = Tween<double>(begin: 0.45, end: 1.0).animate(
+      CurvedAnimation(parent: _anim, curve: Curves.easeOutBack),
+    );
+
+    _slide = Tween<Offset>(
+      begin: const Offset(0.0, 0.45),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _anim, curve: Curves.fastOutSlowIn),
+    );
+
+    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _anim,
+        curve: const Interval(0.0, 0.55, curve: Curves.easeOut),
+      ),
+    );
+
+    if (widget.job != null) {
+      _anim.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _MorphicJobBottomSheetWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.job != null) {
+      _cachedJob = widget.job;
+      _anim.forward();
+    } else {
+      _anim.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_cachedJob == null) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, child) {
+        if (_anim.isDismissed && widget.job == null) {
+          return const SizedBox.shrink();
+        }
+
+        return IgnorePointer(
+          ignoring: widget.job == null,
+          child: FadeTransition(
+            opacity: _opacity,
+            child: SlideTransition(
+              position: _slide,
+              child: ScaleTransition(
+                scale: _scale,
+                alignment: Alignment.bottomCenter,
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+      child: JobBottomSheet(
+        job: _cachedJob!,
+        onClose: widget.onClose,
       ),
     );
   }
