@@ -58,7 +58,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final MapController _mapController = MapController();
   // 0: Map, 1: Jobs, 2: Messages, 3: Profile
@@ -92,11 +93,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _requestAndMoveToUserLocation(moveMap: false);
   }
 
+  AnimationController? _mapFlyController;
+
   @override
   void dispose() {
+    _mapFlyController?.dispose();
     _mapInteractionTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _animatedMapMoveTo(LatLng destLocation, double destZoom) {
+    _mapFlyController?.dispose();
+
+    final camera = _mapController.camera;
+    final latTween =
+        Tween<double>(begin: camera.center.latitude, end: destLocation.latitude);
+    final lngTween = Tween<double>(
+        begin: camera.center.longitude, end: destLocation.longitude);
+    final zoomTween = Tween<double>(begin: camera.zoom, end: destZoom);
+
+    final controller = AnimationController(
+      duration: const Duration(milliseconds: 700),
+      vsync: this,
+    );
+    _mapFlyController = controller;
+
+    final Animation<double> animation = CurvedAnimation(
+      parent: controller,
+      curve: Curves.fastOutSlowIn,
+    );
+
+    controller.addListener(() {
+      _mapController.move(
+        LatLng(latTween.evaluate(animation), lngTween.evaluate(animation)),
+        zoomTween.evaluate(animation),
+      );
+    });
+
+    animation.addStatusListener((status) {
+      if (status == AnimationStatus.completed ||
+          status == AnimationStatus.dismissed) {
+        controller.dispose();
+        if (_mapFlyController == controller) {
+          _mapFlyController = null;
+        }
+      }
+    });
+
+    controller.forward();
   }
 
   Future<void> _requestAndMoveToUserLocation({bool moveMap = true}) async {
@@ -162,7 +207,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         });
 
         if (moveMap) {
-          _mapController.move(userPos, 15.0);
+          _animatedMapMoveTo(userPos, 15.0);
         }
       }
     } catch (e) {
@@ -173,7 +218,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _flyToJob(JobModel job) {
-    _mapController.move(LatLng(job.latitude, job.longitude), 15.0);
+    _animatedMapMoveTo(LatLng(job.latitude, job.longitude), 15.0);
   }
 
   void _showMapStyleSelector() {
