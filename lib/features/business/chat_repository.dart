@@ -119,23 +119,19 @@ class ChatRepository {
       final rows = (response as List<dynamic>).cast<Map<String, dynamic>>();
       final convs = rows.map(ConversationModel.fromRow).toList();
 
-      // Ensure system welcome is always present (fallback if DB seeding failed)
-      final hasSystem = convs.any((c) => c.id == _systemConvId);
-      if (!hasSystem) {
-        convs.insert(0, _systemWelcomeConversation());
-      } else {
-        // Move system to top
-        final sysIdx = convs.indexWhere((c) => c.id == _systemConvId);
-        if (sysIdx > 0) {
-          final sys = convs.removeAt(sysIdx);
-          convs.insert(0, sys);
-        }
+      // If the system welcome exists in DB, keep it at the top.
+      // Do NOT inject a fake one — show empty state if no real conversations.
+      final sysIdx = convs.indexWhere((c) => c.id == _systemConvId);
+      if (sysIdx > 0) {
+        final sys = convs.removeAt(sysIdx);
+        convs.insert(0, sys);
       }
+
       return convs;
     } catch (e) {
       if (kDebugMode) print('⚠️ [ChatRepository fetchConversations]: $e');
-      // Always return at least the system welcome message
-      return [_systemWelcomeConversation()];
+      // On error, return empty — HomeScreen shows the empty-state UI
+      return [];
     }
   }
 
@@ -149,17 +145,10 @@ class ChatRepository {
           .order('created_at', ascending: true);
 
       final rows = (response as List<dynamic>).cast<Map<String, dynamic>>();
-      final msgs = rows.map(MessageModel.fromRow).toList();
-
-      // Always inject system welcome at top if not present
-      final hasWelcome = msgs.any((m) => m.isSystem);
-      if (!hasWelcome) {
-        msgs.insert(0, _systemWelcomeMessage(conversationId));
-      }
-      return msgs;
+      return rows.map(MessageModel.fromRow).toList();
     } catch (e) {
       if (kDebugMode) print('⚠️ [ChatRepository fetchMessages]: $e');
-      return [_systemWelcomeMessage(conversationId)];
+      return [];
     }
   }
 
@@ -265,33 +254,5 @@ class ChatRepository {
       return null;
     }
   }
-
-  // ── Local fallback: system welcome conversation ────────────
-  static ConversationModel _systemWelcomeConversation() {
-    return ConversationModel(
-      id: _systemConvId,
-      jobId: '',
-      businessName: 'GetWork',
-      workerName: 'GetWork System',
-      workerPhone: '',
-      lastMessage:
-          '👋 Welcome! Post your first job to receive applications here.',
-      lastMessageAt: DateTime.now(),
-      unreadCount: 1,
-      isSystem: true,
-    );
-  }
-
-  static MessageModel _systemWelcomeMessage(String convId) {
-    return MessageModel(
-      id: 'sys-welcome-0',
-      conversationId: convId,
-      senderType: 'system',
-      senderName: 'GetWork',
-      body:
-          '👋 Welcome to GetWork Business! Here you\'ll see messages from workers who apply to your jobs. Post your first shift to get started — workers in your area will apply within minutes.',
-      createdAt: DateTime.now(),
-      isRead: false,
-    );
-  }
 }
+

@@ -1,7 +1,10 @@
 // ============================================================
 // OPEN STREET MAP WIDGET — GetWork App
 // Renders Kathmandu map via flutter_map + multi-style tiles
-// Features smooth staggered entrance animations on job markers
+// Features zoom-aware clustering:
+//   • Zoom < 14  → cluster bubbles showing job count
+//   • Zoom ≥ 14  → individual pins (with spiderfy for exact overlaps)
+// Color semantics: Orange/accent = Urgent, Primary = Standard
 // ============================================================
 
 import 'dart:math' as math;
@@ -11,7 +14,24 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/constants/app_colors.dart';
 import '../../../models/job_model.dart';
 
+export 'open_street_map_widget.dart' show MapStyleType;
+
 enum MapStyleType { street, satellite, lightGray }
+
+// ── Cluster data model ────────────────────────────────────────
+class _JobCluster {
+  final List<JobModel> jobs;
+  final double lat;
+  final double lng;
+
+  _JobCluster({required this.jobs, required this.lat, required this.lng});
+
+  LatLng get center => LatLng(lat, lng);
+  int get count => jobs.length;
+  bool get isSingle => jobs.length == 1;
+  // Cluster is "urgent" if any job in it is urgent
+  bool get hasUrgent => jobs.any((j) => j.isUrgent);
+}
 
 // ── Animated single marker wrapper ───────────────────────────
 class _AnimatedMarkerWidget extends StatefulWidget {
@@ -63,7 +83,6 @@ class _AnimatedMarkerWidgetState extends State<_AnimatedMarkerWidget>
       ),
     );
 
-    // If marker already animated, set to 1.0 instantly so dragging map doesn't re-trigger
     if (_animatedJobIds.contains(widget.job.id)) {
       _controller.value = 1.0;
     } else {
@@ -99,8 +118,118 @@ class _AnimatedMarkerWidgetState extends State<_AnimatedMarkerWidget>
   }
 }
 
+// ── Animated cluster bubble widget ───────────────────────────
+class _ClusterBubble extends StatefulWidget {
+  final _JobCluster cluster;
+  final VoidCallback onTap;
+
+  const _ClusterBubble({
+    super.key,
+    required this.cluster,
+    required this.onTap,
+  });
+
+  @override
+  State<_ClusterBubble> createState() => _ClusterBubbleState();
+}
+
+class _ClusterBubbleState extends State<_ClusterBubble>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _scaleAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasUrgent = widget.cluster.hasUrgent;
+    final baseColor = hasUrgent ? AppColors.accent : AppColors.primary;
+    final count = widget.cluster.count;
+
+    // Size scales with count
+    final size = count >= 10 ? 52.0 : count >= 5 ? 46.0 : 40.0;
+
+    return ScaleTransition(
+      scale: _scaleAnim,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: baseColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: baseColor.withValues(alpha: 0.5),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$count',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1.0,
+                      ),
+                    ),
+                    const Text(
+                      'jobs',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 8,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white70,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Downward pointer
+            CustomPaint(
+              size: const Size(10, 6),
+              painter: _TrianglePointerPainter(color: baseColor),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── Main Map Widget ───────────────────────────────────────────
-class OpenStreetMapWidget extends StatelessWidget {
+class OpenStreetMapWidget extends StatefulWidget {
   final List<JobModel> jobs;
   final JobModel? selectedJob;
   final MapController? mapController;
@@ -124,11 +253,18 @@ class OpenStreetMapWidget extends StatelessWidget {
     this.onMapInteractionChanged,
   });
 
+  @override
+  State<OpenStreetMapWidget> createState() => _OpenStreetMapWidgetState();
+}
+
+class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget> {
+  double _currentZoom = 13.5;
+
   // Kathmandu default centre
   static const LatLng kathmanduCenter = LatLng(27.7172, 85.3240);
 
   String get _tileUrl {
-    switch (mapStyle) {
+    switch (widget.mapStyle) {
       case MapStyleType.satellite:
         return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
       case MapStyleType.lightGray:
@@ -138,24 +274,58 @@ class OpenStreetMapWidget extends StatelessWidget {
     }
   }
 
-  /// Calculates offsets for markers that share the same or very close coordinates
-  List<Marker> _buildSpiderfiedMarkers() {
-    final Map<String, List<int>> locationClusters = {};
+  /// Groups jobs into clusters based on current zoom level.
+  /// At zoom < 14: cluster within ~0.01° radius.
+  /// At zoom ≥ 14: cluster within ~0.0008° (spiderfy for exact overlaps).
+  List<_JobCluster> _buildClusters() {
+    final clusterRadius = _currentZoom < 14 ? 0.012 : 0.0008;
+    final jobs = List<JobModel>.from(widget.jobs);
+    final List<_JobCluster> clusters = [];
+    final Set<int> assigned = {};
 
-    // Group jobs by location key (rounded to ~30 meters precision)
     for (int i = 0; i < jobs.length; i++) {
-      final job = jobs[i];
-      final key = '${(job.latitude * 1000).round()},${(job.longitude * 1000).round()}';
-      locationClusters.putIfAbsent(key, () => []).add(i);
-    }
+      if (assigned.contains(i)) continue;
 
+      final job = jobs[i];
+      final List<JobModel> clusterJobs = [job];
+      assigned.add(i);
+
+      for (int j = i + 1; j < jobs.length; j++) {
+        if (assigned.contains(j)) continue;
+        final other = jobs[j];
+        final latDiff = (job.latitude - other.latitude).abs();
+        final lngDiff = (job.longitude - other.longitude).abs();
+        if (latDiff < clusterRadius && lngDiff < clusterRadius) {
+          clusterJobs.add(other);
+          assigned.add(j);
+        }
+      }
+
+      // Cluster center = average lat/lng
+      final avgLat =
+          clusterJobs.map((j) => j.latitude).reduce((a, b) => a + b) /
+              clusterJobs.length;
+      final avgLng =
+          clusterJobs.map((j) => j.longitude).reduce((a, b) => a + b) /
+              clusterJobs.length;
+
+      clusters.add(_JobCluster(
+        jobs: clusterJobs,
+        lat: avgLat,
+        lng: avgLng,
+      ));
+    }
+    return clusters;
+  }
+
+  List<Marker> _buildMarkers(List<_JobCluster> clusters) {
     final List<Marker> markers = [];
 
-    // Render User Location Pin first if active
-    if (userLocation != null) {
+    // User location pin
+    if (widget.userLocation != null) {
       markers.add(
         Marker(
-          point: userLocation!,
+          point: widget.userLocation!,
           width: 44,
           height: 44,
           child: Container(
@@ -193,39 +363,73 @@ class OpenStreetMapWidget extends StatelessWidget {
       );
     }
 
-    // Build job markers with fan-out spiderfy offset for overlapping markers
-    for (int i = 0; i < jobs.length; i++) {
-      final job = jobs[i];
-      final key = '${(job.latitude * 1000).round()},${(job.longitude * 1000).round()}';
-      final cluster = locationClusters[key] ?? [i];
+    // Job clusters / individual pins
+    for (int ci = 0; ci < clusters.length; ci++) {
+      final cluster = clusters[ci];
 
-      double lat = job.latitude;
-      double lng = job.longitude;
-
-      if (cluster.length > 1) {
-        final indexInCluster = cluster.indexOf(i);
-        final angle = (2 * math.pi * indexInCluster) / cluster.length;
-        const radius = 0.0008; // ~90m spread for clear visual separation
-        lat += radius * math.sin(angle);
-        lng += radius * math.cos(angle);
-      }
-
-      final isSelected = selectedJob?.id == job.id;
-      markers.add(
-        Marker(
-          point: LatLng(lat, lng),
-          width: 140,
-          height: 72,
-          alignment: Alignment.topCenter,
-          child: _AnimatedMarkerWidget(
-            key: ValueKey(job.id),
-            job: job,
-            isSelected: isSelected,
-            onTap: () => onMarkerTap(job),
-            index: i,
+      if (cluster.isSingle) {
+        // Individual pin
+        final job = cluster.jobs.first;
+        final isSelected = widget.selectedJob?.id == job.id;
+        markers.add(
+          Marker(
+            point: cluster.center,
+            width: 140,
+            height: 72,
+            alignment: Alignment.topCenter,
+            child: _AnimatedMarkerWidget(
+              key: ValueKey(job.id),
+              job: job,
+              isSelected: isSelected,
+              onTap: () => widget.onMarkerTap(job),
+              index: ci,
+            ),
           ),
-        ),
-      );
+        );
+      } else if (_currentZoom >= 14) {
+        // Spiderfy individual pins within tight cluster
+        for (int ki = 0; ki < cluster.jobs.length; ki++) {
+          final job = cluster.jobs[ki];
+          final angle = (2 * math.pi * ki) / cluster.jobs.length;
+          const radius = 0.0008;
+          final lat = cluster.lat + radius * math.sin(angle);
+          final lng = cluster.lng + radius * math.cos(angle);
+          final isSelected = widget.selectedJob?.id == job.id;
+          markers.add(
+            Marker(
+              point: LatLng(lat, lng),
+              width: 140,
+              height: 72,
+              alignment: Alignment.topCenter,
+              child: _AnimatedMarkerWidget(
+                key: ValueKey('${job.id}_spider_$ki'),
+                job: job,
+                isSelected: isSelected,
+                onTap: () => widget.onMarkerTap(job),
+                index: ci + ki,
+              ),
+            ),
+          );
+        }
+      } else {
+        // Cluster bubble
+        markers.add(
+          Marker(
+            point: cluster.center,
+            width: 60,
+            height: 66,
+            alignment: Alignment.topCenter,
+            child: _ClusterBubble(
+              key: ValueKey('cluster_${cluster.lat}_${cluster.lng}_${cluster.count}'),
+              cluster: cluster,
+              onTap: () {
+                // Zoom into the cluster on tap
+                widget.mapController?.move(cluster.center, _currentZoom + 2.0);
+              },
+            ),
+          ),
+        );
+      }
     }
 
     return markers;
@@ -234,16 +438,20 @@ class OpenStreetMapWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FlutterMap(
-      mapController: mapController,
+      mapController: widget.mapController,
       options: MapOptions(
-        initialCenter: userLocation ?? kathmanduCenter,
-        initialZoom: 13.5,
+        initialCenter: widget.userLocation ?? kathmanduCenter,
+        initialZoom: _currentZoom,
         minZoom: 10,
         maxZoom: 18,
-        onTap: (_, _) => onMapTap(),
+        onTap: (_, _) => widget.onMapTap(),
         onPositionChanged: (position, hasGesture) {
-          if (hasGesture && onMapInteractionChanged != null) {
-            onMapInteractionChanged!(true);
+          final newZoom = position.zoom;
+          if ((newZoom - _currentZoom).abs() > 0.15) {
+            setState(() => _currentZoom = newZoom);
+          }
+          if (hasGesture && widget.onMapInteractionChanged != null) {
+            widget.onMapInteractionChanged!(true);
           }
         },
       ),
@@ -257,12 +465,12 @@ class OpenStreetMapWidget extends StatelessWidget {
         ),
 
         // ── Dynamic Location Filter Distance Range Circle ────
-        if (userLocation != null)
+        if (widget.userLocation != null)
           CircleLayer(
             circles: [
               CircleMarker(
-                point: userLocation!,
-                radius: filterDistanceKm * 1000, // radius in meters
+                point: widget.userLocation!,
+                radius: widget.filterDistanceKm * 1000,
                 useRadiusInMeter: true,
                 color: AppColors.primary.withValues(alpha: 0.08),
                 borderColor: AppColors.primary.withValues(alpha: 0.35),
@@ -273,7 +481,7 @@ class OpenStreetMapWidget extends StatelessWidget {
 
         // ── Job Markers & User Location Marker ───────────────
         MarkerLayer(
-          markers: _buildSpiderfiedMarkers(),
+          markers: _buildMarkers(_buildClusters()),
         ),
       ],
     );
@@ -293,6 +501,7 @@ class _MarkerCalloutPin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Orange = Urgent, Primary blue-green = Standard
     final bgColor = isSelected
         ? AppColors.accent
         : job.isUrgent
@@ -335,17 +544,26 @@ class _MarkerCalloutPin extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 1),
-              Text(
-                job.title,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white70,
-                  height: 1.1,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (job.isUrgent) ...[
+                    const Text('🔥', style: TextStyle(fontSize: 9)),
+                    const SizedBox(width: 2),
+                  ],
+                  Text(
+                    job.title,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white70,
+                      height: 1.1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ],
           ),

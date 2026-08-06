@@ -252,7 +252,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-
+  void _showHelpDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxHeight: 440),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Help & Support',
+                  style: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+              ],
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.email_outlined, color: AppColors.primary),
+              title: const Text('Email Support', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+              subtitle: const Text('support@getwork.com.np'),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Email: support@getwork.com.np'), behavior: SnackBarBehavior.floating),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.phone_outlined, color: AppColors.primary),
+              title: const Text('Support Hotline', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+              subtitle: const Text('+977 1-4200000'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -344,63 +391,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         duration: const Duration(milliseconds: 150),
                         child: IgnorePointer(
                           ignoring: _isMapInteracting,
-                          child: SizedBox(
-                            height: 114,
-                            child: ListView.separated(
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
-                              scrollDirection: Axis.horizontal,
-                              itemCount: jobs.length,
-                              separatorBuilder: (_, idx) =>
-                                  const SizedBox(width: 10),
-                              itemBuilder: (context, i) {
-                                final job = jobs[i];
-                                return GestureDetector(
-                                  onTap: () {
-                                    FocusScope.of(context).unfocus();
-                                    ref
-                                        .read(selectedJobProvider.notifier)
-                                        .selectJob(job);
-                                    _flyToJob(job);
-                                  },
-                                  child: Container(
-                                    width: 250,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(
-                                          color: AppColors.border, width: 0.8),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          color: AppColors.shadowMedium,
-                                          blurRadius: 12,
-                                          offset: Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                job.title,
-                                                style: const TextStyle(
-                                                  fontFamily: 'Inter',
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
+                          child: Stack(
+                            children: [
+                              SizedBox(
+                                height: 114,
+                                child: ListView.separated(
+                                  padding: const EdgeInsets.only(
+                                      left: 14, right: 48), // extra right for peek
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: jobs.length,
+                                  separatorBuilder: (_, idx) =>
+                                      const SizedBox(width: 10),
+                                  itemBuilder: (context, i) {
+                                    final job = jobs[i];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        FocusScope.of(context).unfocus();
+                                        ref
+                                            .read(selectedJobProvider.notifier)
+                                            .selectJob(job);
+                                        _flyToJob(job);
+                                      },
+                                      child: Container(
+                                        width: 250,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(18),
+                                          border: Border.all(
+                                              color: AppColors.border, width: 0.8),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: AppColors.shadowMedium,
+                                              blurRadius: 12,
+                                              offset: Offset(0, 4),
                                             ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              job.salaryDisplay,
+                                          ],
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    job.title,
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Inter',
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: AppColors.textPrimary,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  job.salaryDisplay,
                                               style: const TextStyle(
                                                 fontFamily: 'Inter',
                                                 fontSize: 13,
@@ -447,6 +497,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 );
                               },
                             ),
+                          ),
+                          // Right-edge gradient scroll hint
+                          Positioned(
+                                top: 0,
+                                bottom: 0,
+                                right: 0,
+                                child: IgnorePointer(
+                                  child: Container(
+                                    width: 40,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withValues(alpha: 0.07),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -1045,10 +1118,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ── Side Profile Drawer ────────────────────────────────────────────────────
+  // ── Role Switch Dialog ─────────────────────────────────
+  void _showRoleSwitchDialog(BuildContext context, UserRole targetRole) {
+    final isWorkerTarget = targetRole == UserRole.worker;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(
+              isWorkerTarget ? Icons.handyman_rounded : Icons.storefront_rounded,
+              color: isWorkerTarget ? AppColors.primary : AppColors.accent,
+              size: 24,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              isWorkerTarget ? 'Switch to Worker Mode' : 'Switch to Business Mode',
+              style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w800, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Text(
+          isWorkerTarget
+              ? '⚒️ Worker Mode lets you browse the job map, discover shifts near you, and apply with one tap. Your applications and chat history stay separate from business activity.'
+              : '🏢 Business Mode lets you post jobs, view applicants, and manage your hiring. Switch back to Worker Mode any time to look for shifts yourself.',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 13,
+            color: AppColors.textSecondary,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(fontFamily: 'Inter')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).pop(); // close drawer
+              ref.read(userRoleProvider.notifier).setRole(targetRole);
+              if (targetRole == UserRole.business) {
+                context.go('/business');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isWorkerTarget ? AppColors.primary : AppColors.accent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(
+              isWorkerTarget ? 'Switch to Worker' : 'Switch to Business',
+              style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Side Profile Drawer ────────────────────────────────────────────
   Widget _buildProfileDrawer(BuildContext context) {
     final role = ref.watch(userRoleProvider);
     final isWorker = role != UserRole.business;
+    final appliedCount = ref.watch(appliedJobsProvider).length;
+
     return Drawer(
       width: MediaQuery.of(context).size.width * 0.78,
       backgroundColor: Colors.white,
@@ -1056,7 +1193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ────────────────────────────────────────────
+            // ── Header ────────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -1114,157 +1251,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Colors.white70,
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  // Role badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1),
-                    ),
-                    child: Text(
-                      isWorker ? '⚒️  Worker Mode' : '🏢  Business Mode',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Role Switch Toggle ─────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Switch Role',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textHint,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Toggle Pill
-                  Container(
-                    width: double.infinity,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        // Worker side
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              ref.read(userRoleProvider.notifier).setRole(UserRole.worker);
-                              Navigator.of(context).pop();
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOutCubic,
-                              margin: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: isWorker ? AppColors.primary : Colors.transparent,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: isWorker
-                                    ? [
-                                        BoxShadow(
-                                          color: AppColors.primary.withValues(alpha: 0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.handyman_rounded,
-                                      size: 16,
-                                      color: isWorker ? Colors.white : AppColors.textSecondary,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Worker',
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: isWorker ? Colors.white : AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Business side
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              ref.read(userRoleProvider.notifier).setRole(UserRole.business);
-                              Navigator.of(context).pop();
-                              context.go('/business');
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOutCubic,
-                              margin: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: !isWorker ? AppColors.accent : Colors.transparent,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: !isWorker
-                                    ? [
-                                        BoxShadow(
-                                          color: AppColors.accent.withValues(alpha: 0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.storefront_rounded,
-                                      size: 16,
-                                      color: !isWorker ? Colors.white : AppColors.textSecondary,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Business',
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: !isWorker ? Colors.white : AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 16),
+                  // ── Stats Row ──────────────────────────────
+                  Row(
+                    children: [
+                      _statBadge('💼', '$appliedCount', 'Applied'),
+                      const SizedBox(width: 10),
+                      _statBadge('⭐', '4.8', 'Rating'),
+                      const SizedBox(width: 10),
+                      _statBadge('✔️', '0', 'Hired'),
+                    ],
                   ),
                 ],
               ),
@@ -1272,7 +1268,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             const Divider(height: 1, color: AppColors.border),
 
-            // ── Menu Items ─────────────────────────────────────────
+            // ── Menu Items ─────────────────────────────
             _drawerItem(Icons.person_outline_rounded, 'My Profile', () {
               Navigator.of(context).pop();
               context.push('/profile');
@@ -1281,11 +1277,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Navigator.of(context).pop();
               setState(() => _currentNavIndex = 3);
             }),
+            // Switch Mode — intentional, with explanation
+            if (isWorker)
+              _drawerItem(Icons.storefront_rounded, 'Switch to Business Mode', () {
+                _showRoleSwitchDialog(context, UserRole.business);
+              }, color: AppColors.accent)
+            else
+              _drawerItem(Icons.handyman_rounded, 'Switch to Worker Mode', () {
+                _showRoleSwitchDialog(context, UserRole.worker);
+              }, color: AppColors.primary),
             _drawerItem(Icons.settings_outlined, 'Settings', () {
               Navigator.of(context).pop();
+              context.push('/settings');
             }),
             _drawerItem(Icons.help_outline_rounded, 'Help & Support', () {
               Navigator.of(context).pop();
+              _showHelpDialog();
             }),
 
             const Spacer(),
@@ -1296,6 +1303,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               context.go('/');
             }, color: Colors.red),
             const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Stats badge for drawer header ──────────────────────
+  Widget _statBadge(String emoji, String value, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '$emoji $value',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 10,
+                color: Colors.white70,
+              ),
+            ),
           ],
         ),
       ),
@@ -1855,9 +1897,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Row(
                     children: [
-                      const Icon(Icons.lock_rounded,
-                          size: 11, color: AppColors.primary),
-                      const SizedBox(width: 3),
                       Expanded(
                         child: Text(
                           c.lastMessage,
@@ -2020,18 +2059,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ── Auto Apply Form & Settings Card ─────────────────────────────
+  // ── Smart Apply Card ──────────────────────────────────────────────
   Widget _buildAutoApplyFormCard(List<JobModel> allJobs, int currentAppliedCount) {
-    final canAutoApply = currentAppliedCount < 6 && allJobs.isNotEmpty;
+    final remainingSlots = 6 - currentAppliedCount;
+    final topJobs = allJobs
+        .where((j) => !ref.read(appliedJobsProvider).contains(j.id))
+        .take(6)
+        .toList();
+    final canSmartApply = remainingSlots > 0 && topJobs.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primaryDark,
-            AppColors.primary,
-          ],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E3A5F), Color(0xFF2563EB)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -2056,7 +2097,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.bolt_rounded,
+                  Icons.auto_awesome_rounded,
                   color: Colors.amber,
                   size: 22,
                 ),
@@ -2067,7 +2108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Auto-Apply Engine',
+                      'Smart Apply',
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 16,
@@ -2076,7 +2117,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                     Text(
-                      'Apply to 6 jobs at once. Auto-cancel when hired.',
+                      'Review top matches and choose which to apply.',
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 11,
@@ -2092,9 +2133,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: Colors.white.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'Max 6',
-                  style: TextStyle(
+                child: Text(
+                  '$remainingSlots left',
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -2108,67 +2149,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const Divider(color: Colors.white24, height: 1),
           const SizedBox(height: 12),
 
-          // Form settings pills
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              _formPill(Icons.radar_rounded, 'Radius: ≤ 25 km'),
-              _formPill(Icons.attach_money_rounded, 'Salary: Top Paying'),
-              _formPill(Icons.cleaning_services_rounded, 'Auto-Cancel: Active'),
-            ],
+          // Info note
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.info_outline_rounded, color: Colors.white70, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'You pick which jobs to apply to. Each application is your explicit choice — employers can then reach you via chat.',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      color: Colors.white70,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Trigger Auto Apply Button
+          // CTA Button
           SizedBox(
             width: double.infinity,
             height: 46,
             child: ElevatedButton.icon(
-              onPressed: canAutoApply
-                  ? () {
-                      final availableJobIds = allJobs.map((j) => j.id).toList();
-                      ref
-                          .read(appliedJobsProvider.notifier)
-                          .autoApply6Jobs(availableJobIds);
-                      ref
-                          .read(autoAppliedJobsProvider.notifier)
-                          .markAutoApplied(availableJobIds.take(6));
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: AppColors.primaryDark,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          content: Row(
-                            children: const [
-                              Icon(Icons.bolt_rounded,
-                                  color: Colors.amber, size: 20),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  '⚡ Auto-applied to 6 nearby jobs! If 1 hires you, the rest auto-cancel.',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
+              onPressed: canSmartApply
+                  ? () => _showSmartApplySheet(topJobs)
                   : null,
-              icon: const Icon(Icons.flash_on_rounded, size: 18),
+              icon: const Icon(Icons.checklist_rounded, size: 18),
               label: Text(
-                currentAppliedCount >= 6
-                    ? '6 Jobs Auto-Applied (Limit Reached)'
-                    : 'Auto-Apply to 6 Jobs Now 🚀',
+                remainingSlots <= 0
+                    ? '6 Applications Active (Limit Reached)'
+                    : topJobs.isEmpty
+                        ? 'No New Jobs Available'
+                        : 'Review & Apply to Jobs →',
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
@@ -2177,7 +2199,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: AppColors.primaryDark,
+                foregroundColor: const Color(0xFF1E3A5F),
                 disabledBackgroundColor: Colors.white38,
                 disabledForegroundColor: Colors.white70,
                 elevation: 2,
@@ -2192,29 +2214,191 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _formPill(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: Colors.white70),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
+  // ── Smart Apply Bottom Sheet ──────────────────────────────────────
+  void _showSmartApplySheet(List<JobModel> topJobs) {
+    final selected = <String>{};
+    for (final j in topJobs) {
+      selected.add(j.id); // all pre-selected by default
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Container(
+              padding: EdgeInsets.only(
+                top: 24,
+                left: 20,
+                right: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.82,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Header
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Choose Jobs to Apply',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Review each job below and uncheck any you don\'t want.',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 8),
+                  // Job List
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: topJobs.length,
+                      itemBuilder: (_, i) {
+                        final job = topJobs[i];
+                        final isChecked = selected.contains(job.id);
+                        return CheckboxListTile(
+                          value: isChecked,
+                          activeColor: AppColors.primary,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 4),
+                          title: Text(
+                            job.title,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${job.businessName} • ${job.salaryDisplay} • ${job.address}',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          onChanged: (val) {
+                            setSheetState(() {
+                              if (val == true) {
+                                selected.add(job.id);
+                              } else {
+                                selected.remove(job.id);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 16),
+                  // Submit
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: selected.isEmpty
+                          ? null
+                          : () {
+                              Navigator.pop(ctx);
+                              for (final id in selected) {
+                                ref
+                                    .read(appliedJobsProvider.notifier)
+                                    .applyToJob(id);
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: AppColors.primaryDark,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  content: Text(
+                                    '✅ Applied to ${selected.length} job${selected.length == 1 ? '' : 's'}! Employers will contact you via chat.',
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        selected.isEmpty
+                            ? 'Select at least one job'
+                            : 'Apply to ${selected.length} Selected Job${selected.length == 1 ? '' : 's'}',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
