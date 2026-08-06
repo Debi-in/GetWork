@@ -49,12 +49,14 @@ class SupabaseJobsService {
     bool isUrgent = false,
     JobType type = JobType.scheduled,
     int deadlineDays = 3,
+    int postExpiryDays = 7,
   }) async {
     try {
       final now = DateTime.now();
+      // For instant jobs: 4-hour expiry. For others: user-chosen 1–15 day expiry.
       final expiresAt = type == JobType.instant
           ? now.add(const Duration(hours: 4))
-          : now.add(Duration(days: deadlineDays.clamp(1, 7)));
+          : now.add(Duration(days: postExpiryDays.clamp(1, 15)));
 
       await _db.from('jobs').insert({
         'title': title,

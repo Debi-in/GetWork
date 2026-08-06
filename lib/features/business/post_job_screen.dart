@@ -69,6 +69,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   String _shiftEnd = '05:00 PM';
   bool _isUrgent = false;
   int _selectedDeadlineDays = 3;
+  int _postExpiryDays = 7; // 1–15 days, post auto-expires & saves to draft
 
   @override
   void initState() {
@@ -105,6 +106,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       _shiftEnd = d['shiftEnd'] as String? ?? '05:00 PM';
       _isUrgent = d['isUrgent'] as bool? ?? false;
       _selectedDeadlineDays = d['deadlineDays'] as int? ?? 3;
+      _postExpiryDays = d['postExpiryDays'] as int? ?? 7;
     } else if (widget.type == JobType.instant) {
       _isUrgent = true;
     }
@@ -214,6 +216,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       'type': widget.type.name,
       'phone': _phoneController.text.trim(),
       'email': _emailController.text.trim(),
+      'postExpiryDays': _postExpiryDays,
     };
   }
 
@@ -466,6 +469,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       isUrgent: _isUrgent,
       type: widget.type,
       deadlineDays: _selectedDeadlineDays,
+      postExpiryDays: _postExpiryDays,
     );
 
     setState(() => _isLoading = false);
@@ -981,6 +985,13 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
+
+                // ── Post Expiry (ALL job types) ──────────────────────
+                _PostExpirySection(
+                  expiryDays: _postExpiryDays,
+                  onChanged: (v) => setState(() => _postExpiryDays = v),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -1281,6 +1292,198 @@ class _StyledDropdown<T> extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// POST EXPIRY SECTION WIDGET
+// Allows business to set how many days a post stays live (1–15).
+// After the deadline: post is auto-removed from listings and
+// saved to Drafts so it can be re-posted easily.
+// ════════════════════════════════════════════════════════════
+class _PostExpirySection extends StatelessWidget {
+  const _PostExpirySection({
+    required this.expiryDays,
+    required this.onChanged,
+  });
+
+  final int expiryDays;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final expiryDate = DateTime.now().add(Duration(days: expiryDays));
+    final monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final expiryStr =
+        '${expiryDate.day} ${monthNames[expiryDate.month - 1]} ${expiryDate.year}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Divider ────────────────────────────────────────────
+        Container(
+          height: 1,
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [
+              Color(0x000D9488),
+              Color(0xFF0D9488),
+              Color(0x000D9488),
+            ]),
+          ),
+        ),
+
+        // ── Section header ─────────────────────────────────────
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.timer_outlined,
+                color: Colors.white, size: 16),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            'Post Expiry',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$expiryDays ${expiryDays == 1 ? 'day' : 'days'}',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 4),
+        Text(
+          'Expires on $expiryStr — max 15 days',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // ── Slider ─────────────────────────────────────────────
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: const Color(0xFF0D9488),
+            inactiveTrackColor: const Color(0xFFE0F2F1),
+            thumbColor: const Color(0xFF0D9488),
+            overlayColor: const Color(0x220D9488),
+            trackHeight: 4,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+          ),
+          child: Slider(
+            value: expiryDays.toDouble(),
+            min: 1,
+            max: 15,
+            divisions: 14,
+            onChanged: (v) => onChanged(v.round()),
+          ),
+        ),
+
+        // ── Quick-pick day pills ────────────────────────────────
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [1, 3, 5, 7, 10, 14, 15].map((d) {
+            final selected = expiryDays == d;
+            return GestureDetector(
+              onTap: () => onChanged(d),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  gradient: selected
+                      ? const LinearGradient(
+                          colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                        )
+                      : null,
+                  color: selected ? null : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: selected
+                        ? const Color(0xFF0D9488)
+                        : AppColors.border,
+                  ),
+                ),
+                child: Text(
+                  '$d ${d == 1 ? 'day' : 'days'}',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        selected ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 14),
+
+        // ── Info card ──────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFE0F2F1), Color(0xFFB2DFDB)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF0D9488), width: 0.8),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline_rounded,
+                  color: Color(0xFF0F766E), size: 18),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'When this post expires it is automatically removed from listings and saved to your Drafts for 4 days so you can re-post it quickly.',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    color: Color(0xFF0F5132),
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
