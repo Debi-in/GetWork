@@ -8,7 +8,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
@@ -384,7 +383,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // Bottom Horizontal Job Carousel (Fades out when panning/rotating map)
                   if (selectedJob == null && jobs.isNotEmpty)
                     Positioned(
-                      bottom: 104, // raised above floating nav bar
+                      bottom: 92, // raised neatly above floating nav bar
                       left: 0,
                       right: 0,
                       child: AnimatedOpacity(
@@ -395,16 +394,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Stack(
                             children: [
                               SizedBox(
-                                height: 114,
+                                height: 82,
                                 child: ListView.separated(
                                   padding: const EdgeInsets.only(
-                                      left: 14, right: 48), // extra right for peek
+                                      left: 14, right: 44), // peek right card
                                   scrollDirection: Axis.horizontal,
                                   itemCount: jobs.length,
                                   separatorBuilder: (_, idx) =>
                                       const SizedBox(width: 10),
                                   itemBuilder: (context, i) {
                                     final job = jobs[i];
+                                    final catColor = _categoryColor(job.category);
                                     return GestureDetector(
                                       onTap: () {
                                         FocusScope.of(context).unfocus();
@@ -414,26 +414,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         _flyToJob(job);
                                       },
                                       child: Container(
-                                        width: 250.w,
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 12.w, vertical: 8.h),
+                                        width: 190,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 11, vertical: 9),
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
                                             colors: [
                                               Colors.white,
-                                              AppColors.background,
+                                              catColor.withValues(alpha: 0.06),
                                             ],
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
                                           ),
-                                          borderRadius: BorderRadius.circular(18.r),
+                                          borderRadius: BorderRadius.circular(16),
                                           border: Border.all(
-                                              color: AppColors.border, width: 0.8),
-                                          boxShadow: const [
+                                              color: catColor.withValues(alpha: 0.25),
+                                              width: 0.9),
+                                          boxShadow: [
                                             BoxShadow(
-                                              color: AppColors.shadowMedium,
-                                              blurRadius: 12,
-                                              offset: Offset(0, 4),
+                                              color: Colors.black.withValues(alpha: 0.09),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 3),
                                             ),
                                           ],
                                         ),
@@ -441,6 +442,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
+                                            // Title + salary pill row
                                             Row(
                                               children: [
                                                 Expanded(
@@ -448,7 +450,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                     job.title,
                                                     style: const TextStyle(
                                                       fontFamily: 'Inter',
-                                                      fontSize: 14,
+                                                      fontSize: 12.5,
                                                       fontWeight: FontWeight.w700,
                                                       color: AppColors.textPrimary,
                                                     ),
@@ -456,64 +458,108 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                     overflow: TextOverflow.ellipsis,
                                                   ),
                                                 ),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  job.salaryDisplay,
-                                              style: const TextStyle(
-                                                fontFamily: 'Inter',
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                                color: AppColors.primary,
-                                              ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          job.businessName,
-                                          style: const TextStyle(
-                                            fontFamily: 'Inter',
-                                            fontSize: 12,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.location_on_outlined,
-                                                size: 13, color: AppColors.primary),
-                                            const SizedBox(width: 3),
-                                            Expanded(
-                                              child: Text(
-                                                '${job.distanceKm ?? 0.5} km • ${job.address}',
-                                                style: const TextStyle(
-                                                  fontFamily: 'Inter',
-                                                  fontSize: 11,
-                                                  color: AppColors.textSecondary,
+                                            const SizedBox(height: 3),
+                                            // Business name + salary on same row
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    job.businessName,
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Inter',
+                                                      fontSize: 10.5,
+                                                      color: AppColors.textSecondary,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
                                                 ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                      horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: [
+                                                        const Color(0xFFD1FAE5),
+                                                        const Color(0xFFA7F3D0),
+                                                      ],
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    job.salaryDisplay,
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Inter',
+                                                      fontSize: 9.5,
+                                                      fontWeight: FontWeight.w800,
+                                                      color: Color(0xFF047857),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 5),
+                                            // Distance + category badge
+                                            Row(
+                                              children: [
+                                                Icon(Icons.location_on_rounded,
+                                                    size: 11,
+                                                    color: catColor),
+                                                const SizedBox(width: 2),
+                                                Expanded(
+                                                  child: Text(
+                                                    '${job.distanceKm ?? 0.5} km away',
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Inter',
+                                                      fontSize: 9.5,
+                                                      color: AppColors.textSecondary,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                if (job.isUrgent)
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                        horizontal: 5, vertical: 1),
+                                                    decoration: BoxDecoration(
+                                                      gradient: const LinearGradient(
+                                                        colors: [Color(0xFFFF6B35), Color(0xFFE53935)],
+                                                      ),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                    ),
+                                                    child: const Text(
+                                                      'Urgent',
+                                                      style: TextStyle(
+                                                        fontFamily: 'Inter',
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
                                             ),
                                           ],
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          // Right-edge gradient scroll hint
-                          Positioned(
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              // Right-edge gradient scroll hint
+                              Positioned(
                                 top: 0,
                                 bottom: 0,
                                 right: 0,
                                 child: IgnorePointer(
                                   child: Container(
-                                    width: 40,
+                                    width: 32,
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         begin: Alignment.centerLeft,
@@ -537,7 +583,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   if (selectedJob == null)
                     Positioned(
                       right: 14,
-                      bottom: 232, // placed above job carousel (104 + 114 + 14 = 232)
+                      bottom: 188, // placed above compact job carousel (92 + 86 + 10 = 188)
                       child: AnimatedOpacity(
                         opacity: _isMapInteracting ? 0.0 : 1.0,
                         duration: const Duration(milliseconds: 150),
@@ -1637,228 +1683,248 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onTap: () => context.push('/job/${job.id}'),
             child: Container(
               margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white,
+                    catColor.withValues(alpha: 0.06),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
+                border: Border.all(
+                  color: catColor.withValues(alpha: 0.15),
+                  width: 0.8,
+                ),
+                boxShadow: [
                   BoxShadow(
-                    color: AppColors.shadowLight,
+                    color: catColor.withValues(alpha: 0.08),
                     blurRadius: 14,
-                    offset: Offset(0, 4),
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Left: Square Business Avatar ──
-                  Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      color: catColor.withValues(alpha: 0.13),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: catColor.withValues(alpha: 0.25),
-                        width: 1,
-                      ),
-                    ),
-                    child: job.businessLogoUrl != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child: Image.network(
-                              job.businessLogoUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, e, st) => _avatarFallback(
-                                  job.businessName, catColor),
-                            ),
-                          )
-                        : _avatarFallback(job.businessName, catColor),
-                  ),
-                  const SizedBox(width: 14),
-
-                  // ── Right: All Content ──
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Top: Title + Chevron
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                job.title,
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
-                                  height: 1.25,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryContainer,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 13,
-                                color: AppColors.primary,
-                              ),
-                            ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Left: Square Business Avatar ──
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            catColor.withValues(alpha: 0.18),
+                            catColor.withValues(alpha: 0.08),
                           ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        const SizedBox(height: 4),
-
-                        // Business • Location
-                        Text(
-                          '${job.businessName} • ${job.address}',
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            color: AppColors.textSecondary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: catColor.withValues(alpha: 0.3),
+                          width: 1,
                         ),
-                        const SizedBox(height: 6),
+                      ),
+                      child: job.businessLogoUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(13),
+                              child: Image.network(
+                                job.businessLogoUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, e, st) => _avatarFallback(
+                                    job.businessName, catColor),
+                              ),
+                            )
+                          : _avatarFallback(job.businessName, catColor),
+                    ),
+                    const SizedBox(width: 12),
 
-                        // Rating + Distance row
-                        Row(
-                          children: [
-                            const Icon(Icons.star_rounded,
-                                size: 14, color: Color(0xFFF59E0B)),
-                            const SizedBox(width: 3),
-                            const Text(
-                              '4.8',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const Text(
-                              ' (128)',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11,
-                                color: AppColors.textHint,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            const Icon(Icons.location_on_rounded,
-                                size: 13, color: AppColors.primary),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${job.distanceKm ?? 0.5} km',
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            if (job.isToday) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: AppColors.successLight,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  'Today',
-                                  style: TextStyle(
+                    // ── Right: All Content ──
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Top: Title + Arrow
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  job.title,
+                                  style: const TextStyle(
                                     fontFamily: 'Inter',
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.success,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textPrimary,
+                                    height: 1.2,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      catColor.withValues(alpha: 0.18),
+                                      catColor.withValues(alpha: 0.08),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 12,
+                                  color: catColor,
                                 ),
                               ),
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 10),
+                          ),
+                          const SizedBox(height: 3),
 
-                        // Bottom: Salary pill + Tags
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: [
-                            // Green salary pill
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD1FAE5),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                job.salaryDisplay,
-                                style: const TextStyle(
+                          // Business • Location
+                          Text(
+                            '${job.businessName} • ${job.address}',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+
+                          // Rating + Distance row
+                          Row(
+                            children: [
+                              const Icon(Icons.star_rounded,
+                                  size: 13, color: Color(0xFFF59E0B)),
+                              const SizedBox(width: 2),
+                              const Text(
+                                '4.8',
+                                style: TextStyle(
                                   fontFamily: 'Inter',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF059669),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
-                            ),
-                            // Category tag
-                            _tagPill(catLabel, catColor),
-                            // Shift time tag
-                            _tagPill(
-                              '${job.shiftStartTime}–${job.shiftEndTime}',
-                              AppColors.textHint,
-                            ),
-                            // Urgent tag with gradient
-                            if (job.isUrgent)
+                              const SizedBox(width: 8),
+                              Icon(Icons.location_on_rounded,
+                                  size: 12, color: catColor),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${job.distanceKm ?? 0.5} km',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              if (job.isToday) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF059669), Color(0xFF047857)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'Today',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Bottom: Salary pill + Tags
+                          Row(
+                            children: [
+                              // Green salary pill
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
+                                    horizontal: 9, vertical: 3),
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFFFF6B35), Color(0xFFE53935)],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
+                                    colors: [Color(0xFFD1FAE5), Color(0xFFA7F3D0)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(Icons.local_fire_department_rounded,
-                                        size: 12, color: Colors.white),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Urgent',
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  job.salaryDisplay,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF059669),
+                                  ),
                                 ),
                               ),
-                          ],
-                        ),
-                      ],
+                              const SizedBox(width: 6),
+                              // Category tag
+                              _tagPill(catLabel, catColor),
+                              if (job.isUrgent) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFFF6B35), Color(0xFFE53935)],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      Icon(Icons.local_fire_department_rounded,
+                                          size: 10, color: Colors.white),
+                                      SizedBox(width: 3),
+                                      Text(
+                                        'Urgent',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1885,18 +1951,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── Small tag pill ───────────────────────────────────────────────────────
   Widget _tagPill(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.07),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 0.6),
       ),
       child: Text(
         label,
         style: TextStyle(
           fontFamily: 'Inter',
-          fontSize: 11,
+          fontSize: 10.5,
           fontWeight: FontWeight.w600,
-          color: color.withValues(alpha: 0.9),
+          color: color,
         ),
       ),
     );
