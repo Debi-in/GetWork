@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/auth_service.dart';
 import '../../authentication/choose_role_screen.dart';
 import '../../jobs/jobs_provider.dart';
 
@@ -275,14 +274,11 @@ class ProfileDrawer extends ConsumerWidget {
               'Sign Out',
               () async {
                 Navigator.of(context).pop();
-                // Clear local role cache
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.remove('user_role');
                 await prefs.remove('role_locked_at');
-                // Firebase sign out
-                await AuthService.signOut();
                 if (context.mounted) {
-                  context.go('/login');
+                  context.go('/choose-role');
                 }
               },
               color: Colors.red,
