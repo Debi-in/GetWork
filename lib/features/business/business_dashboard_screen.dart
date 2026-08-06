@@ -340,18 +340,21 @@ class _BusinessDashboardScreenState
                     child: _SpeedDial(
                       actions: [
                         _SpeedDialAction(
+                          label: 'Post New Job',
                           icon: Icons.add_rounded,
                           color: AppColors.primary,
                           bgColor: AppColors.primaryContainer,
                           onTap: () => context.push(AppRoutes.postJobType),
                         ),
                         _SpeedDialAction(
+                          label: 'Saved Drafts',
                           icon: Icons.bookmark_outline_rounded,
                           color: const Color(0xFF7C4DFF),
                           bgColor: const Color(0xFFEDE7F6),
                           onTap: () => context.push(AppRoutes.drafts),
                         ),
                         _SpeedDialAction(
+                          label: 'All Applicants',
                           icon: Icons.people_outline_rounded,
                           color: AppColors.accent,
                           bgColor: AppColors.accentContainer,
@@ -758,11 +761,14 @@ class _BusinessJobCard extends StatelessWidget {
 
 // ── Speed Dial Action Model ────────────────────────────────────
 class _SpeedDialAction {
+  final String label;
   final IconData icon;
   final Color color;
   final Color bgColor;
   final VoidCallback onTap;
+
   const _SpeedDialAction({
+    required this.label,
     required this.icon,
     required this.color,
     required this.bgColor,
@@ -770,7 +776,7 @@ class _SpeedDialAction {
   });
 }
 
-// ── Stateful Speed Dial FAB Widget with Spring Animation ───────
+// ── Stateful Speed Dial FAB Widget using OverlayPortal ────────
 class _SpeedDial extends StatefulWidget {
   final List<_SpeedDialAction> actions;
 
@@ -785,16 +791,7 @@ class _SpeedDialState extends State<_SpeedDial>
   bool _isOpen = false;
   late AnimationController _controller;
   late Animation<double> _rotationAnimation;
-
-  // Exact spring cubic bezier matching spec: cubic-bezier(0.34, 1.56, 0.64, 1)
-  static const Curve _springCurve = Cubic(0.34, 1.56, 0.64, 1.0);
-
-  // Exact target fan offsets: upper-left (-54, -58), top (0, -80), upper-right (54, -58)
-  static const List<Offset> _fanTargets = [
-    Offset(-54, -58),
-    Offset(0, -80),
-    Offset(54, -58),
-  ];
+  final OverlayPortalController _overlayController = OverlayPortalController();
 
   @override
   void initState() {
@@ -819,130 +816,166 @@ class _SpeedDialState extends State<_SpeedDial>
       _isOpen = !_isOpen;
       if (_isOpen) {
         _controller.forward();
+        _overlayController.show();
       } else {
-        _controller.reverse();
+        _controller.reverse().then((_) {
+          if (mounted && !_isOpen) {
+            _overlayController.hide();
+          }
+        });
       }
     });
   }
 
+  void _closeAndExecute(VoidCallback action) {
+    setState(() {
+      _isOpen = false;
+      _controller.reverse().then((_) {
+        if (mounted) {
+          _overlayController.hide();
+        }
+      });
+    });
+    action();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 60,
-      height: 60,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          // ── 3 Mini Action Buttons Emerging from Center ────────
-          ...List.generate(widget.actions.length, (i) {
-            final action = widget.actions[i];
-            final targetOffset = _fanTargets[i];
-            final delayFraction = (i * 0.08).clamp(0.0, 0.25);
-
-            final scaleAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
-              CurvedAnimation(
-                parent: _controller,
-                curve: Interval(delayFraction, 1.0, curve: _springCurve),
+    return OverlayPortal(
+      controller: _overlayController,
+      overlayChildBuilder: (context) {
+        return Stack(
+          children: [
+            // Dark dismissible backdrop
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _toggle,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.35),
+                ),
               ),
-            );
+            ),
 
-            final opacityAnimation =
-                Tween<double>(begin: 0.0, end: 1.0).animate(
-              CurvedAnimation(
-                parent: _controller,
-                curve: Interval(delayFraction,
-                    (delayFraction + 0.4).clamp(0.0, 1.0),
-                    curve: Curves.easeOut),
-              ),
-            );
-
-            final translateAnimation =
-                Tween<Offset>(begin: Offset.zero, end: targetOffset).animate(
-              CurvedAnimation(
-                parent: _controller,
-                curve: Interval(delayFraction, 1.0, curve: _springCurve),
-              ),
-            );
-
-            return AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                final offset = translateAnimation.value;
-                final scale = scaleAnimation.value;
-                final opacity = opacityAnimation.value;
-
-                return Transform.translate(
-                  offset: offset,
-                  child: Transform.scale(
-                    scale: scale,
-                    child: Opacity(
-                      opacity: opacity.clamp(0.0, 1.0),
-                      child: IgnorePointer(
-                        ignoring: !_isOpen,
-                        child: GestureDetector(
-                          onTap: () {
-                            _toggle();
-                            action.onTap();
-                          },
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: action.bgColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: action.color.withValues(alpha: 0.35),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: action.color.withValues(alpha: 0.25),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child:
-                                Icon(action.icon, color: action.color, size: 22),
+            // Floating action options box
+            Positioned(
+              bottom: 95,
+              left: 30,
+              right: 30,
+              child: ScaleTransition(
+                scale: CurvedAnimation(
+                  parent: _controller,
+                  curve: Curves.easeOutBack,
+                ),
+                child: FadeTransition(
+                  opacity: _controller,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: AppColors.border),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 20,
+                            offset: Offset(0, 8),
                           ),
-                        ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: widget.actions.map((action) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () => _closeAndExecute(action.onTap),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: action.bgColor.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: action.color.withValues(alpha: 0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: action.color,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          action.icon,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Text(
+                                          action.label,
+                                          style: const TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.chevron_right_rounded,
+                                        color: action.color,
+                                        size: 20,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
-                  ),
-                );
-              },
-            );
-          }),
-
-          // ── Central FAB Button (+) Always Emerald Green ────────
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _toggle,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.40),
-                      blurRadius: 16,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: RotationTransition(
-                  turns: _rotationAnimation,
-                  child: const Icon(
-                    Icons.add_rounded,
-                    color: Colors.white,
-                    size: 32,
                   ),
                 ),
               ),
             ),
+          ],
+        );
+      },
+      child: GestureDetector(
+        onTap: _toggle,
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.40),
+                blurRadius: 16,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
-        ],
+          child: RotationTransition(
+            turns: _rotationAnimation,
+            child: const Icon(
+              Icons.add_rounded,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+        ),
       ),
     );
   }
