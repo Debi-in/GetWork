@@ -112,18 +112,29 @@ class _BusinessDashboardScreenState
                         ),
                       ),
 
-                      // Role Switcher Pill Button
-                      OutlinedButton.icon(
-                        onPressed: () => context.go('/choose-role'),
-                        icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                        label: const Text('Worker Mode'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 36),
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
+                      // Verified Business Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentContainer.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.verified_rounded, size: 14, color: AppColors.accentDark),
+                            SizedBox(width: 4),
+                            Text(
+                              'Business Profile',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.accentDark,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -1889,11 +1900,35 @@ class _SettingsTab extends ConsumerWidget {
             title: 'Account',
             tiles: [
               _SettingsTile(
-                icon: Icons.swap_horiz_rounded,
-                label: 'Switch to Worker Mode',
+                icon: Icons.support_agent_rounded,
+                label: 'Contact Support',
                 color: AppColors.accent,
                 trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
-                onTap: () => context.go('/choose-role'),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      title: const Row(
+                        children: [
+                          Icon(Icons.support_agent_rounded, color: AppColors.accent),
+                          SizedBox(width: 8),
+                          Text('Contact Support', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w800, fontSize: 18)),
+                        ],
+                      ),
+                      content: const Text(
+                        'Account roles are permanently assigned upon setup.\n\nNeed to change your account role? Contact support for manual review:\n\nEmail: support@getwork.com\nPhone: +977 1 4200000',
+                        style: TextStyle(fontFamily: 'Inter', fontSize: 13, height: 1.5, color: AppColors.textSecondary),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Close', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               _SettingsTile(
                 icon: Icons.admin_panel_settings_outlined,

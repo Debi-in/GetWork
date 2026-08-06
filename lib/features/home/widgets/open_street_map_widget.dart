@@ -564,51 +564,36 @@ class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget>
 LinearGradient _getJobPinGradient(JobModel job, bool isSelected) {
   if (isSelected) {
     return const LinearGradient(
-      colors: [Color(0xFF06B6D4), Color(0xFF0284C7)],
+      colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
   }
-  if (job.isUrgent) {
-    return AppColors.urgentGradient;
+
+  // 1. Instant / Urgent → Vibrant Urgent Orange-Red
+  if (job.isInstant || job.isUrgent) {
+    return const LinearGradient(
+      colors: [Color(0xFFFF6B35), Color(0xFFE53935)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
   }
 
-  switch (job.category) {
-    case JobCategory.tech:
-      return const LinearGradient(
-        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
-    case JobCategory.food:
-    case JobCategory.retail:
-      return const LinearGradient(
-        colors: [Color(0xFF059669), Color(0xFF047857)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
-    case JobCategory.delivery:
-      return const LinearGradient(
-        colors: [Color(0xFFD97706), Color(0xFFB45309)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
-    case JobCategory.events:
-      return const LinearGradient(
-        colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
-    case JobCategory.construction:
-    case JobCategory.cleaning:
-      return const LinearGradient(
-        colors: [Color(0xFFEA580C), Color(0xFFC2410C)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
-    default:
-      return AppColors.primaryGradient;
+  // 2. Skilled Job → Premium Teal Gradient
+  if (job.isSkilled) {
+    return const LinearGradient(
+      colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
   }
+
+  // 3. Scheduled Job → Standard Trust Green Gradient
+  return const LinearGradient(
+    colors: [Color(0xFF059669), Color(0xFF047857)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 }
 
 // ── Callout Pin Bubble with Downward Arrow Tip ────────────────

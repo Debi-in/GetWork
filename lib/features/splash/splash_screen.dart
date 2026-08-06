@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/services/firestore_user_service.dart';
 import '../../router.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -37,21 +39,39 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final seenOnboarding = prefs.getBool('seen_onboarding') ?? false;
-    final savedRole = prefs.getString('user_role'); // 'worker' or 'business'
+    // ── Step 1: Check Firebase Auth ──────────────────────────────
+    if (!AuthService.isLoggedIn) {
+      // Not logged in → check if they have seen onboarding yet
+      final prefs = await SharedPreferences.getInstance();
+      final seenOnboarding = prefs.getBool('seen_onboarding') ?? false;
+      if (!mounted) return;
+      if (seenOnboarding) {
+        context.go(AppRoutes.login);
+      } else {
+        context.go(AppRoutes.onboarding);
+      }
+      return;
+    }
 
+    // ── Step 2: Logged in → fetch Firestore role ──────────────────
+    final uid = AuthService.uid!;
+    final role = await FirestoreUserService.getRole(uid);
     if (!mounted) return;
 
-    if (seenOnboarding) {
-      // Already onboarded — go straight to the right home screen
-      if (savedRole == 'business') {
+    if (role != null && role.isNotEmpty) {
+      // Role already locked → go straight to the right home
+      // Also cache locally for speed on next cold start
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_role', role);
+      if (!mounted) return;
+      if (role == 'business') {
         context.go(AppRoutes.businessDashboard);
       } else {
         context.go(AppRoutes.home);
       }
     } else {
-      context.go(AppRoutes.onboarding);
+      // Logged in but role not set yet → choose role
+      context.go(AppRoutes.chooseRole);
     }
   }
 

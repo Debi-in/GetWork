@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/services/firestore_user_service.dart';
 
 // ── User Role Provider (Riverpod 3 compatible) ──────────────────────
 enum UserRole { worker, business }
@@ -85,7 +87,7 @@ class ChooseRoleScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               const Center(
                 child: Text(
-                  'Choose your role. You can switch later.',
+                  'Select your account type. Roles are permanently locked after setup.',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
@@ -131,7 +133,7 @@ class ChooseRoleScreen extends ConsumerWidget {
 
               const SizedBox(height: 28),
 
-              // ── Continue Button ───────────────────────────────
+              // ── Continue Button (Role Lock On Write) ──────────
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -139,13 +141,38 @@ class ChooseRoleScreen extends ConsumerWidget {
                   onPressed: selectedRole == null
                       ? null
                       : () async {
-                          // Save onboarding completion + chosen role
                           final prefs = await SharedPreferences.getInstance();
+
+                          // Guard: check if role is already locked locally
+                          final existingRole = prefs.getString('user_role');
+                          if (existingRole != null && existingRole.isNotEmpty) {
+                            if (context.mounted) {
+                              context.go(existingRole == 'worker' ? '/home' : '/business');
+                            }
+                            return;
+                          }
+
+                          final chosenRoleStr =
+                              selectedRole == UserRole.worker ? 'worker' : 'business';
+
+                          // Write role to Firestore (source of truth)
+                          final uid = AuthService.uid;
+                          if (uid != null) {
+                            await FirestoreUserService.saveUser(
+                              uid: uid,
+                              phone: AuthService.phone ?? '',
+                              role: chosenRoleStr,
+                            );
+                          }
+
+                          // Cache locally for offline fast-path
                           await prefs.setBool('seen_onboarding', true);
+                          await prefs.setString('user_role', chosenRoleStr);
                           await prefs.setString(
-                            'user_role',
-                            selectedRole == UserRole.worker ? 'worker' : 'business',
+                            'role_locked_at',
+                            DateTime.now().toIso8601String(),
                           );
+
                           if (context.mounted) {
                             if (selectedRole == UserRole.worker) {
                               context.go('/home');

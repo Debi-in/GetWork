@@ -7,7 +7,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/auth_service.dart';
 import '../../authentication/choose_role_screen.dart';
 import '../../jobs/jobs_provider.dart';
 
@@ -21,75 +23,7 @@ class ProfileDrawer extends ConsumerWidget {
     required this.onShowHelp,
   });
 
-  void _showRoleSwitchDialog(BuildContext context, WidgetRef ref, UserRole targetRole) {
-    final isWorkerTarget = targetRole == UserRole.worker;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(
-              isWorkerTarget ? Icons.handyman_rounded : Icons.storefront_rounded,
-              color: isWorkerTarget ? AppColors.primary : AppColors.accent,
-              size: 24,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              isWorkerTarget ? 'Switch to Worker Mode' : 'Switch to Business Mode',
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          isWorkerTarget
-              ? 'Worker Mode lets you browse the job map, discover shifts near you, and apply with one tap. Your applications and chat history stay separate from business activity.'
-              : 'Business Mode lets you post jobs, view applicants, and manage your hiring. Switch back to Worker Mode any time to look for shifts yourself.',
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 13,
-            color: AppColors.textSecondary,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(fontFamily: 'Inter')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.of(context).pop(); // close drawer
-              ref.read(userRoleProvider.notifier).setRole(targetRole);
-              if (targetRole == UserRole.business) {
-                context.go('/business');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isWorkerTarget ? AppColors.primary : AppColors.accent,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              isWorkerTarget ? 'Switch to Worker' : 'Switch to Business',
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -315,24 +249,7 @@ class ProfileDrawer extends ConsumerWidget {
                 onSelectNavIndex(3);
               },
             ),
-            if (isWorker)
-              _drawerItem(
-                Icons.storefront_rounded,
-                'Switch to Business Mode',
-                () {
-                  _showRoleSwitchDialog(context, ref, UserRole.business);
-                },
-                color: AppColors.accent,
-              )
-            else
-              _drawerItem(
-                Icons.handyman_rounded,
-                'Switch to Worker Mode',
-                () {
-                  _showRoleSwitchDialog(context, ref, UserRole.worker);
-                },
-                color: AppColors.primary,
-              ),
+
             _drawerItem(
               Icons.settings_outlined,
               'Settings',
@@ -356,9 +273,17 @@ class ProfileDrawer extends ConsumerWidget {
             _drawerItem(
               Icons.logout_rounded,
               'Sign Out',
-              () {
+              () async {
                 Navigator.of(context).pop();
-                context.go('/');
+                // Clear local role cache
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('user_role');
+                await prefs.remove('role_locked_at');
+                // Firebase sign out
+                await AuthService.signOut();
+                if (context.mounted) {
+                  context.go('/login');
+                }
               },
               color: Colors.red,
             ),

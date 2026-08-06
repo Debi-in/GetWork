@@ -518,17 +518,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ),
                     ),
 
-                  // ── Blur overlay (Fast animated fade, crash-free) ──────────
+                  // ── Blur overlay (Fades in ONLY AFTER map lands on middle) ──────────
                   Positioned.fill(
                     child: AnimatedOpacity(
                       duration: const Duration(milliseconds: 160),
-                      opacity: selectedJob != null ? 1.0 : 0.0,
+                      opacity: (selectedJob != null && _mapCentered) ? 1.0 : 0.0,
                       child: IgnorePointer(
-                        ignoring: selectedJob == null,
+                        ignoring: selectedJob == null || !_mapCentered,
                         child: GestureDetector(
-                          onTap: () => ref
-                              .read(selectedJobProvider.notifier)
-                              .selectJob(null),
+                          onTap: () {
+                            setState(() => _mapCentered = false);
+                            ref
+                                .read(selectedJobProvider.notifier)
+                                .selectJob(null);
+                          },
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                             child: Container(

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/authentication/choose_role_screen.dart';
+import 'features/authentication/login_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/jobs/job_detail_screen.dart';
 import 'features/jobs/apply_screen.dart';
@@ -29,6 +30,7 @@ class AppRoutes {
 
   static const String splash = '/';
   static const String onboarding = '/onboarding';
+  static const String login = '/login';
   static const String chooseRole = '/choose-role';
   static const String home = '/home';
   static const String jobDetail = '/job/:jobId';
@@ -59,6 +61,11 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.onboarding,
       name: 'onboarding',
       builder: (context, state) => const OnboardingScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.login,
+      name: 'login',
+      builder: (context, state) => const LoginScreen(),
     ),
     GoRoute(
       path: AppRoutes.chooseRole,
