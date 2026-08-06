@@ -845,6 +845,7 @@ class _SpeedDialState extends State<_SpeedDial>
       controller: _overlayController,
       overlayChildBuilder: (context) {
         return Stack(
+          alignment: Alignment.center,
           children: [
             // Dark dismissible backdrop
             Positioned.fill(
@@ -852,102 +853,99 @@ class _SpeedDialState extends State<_SpeedDial>
                 onTap: _toggle,
                 behavior: HitTestBehavior.opaque,
                 child: Container(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: Colors.transparent,
                 ),
               ),
             ),
 
-            // Floating action options box
-            Positioned(
-              bottom: 95,
-              left: 30,
-              right: 30,
-              child: ScaleTransition(
-                scale: CurvedAnimation(
+            // ── 3 Fanned Circular Icon Buttons Emerging in Arc ────────
+            ...List.generate(widget.actions.length, (i) {
+              final action = widget.actions[i];
+              final targetOffset = const [
+                Offset(-54, -68),
+                Offset(0, -86),
+                Offset(54, -68),
+              ][i];
+              final delayFraction = (i * 0.08).clamp(0.0, 0.25);
+
+              final scaleAnimation = Tween<double>(begin: 0.2, end: 1.0).animate(
+                CurvedAnimation(
                   parent: _controller,
-                  curve: Curves.easeOutBack,
+                  curve: Interval(delayFraction, 1.0,
+                      curve: const Cubic(0.34, 1.56, 0.64, 1.0)),
                 ),
-                child: FadeTransition(
-                  opacity: _controller,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.border),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 20,
-                            offset: Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: widget.actions.map((action) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(16),
-                                onTap: () => _closeAndExecute(action.onTap),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: action.bgColor.withValues(alpha: 0.5),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: action.color.withValues(alpha: 0.3),
-                                      width: 1,
+              );
+
+              final opacityAnimation =
+                  Tween<double>(begin: 0.0, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: _controller,
+                  curve: Interval(
+                      delayFraction, (delayFraction + 0.4).clamp(0.0, 1.0),
+                      curve: Curves.easeOut),
+                ),
+              );
+
+              final translateAnimation =
+                  Tween<Offset>(begin: Offset.zero, end: targetOffset).animate(
+                CurvedAnimation(
+                  parent: _controller,
+                  curve: Interval(delayFraction, 1.0,
+                      curve: const Cubic(0.34, 1.56, 0.64, 1.0)),
+                ),
+              );
+
+              return Positioned(
+                bottom: 26,
+                left: 0,
+                right: 0,
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    final offset = translateAnimation.value;
+                    final scale = scaleAnimation.value;
+                    final opacity = opacityAnimation.value;
+
+                    return Transform.translate(
+                      offset: offset,
+                      child: Transform.scale(
+                        scale: scale,
+                        child: Opacity(
+                          opacity: opacity.clamp(0.0, 1.0),
+                          child: Center(
+                            child: GestureDetector(
+                              onTap: () => _closeAndExecute(action.onTap),
+                              child: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: action.bgColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: action.color.withValues(alpha: 0.35),
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          action.color.withValues(alpha: 0.3),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 4),
                                     ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: action.color,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          action.icon,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 14),
-                                      Expanded(
-                                        child: Text(
-                                          action.label,
-                                          style: const TextStyle(
-                                            fontFamily: 'Inter',
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: action.color,
-                                        size: 20,
-                                      ),
-                                    ],
-                                  ),
+                                  ],
                                 ),
+                                child: Icon(action.icon,
+                                    color: action.color, size: 24),
                               ),
                             ),
-                          );
-                        }).toList(),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              ),
-            ),
+              );
+            }),
           ],
         );
       },
