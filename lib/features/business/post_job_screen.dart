@@ -46,6 +46,14 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   bool _isUrgent = false;
   int _selectedDeadlineDays = 3;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.type == JobType.instant) {
+      _isUrgent = true;
+    }
+  }
+
   final Map<String, String> _categoryLabels = {
     'delivery': 'Delivery',
     'retail': 'Retail',
@@ -127,6 +135,8 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       description: _descriptionController.text.trim(),
       requirements: requirements,
       isUrgent: _isUrgent,
+      type: widget.type,
+      deadlineDays: _selectedDeadlineDays,
     );
 
     setState(() => _isLoading = false);
@@ -165,7 +175,13 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Post a Job'),
+        title: Text(
+          widget.type == JobType.instant
+              ? 'Post Instant Job'
+              : widget.type == JobType.skilled
+                  ? 'Post Skilled Job'
+                  : 'Post Scheduled Job',
+        ),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -207,6 +223,36 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Instant Job Info Banner ───────────────────────────
+              if (widget.type == JobType.instant) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3ED),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFF6B35).withValues(alpha: 0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.bolt_rounded, color: Color(0xFFFF6B35), size: 24),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Instant jobs expire in 4 hours. The first qualified worker to accept gets the job immediately.',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFC2410C),
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               // ── Urgent Banner Toggle ──────────────────────────────
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

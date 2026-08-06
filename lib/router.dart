@@ -23,6 +23,8 @@ import 'features/jobs/instant_accept_success_screen.dart';
 import 'models/job_model.dart';
 import 'features/notifications/notifications_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/business/drafts_screen.dart';
+import 'features/business/all_applicants_screen.dart';
 
 // ── Route Names ─────────────────────────────────────────────
 class AppRoutes {
@@ -43,8 +45,10 @@ class AppRoutes {
   static const String postJob = '/business/post-job';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
-  static const String manageProfile = '/manage-profile';
+  static const String manageProfile = '/profile/manage';
   static const String applicants = '/business/job/:jobId/applicants';
+  static const String allApplicants = '/business/applicants/all';
+  static const String drafts = '/business/drafts';
 }
 
 // ── Router Configuration ─────────────────────────────────────
@@ -156,6 +160,16 @@ final GoRouter appRouter = GoRouter(
         final jobId = state.pathParameters['jobId'] ?? '';
         return ApplicantsScreen(jobId: jobId);
       },
+    ),
+    GoRoute(
+      path: AppRoutes.allApplicants,
+      name: 'allApplicants',
+      builder: (context, state) => const AllApplicantsScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.drafts,
+      name: 'drafts',
+      builder: (context, state) => const DraftsScreen(),
     ),
   ],
 

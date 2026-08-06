@@ -349,13 +349,13 @@ class _BusinessDashboardScreenState
                           icon: Icons.bookmark_outline_rounded,
                           color: const Color(0xFF7C4DFF),
                           bgColor: const Color(0xFFEDE7F6),
-                          onTap: () {},
+                          onTap: () => context.push(AppRoutes.drafts),
                         ),
                         _SpeedDialAction(
                           icon: Icons.people_outline_rounded,
                           color: AppColors.accent,
                           bgColor: AppColors.accentContainer,
-                          onTap: () {},
+                          onTap: () => context.push(AppRoutes.allApplicants),
                         ),
                       ],
                     ),
@@ -423,45 +423,68 @@ class _BusinessDashboardScreenState
   }
 }
 
-// ── Fallback when Supabase has no jobs yet ─────────────────────
+// ── Empty state when Supabase has no jobs yet ─────────────────
 class _LiveJobsFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _BusinessJobCard(
-          title: 'Supermarket Cashier',
-          rate: 'Rs. 700 /day',
-          status: 'Active',
-          statusColor: AppColors.primary,
-          workersHired: 2,
-          workersNeeded: 2,
-          appliedCount: 8,
-          shiftDate: 'Today, 10:00 AM - 06:00 PM',
-        ),
-        const SizedBox(height: 12),
-        _BusinessJobCard(
-          title: 'Delivery Rider',
-          rate: 'Rs. 900 /day',
-          status: 'Urgent',
-          statusColor: AppColors.accent,
-          workersHired: 1,
-          workersNeeded: 3,
-          appliedCount: 5,
-          shiftDate: 'Today, 09:00 AM - 05:00 PM',
-        ),
-        const SizedBox(height: 12),
-        _BusinessJobCard(
-          title: 'Event Setup Staff',
-          rate: 'Rs. 1,300 /day',
-          status: 'Active',
-          statusColor: AppColors.primary,
-          workersHired: 4,
-          workersNeeded: 10,
-          appliedCount: 12,
-          shiftDate: 'Tomorrow, 07:00 AM - 05:00 PM',
-        ),
-      ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 0.8),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.work_outline_rounded,
+              size: 30,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'No Posted Jobs Yet',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Tap the (+) button below to create your first job posting.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () => context.push(AppRoutes.postJobType),
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Post a Job Now'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -778,9 +801,9 @@ class _SpeedDialState extends State<_SpeedDial>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 180),
     );
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.125).animate(
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.25).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
