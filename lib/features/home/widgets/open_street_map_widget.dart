@@ -9,7 +9,6 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/constants/app_colors.dart';
@@ -166,7 +165,7 @@ class _ClusterBubbleState extends State<_ClusterBubble>
     final count = widget.cluster.count;
 
     // Size scales with count
-    final size = count >= 10 ? 54.w : count >= 5 ? 48.w : 42.w;
+    final size = count >= 10 ? 48.0 : count >= 5 ? 42.0 : 36.0;
 
     return ScaleTransition(
       scale: _scaleAnim,
@@ -181,12 +180,12 @@ class _ClusterBubbleState extends State<_ClusterBubble>
               decoration: BoxDecoration(
                 gradient: gradient,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2.5),
+                border: Border.all(color: Colors.white, width: 2.0),
                 boxShadow: [
                   BoxShadow(
-                    color: gradient.colors.first.withValues(alpha: 0.5),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: gradient.colors.first.withValues(alpha: 0.45),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -196,21 +195,21 @@ class _ClusterBubbleState extends State<_ClusterBubble>
                   children: [
                     Text(
                       '$count',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 14.sp,
+                        fontSize: 13,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         height: 1.0,
                       ),
                     ),
-                    Text(
+                    const Text(
                       'jobs',
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 8.sp,
+                        fontSize: 7.5,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white70,
                         height: 1.1,
                       ),
                     ),
@@ -220,7 +219,7 @@ class _ClusterBubbleState extends State<_ClusterBubble>
             ),
             // Downward pointer
             CustomPaint(
-              size: Size(10.w, 6.h),
+              size: const Size(9, 5),
               painter: _TrianglePointerPainter(color: gradient.colors.last),
             ),
           ],
@@ -427,8 +426,8 @@ class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget>
         markers.add(
           Marker(
             point: cluster.center,
-            width: 160.w,
-            height: 75.h,
+            width: 145,
+            height: 70,
             alignment: Alignment.topCenter,
             child: _AnimatedMarkerWidget(
               key: ValueKey(job.id),
@@ -454,8 +453,8 @@ class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget>
           markers.add(
             Marker(
               point: LatLng(lat, lng),
-              width: 160.w,
-              height: 75.h,
+              width: 145,
+              height: 70,
               alignment: Alignment.topCenter,
               child: _AnimatedMarkerWidget(
                 key: ValueKey('${job.id}_spider_$ki'),
@@ -475,8 +474,8 @@ class _OpenStreetMapWidgetState extends State<OpenStreetMapWidget>
         markers.add(
           Marker(
             point: cluster.center,
-            width: 70.w,
-            height: 70.h,
+            width: 54,
+            height: 60,
             alignment: Alignment.topCenter,
             child: _ClusterBubble(
               key: ValueKey('cluster_${cluster.lat}_${cluster.lng}_${cluster.count}'),
@@ -624,23 +623,23 @@ class _MarkerCalloutPin extends StatelessWidget {
         // Bubble Body
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          constraints: BoxConstraints(
-            maxWidth: 155.w,
-            minWidth: 100.w,
+          constraints: const BoxConstraints(
+            maxWidth: 140,
+            minWidth: 90,
           ),
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           decoration: BoxDecoration(
             gradient: gradient,
-            borderRadius: BorderRadius.circular(14.r),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: Colors.white,
-              width: isSelected ? 2.5 : 1.5,
+              width: isSelected ? 2.0 : 1.2,
             ),
             boxShadow: [
               BoxShadow(
                 color: shadowColor,
-                blurRadius: isSelected ? 16 : 8,
-                offset: const Offset(0, 4),
+                blurRadius: isSelected ? 12 : 6,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -649,9 +648,9 @@ class _MarkerCalloutPin extends StatelessWidget {
             children: [
               Text(
                 job.salaryDisplay,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 12.sp,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   height: 1.1,
@@ -659,7 +658,7 @@ class _MarkerCalloutPin extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              SizedBox(height: 2.h),
+              const SizedBox(height: 2),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -667,19 +666,19 @@ class _MarkerCalloutPin extends StatelessWidget {
                   if (job.isUrgent) ...[
                     const Icon(
                       Icons.local_fire_department_rounded,
-                      size: 11,
+                      size: 10,
                       color: Colors.amberAccent,
                     ),
-                    SizedBox(width: 3.w),
+                    const SizedBox(width: 2),
                   ],
                   Flexible(
                     child: Text(
                       job.title,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 10.sp,
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.95),
+                        color: Colors.white,
                         height: 1.1,
                       ),
                       maxLines: 1,
@@ -694,7 +693,7 @@ class _MarkerCalloutPin extends StatelessWidget {
 
         // Downward Triangle Arrow Pointer Tip
         CustomPaint(
-          size: Size(12.w, 7.h),
+          size: const Size(10, 6),
           painter: _TrianglePointerPainter(
             color: gradient.colors.last,
           ),

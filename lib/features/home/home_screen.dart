@@ -1225,24 +1225,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       InkWell(
                         onTap: () => Navigator.of(context).pop(),
-                        borderRadius: BorderRadius.circular(20.r),
+                        borderRadius: BorderRadius.circular(16),
                         child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(20.r),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.arrow_back_rounded,
-                                  color: Colors.white, size: 18),
-                              SizedBox(width: 4.w),
+                              Icon(Icons.arrow_back_rounded,
+                                  color: Colors.white, size: 16),
+                              SizedBox(width: 4),
                               Text(
                                 'Back',
                                 style: TextStyle(
                                   fontFamily: 'Inter',
-                                  fontSize: 12.sp,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
                                 ),
@@ -1254,14 +1254,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: Icon(Icons.close_rounded,
-                            color: Colors.white.withValues(alpha: 0.85), size: 22),
+                            color: Colors.white.withValues(alpha: 0.85), size: 20),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         tooltip: 'Close Menu',
                       ),
                     ],
                   ),
-                  SizedBox(height: 16.h),
+                  const SizedBox(height: 14),
 
                   // Avatar circle with app logo
                   Container(

@@ -14,29 +14,34 @@ class GetWorkApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ScreenUtilInit(
-      designSize: const Size(375, 812),
-      minTextAdapt: true,
-      splitScreenMode: true,
+    return MaterialApp.router(
+      title: 'GetWork',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      routerConfig: appRouter,
       builder: (context, child) {
-        return MaterialApp.router(
-          title: 'GetWork',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          routerConfig: appRouter,
-          builder: (context, child) {
-            final mediaQuery = MediaQuery.of(context);
-            final clampedChild = MediaQuery(
-              data: mediaQuery.copyWith(
-                textScaler: mediaQuery.textScaler.clamp(
-                  minScaleFactor: 0.9,
-                  maxScaleFactor: 1.2,
-                ),
-              ),
-              child: child ?? const SizedBox.shrink(),
-            );
-            return MobileFrameWrapper(child: clampedChild);
-          },
+        final mediaQuery = MediaQuery.of(context);
+        final clampedChild = MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: mediaQuery.textScaler.clamp(
+              minScaleFactor: 0.9,
+              maxScaleFactor: 1.2,
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+
+        return MobileFrameWrapper(
+          child: Builder(
+            builder: (innerContext) {
+              return ScreenUtilInit(
+                designSize: const Size(375, 812),
+                minTextAdapt: true,
+                splitScreenMode: true,
+                builder: (context, child) => clampedChild,
+              );
+            },
+          ),
         );
       },
     );
