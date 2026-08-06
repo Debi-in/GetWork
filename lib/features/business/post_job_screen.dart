@@ -2,12 +2,12 @@
 // POST JOB SCREEN — GetWork App
 // Business users post new shift jobs directly to Supabase
 // Includes:
+// - Required Contact Phone Number & Optional Email
 // - Salary dropdown (/hour, /day, /week, /month, Fixed)
 // - Rs. currency display
 // - Reverse-geocoded location picker (map + place name)
-// - Custom slot-machine time picker wheel
-// - Draft auto-save & explicit save-to-draft dialog on back navigation
-// - Optional Contact Phone & Email fields
+// - Custom slot-machine time picker wheel (AM/PM non-looping)
+// - Draft auto-save & explicit dialog on back navigation
 // - Bottom bar with Cancel & Confirm Post buttons
 // ============================================================
 
@@ -221,6 +221,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     return _titleController.text.trim().isNotEmpty ||
         _salaryController.text.trim().isNotEmpty ||
         _selectedLocation.isNotEmpty ||
+        _phoneController.text.trim().isNotEmpty ||
         _descriptionController.text.trim().isNotEmpty;
   }
 
@@ -274,17 +275,18 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     if (res != null) setState(() => _shiftEnd = res);
   }
 
-  /// Dialog shown when user taps top back arrow or system back gesture
+  /// Clean, spacious dialog shown when leaving page with unfinished form
   Future<bool> _onWillPop() async {
     if (_isSubmitted || !_hasAnyData) return true;
 
     final action = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
         title: const Row(
           children: [
-            Icon(Icons.bookmark_add_rounded, color: AppColors.primary),
+            Icon(Icons.bookmark_add_rounded, color: AppColors.primary, size: 28),
             SizedBox(width: 10),
             Text(
               'Save Job Draft?',
@@ -296,57 +298,91 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
             ),
           ],
         ),
-        content: const Text(
-          'Do you want to save this job post as a draft for later editing, or discard your changes?',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 14,
-            color: AppColors.textSecondary,
-            height: 1.4,
-          ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You have unsaved changes in this job post. Save as a draft to resume anytime within 4 days.',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 20),
+          ],
         ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         actions: [
-          Row(
+          Column(
             children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.of(ctx).pop('discard'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
-                  ),
-                  child: const Text('Discard'),
-                ),
-              ),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(ctx).pop('cancel'),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.border),
-                  ),
-                  child: const Text('Continue'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
+              // Save Draft Button (Primary)
+              SizedBox(
+                width: double.infinity,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     onPressed: () => Navigator.of(ctx).pop('save'),
+                    icon: const Icon(Icons.bookmark_rounded, size: 18),
+                    label: const Text('Save Draft'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       foregroundColor: Colors.white,
                       shadowColor: Colors.transparent,
                       elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      textStyle: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                    child: const Text('Save Draft'),
                   ),
                 ),
+              ),
+              const SizedBox(height: 8),
+
+              Row(
+                children: [
+                  // Discard Button
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(ctx).pop('discard'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Discard'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Cancel / Keep Editing
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(ctx).pop('cancel'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: const BorderSide(color: AppColors.border),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Keep Editing'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -359,7 +395,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Job draft saved for 4 days!'),
+            content: const Text('Job saved to drafts for 4 days!'),
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -405,12 +441,11 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
         .where((s) => s.isNotEmpty)
         .toList();
 
-    // Append contact info to description if provided
     var desc = _descriptionController.text.trim();
     final phone = _phoneController.text.trim();
     final email = _emailController.text.trim();
     if (phone.isNotEmpty || email.isNotEmpty) {
-      desc += '\n\nContact: ${phone.isNotEmpty ? 'Phone: $phone' : ''} ${email.isNotEmpty ? 'Email: $email' : ''}';
+      desc += '\n\nContact: Phone: $phone ${email.isNotEmpty ? '| Email: $email' : ''}';
     }
 
     final success = await SupabaseJobsService.postJob(
@@ -439,7 +474,6 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
     if (success) {
       _isSubmitted = true;
-      // Delete draft if it was saved before
       if (_draftId != null) {
         await DraftService.deleteDraft(_draftId!);
       }
@@ -623,7 +657,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 const SizedBox(height: 24),
 
                 // ── Job Title ──────────────────────────────────────
-                const _SectionLabel(label: 'Job Title'),
+                const _SectionLabel(label: 'Job Title *'),
                 _StyledField(
                   controller: _titleController,
                   hint: 'e.g. Supermarket Cashier',
@@ -633,7 +667,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 const SizedBox(height: 16),
 
                 // ── Business Name ──────────────────────────────────
-                const _SectionLabel(label: 'Business Name'),
+                const _SectionLabel(label: 'Business Name *'),
                 _StyledField(
                   controller: _businessNameController,
                   hint: 'Your business name',
@@ -672,7 +706,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 const SizedBox(height: 16),
 
                 // ── Pay Rate (Rs.) & Salary Dropdown ─────────────────
-                const _SectionLabel(label: 'Pay Rate (Rs.)'),
+                const _SectionLabel(label: 'Pay Rate (Rs.) *'),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -710,7 +744,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 const SizedBox(height: 16),
 
                 // ── Job Location Picker ─────────────────────────────
-                const _SectionLabel(label: 'Job Location'),
+                const _SectionLabel(label: 'Job Location *'),
                 GestureDetector(
                   onTap: _openLocationPicker,
                   child: Container(
@@ -826,7 +860,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 const SizedBox(height: 16),
 
                 // ── Workers Needed ─────────────────────────────────
-                const _SectionLabel(label: 'Workers Needed'),
+                const _SectionLabel(label: 'Workers Needed *'),
                 _StyledField(
                   controller: _workersNeededController,
                   hint: '1',
@@ -838,15 +872,18 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Optional Contact Info (Phone & Email) ───────────
-                const _SectionLabel(label: 'Contact Information (Optional)'),
+                // ── Contact Info (Phone Required, Email Optional) ───
+                const _SectionLabel(label: 'Contact Information'),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: _StyledField(
                         controller: _phoneController,
-                        hint: 'Phone No.',
+                        hint: 'Phone No. *',
                         keyboardType: TextInputType.phone,
+                        validator: (v) =>
+                            v!.trim().isEmpty ? 'Phone number required' : null,
                         icon: Icons.phone_rounded,
                       ),
                     ),
@@ -854,7 +891,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                     Expanded(
                       child: _StyledField(
                         controller: _emailController,
-                        hint: 'Email Address',
+                        hint: 'Email (Optional)',
                         keyboardType: TextInputType.emailAddress,
                         icon: Icons.email_rounded,
                       ),
@@ -993,37 +1030,47 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: _jobTypeGradient),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _submitJob,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.send_rounded, size: 18),
-                      label: Text(
-                        _isLoading ? 'Posting...' : 'Confirm & Post Job',
+                  child: Transform.rotate(
+                    angle: -0.01,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: _jobTypeGradient),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _jobTypeGradient.first.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        shadowColor: Colors.transparent,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        textStyle: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _submitJob,
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.send_rounded, size: 18),
+                        label: Text(
+                          _isLoading ? 'Posting...' : 'Confirm & Post Job',
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: Colors.white,
+                          shadowColor: Colors.transparent,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          textStyle: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                       ),
                     ),

@@ -1,7 +1,7 @@
 // ============================================================
 // TIME PICKER SHEET — GetWork App
 // Scroll-wheel time picker (hour | minute | AM/PM)
-// inspired by slot-machine style UI
+// Fixed initial visibility & non-looping AM/PM
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -40,8 +40,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
   int _selectedMinute = 0;
   int _selectedPeriod = 0; // 0=AM, 1=PM
 
-  static const double _itemHeight = 52;
-  static const int _visibleItems = 5;
+  static const double _itemHeight = 48.0;
 
   @override
   void initState() {
@@ -57,14 +56,12 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
 
   void _parseInitial(String t) {
     try {
-      // Format: "08:30 AM"
       final parts = t.trim().split(' ');
       if (parts.length == 2) {
         final hm = parts[0].split(':');
         _selectedHour = int.parse(hm[0]);
         _selectedMinute = int.parse(hm[1]);
         _selectedPeriod = parts[1].toUpperCase() == 'PM' ? 1 : 0;
-        // Clamp hour to 1-12
         if (_selectedHour == 0) _selectedHour = 12;
         if (!_hours.contains(_selectedHour)) _selectedHour = 8;
         if (!_minutes.contains(_selectedMinute)) _selectedMinute = 0;
@@ -91,105 +88,6 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
     return '$h:$m $p';
   }
 
-  Widget _buildColumn({
-    required List<dynamic> items,
-    required FixedExtentScrollController controller,
-    required void Function(int) onChanged,
-    required String Function(dynamic) label,
-  }) {
-    return SizedBox(
-      width: 80,
-      height: _itemHeight * _visibleItems,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Selected highlight
-          Positioned(
-            top: _itemHeight * (_visibleItems ~/ 2),
-            child: Container(
-              width: 72,
-              height: _itemHeight,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
-          // Fade top
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: _itemHeight * 1.8,
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white,
-                      Colors.white.withValues(alpha: 0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Fade bottom
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: _itemHeight * 1.8,
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.white,
-                      Colors.white.withValues(alpha: 0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Wheel
-          ListWheelScrollView.useDelegate(
-            controller: controller,
-            itemExtent: _itemHeight,
-            diameterRatio: 1.6,
-            physics: const FixedExtentScrollPhysics(),
-            onSelectedItemChanged: onChanged,
-            childDelegate: ListWheelChildLoopingListDelegate(
-              children: items.map((item) {
-                final idx = items.indexOf(item);
-                return Center(
-                  child: Text(
-                    label(item),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: idx == controller.initialItem
-                          ? Colors.white
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -211,7 +109,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
             ),
           ),
 
-          // Header
+          // Header with Live Preview
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -219,7 +117,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
               children: [
                 const Expanded(
                   child: Text(
-                    'Select Time',
+                    'Select Shift Time',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 18,
@@ -228,72 +126,130 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
                     ),
                   ),
                 ),
-                // Live preview
-                AnimatedBuilder(
-                  animation: Listenable.merge(
-                      [_hourCtrl, _minCtrl, _periodCtrl]),
-                  builder: (_, __) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _formatResult(),
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                    );
-                  },
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _formatResult(),
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
 
-          // Wheel columns
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          const SizedBox(height: 10),
+
+          // Wheel Columns
+          SizedBox(
+            height: 200,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                // Hour
-                _WheelColumn(
-                  items: _hours.map((h) => h.toString().padLeft(2, '0')).toList(),
-                  controller: _hourCtrl,
-                  onChanged: (i) => setState(
-                      () => _selectedHour = _hours[i % _hours.length]),
+                // Highlight Bar in center
+                Container(
+                  height: _itemHeight,
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFF0D9488).withValues(alpha: 0.4),
+                      width: 1.5,
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 4),
-                const Text(':',
-                    style: TextStyle(
-                        fontSize: 28,
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Hour Wheel (Looping)
+                    _WheelColumn(
+                      controller: _hourCtrl,
+                      itemCount: _hours.length,
+                      isLooping: true,
+                      onChanged: (i) => setState(() =>
+                          _selectedHour = _hours[i % _hours.length]),
+                      builder: (i) => Text(
+                        _hours[i % _hours.length].toString().padLeft(2, '0'),
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: _selectedHour == _hours[i % _hours.length] ? 22 : 16,
+                          fontWeight: _selectedHour == _hours[i % _hours.length]
+                              ? FontWeight.w800
+                              : FontWeight.w500,
+                          color: _selectedHour == _hours[i % _hours.length]
+                              ? const Color(0xFF0F766E)
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+
+                    const Text(
+                      ':',
+                      style: TextStyle(
+                        fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.textSecondary)),
-                const SizedBox(width: 4),
-                // Minute
-                _WheelColumn(
-                  items:
-                      _minutes.map((m) => m.toString().padLeft(2, '0')).toList(),
-                  controller: _minCtrl,
-                  onChanged: (i) => setState(
-                      () => _selectedMinute = _minutes[i % _minutes.length]),
-                ),
-                const SizedBox(width: 16),
-                // AM/PM
-                _WheelColumn(
-                  items: _periods,
-                  controller: _periodCtrl,
-                  onChanged: (i) =>
-                      setState(() => _selectedPeriod = i % _periods.length),
-                  itemWidth: 72,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+
+                    // Minute Wheel (Looping)
+                    _WheelColumn(
+                      controller: _minCtrl,
+                      itemCount: _minutes.length,
+                      isLooping: true,
+                      onChanged: (i) => setState(() =>
+                          _selectedMinute = _minutes[i % _minutes.length]),
+                      builder: (i) => Text(
+                        _minutes[i % _minutes.length].toString().padLeft(2, '0'),
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: _selectedMinute == _minutes[i % _minutes.length] ? 22 : 16,
+                          fontWeight: _selectedMinute == _minutes[i % _minutes.length]
+                              ? FontWeight.w800
+                              : FontWeight.w500,
+                          color: _selectedMinute == _minutes[i % _minutes.length]
+                              ? const Color(0xFF0F766E)
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    // AM/PM Wheel (Non-looping 2 items)
+                    _WheelColumn(
+                      controller: _periodCtrl,
+                      itemCount: _periods.length,
+                      isLooping: false,
+                      onChanged: (i) => setState(() => _selectedPeriod = i),
+                      builder: (i) => Text(
+                        _periods[i],
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: _selectedPeriod == i ? 22 : 16,
+                          fontWeight: _selectedPeriod == i
+                              ? FontWeight.w800
+                              : FontWeight.w500,
+                          color: _selectedPeriod == i
+                              ? const Color(0xFF0F766E)
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -309,7 +265,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF1F2933), Color(0xFF0F172A)],
+                    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -331,7 +287,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text('Confirm'),
+                  child: const Text('Confirm Time'),
                 ),
               ),
             ),
@@ -342,122 +298,46 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
   }
 }
 
-// ── Wheel Column widget ─────────────────────────────────────────
 class _WheelColumn extends StatelessWidget {
-  final List<String> items;
   final FixedExtentScrollController controller;
+  final int itemCount;
+  final bool isLooping;
   final void Function(int) onChanged;
-  final double itemWidth;
-
-  static const double _itemHeight = 52.0;
-  static const int _visibleItems = 5;
+  final Widget Function(int) builder;
 
   const _WheelColumn({
-    required this.items,
     required this.controller,
+    required this.itemCount,
+    required this.isLooping,
     required this.onChanged,
-    this.itemWidth = 80,
+    required this.builder,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: itemWidth,
-      height: _itemHeight * _visibleItems,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Selected highlight bar
-          Center(
-            child: Container(
-              width: itemWidth - 8,
-              height: _itemHeight,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+      width: 75,
+      height: 200,
+      child: ListWheelScrollView.useDelegate(
+        controller: controller,
+        itemExtent: 48,
+        perspective: 0.003,
+        diameterRatio: 1.8,
+        physics: const FixedExtentScrollPhysics(),
+        onSelectedItemChanged: onChanged,
+        childDelegate: isLooping
+            ? ListWheelChildLoopingListDelegate(
+                children: List.generate(
+                  itemCount,
+                  (index) => Center(child: builder(index)),
                 ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
-          // Fade top overlay
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: _itemHeight * 1.5,
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.95),
-                      Colors.white.withValues(alpha: 0),
-                    ],
-                  ),
+              )
+            : ListWheelChildListDelegate(
+                children: List.generate(
+                  itemCount,
+                  (index) => Center(child: builder(index)),
                 ),
               ),
-            ),
-          ),
-          // Fade bottom overlay
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: _itemHeight * 1.5,
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.95),
-                      Colors.white.withValues(alpha: 0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // The wheel
-          ListWheelScrollView.useDelegate(
-            controller: controller,
-            itemExtent: _itemHeight,
-            diameterRatio: 2.0,
-            physics: const FixedExtentScrollPhysics(),
-            onSelectedItemChanged: onChanged,
-            childDelegate: ListWheelChildLoopingListDelegate(
-              children: List.generate(items.length, (i) {
-                return Center(
-                  child: AnimatedBuilder(
-                    animation: controller,
-                    builder: (_, __) {
-                      final selected = controller.hasClients
-                          ? controller.selectedItem % items.length == i
-                          : controller.initialItem == i;
-                      return Text(
-                        items[i],
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: selected ? 22 : 18,
-                          fontWeight: selected
-                              ? FontWeight.w800
-                              : FontWeight.w500,
-                          color: selected
-                              ? Colors.white
-                              : AppColors.textSecondary.withValues(alpha: 0.7),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
       ),
     );
   }
