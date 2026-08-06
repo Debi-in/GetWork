@@ -119,6 +119,8 @@ class JobRepository {
     SalaryType salaryType;
     switch (salaryTypeStr) {
       case 'hourly': salaryType = SalaryType.hourly; break;
+      case 'weekly': salaryType = SalaryType.weekly; break;
+      case 'monthly': salaryType = SalaryType.monthly; break;
       case 'fixed':
       case 'project': salaryType = SalaryType.fixed; break;
       default: salaryType = SalaryType.daily;

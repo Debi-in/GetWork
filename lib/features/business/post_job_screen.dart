@@ -7,10 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/supabase_jobs_service.dart';
 import '../../models/job_model.dart';
 import '../jobs/jobs_provider.dart';
+import 'location_picker_sheet.dart';
 
 class PostJobScreen extends ConsumerStatefulWidget {
   final JobType type;
@@ -35,11 +37,15 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   final _descriptionController = TextEditingController();
   final _requirementsController = TextEditingController();
   final _workersNeededController = TextEditingController(text: '1');
+  final _customCategoryController = TextEditingController();
 
   // ── Form State ──────────────────────────────────────────────
   String _selectedCategory = 'retail';
+  bool _isCustomCategory = false;
   String _selectedSalaryType = 'daily';
-  String _selectedLocation = 'Patan Dhoka, Lalitpur';
+  String _selectedLocation = '';
+  double _locationLat = 27.7172;
+  double _locationLng = 85.3240;
   DateTime _selectedDate = DateTime.now();
   String _shiftStart = '09:00 AM';
   String _shiftEnd = '05:00 PM';
@@ -54,6 +60,51 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     }
   }
 
+  // ── Type display helpers ────────────────────────────────────
+  String get _jobTypeName {
+    switch (widget.type) {
+      case JobType.instant:
+        return 'Instant Job';
+      case JobType.scheduled:
+        return 'Scheduled Job';
+      case JobType.skilled:
+        return 'Skilled / Project Job';
+    }
+  }
+
+  String get _jobTypeDescription {
+    switch (widget.type) {
+      case JobType.instant:
+        return 'First qualified worker to accept gets the job immediately';
+      case JobType.scheduled:
+        return 'Post now — review applicants and confirm one';
+      case JobType.skilled:
+        return 'Requires qualifications — you review and select the best fit';
+    }
+  }
+
+  IconData get _jobTypeIcon {
+    switch (widget.type) {
+      case JobType.instant:
+        return Icons.bolt_rounded;
+      case JobType.scheduled:
+        return Icons.calendar_month_rounded;
+      case JobType.skilled:
+        return Icons.workspace_premium_rounded;
+    }
+  }
+
+  List<Color> get _jobTypeGradient {
+    switch (widget.type) {
+      case JobType.instant:
+        return [const Color(0xFFFF6B35), const Color(0xFFE53935)];
+      case JobType.scheduled:
+        return [const Color(0xFF0D9488), const Color(0xFF0F766E)];
+      case JobType.skilled:
+        return [const Color(0xFF2563EB), const Color(0xFF1D4ED8)];
+    }
+  }
+
   final Map<String, String> _categoryLabels = {
     'delivery': 'Delivery',
     'retail': 'Retail',
@@ -62,17 +113,20 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     'cleaning': 'Cleaning',
     'tech': 'Tech',
     'events': 'Events',
+    'education': 'Education',
+    'healthcare': 'Healthcare',
+    'security': 'Security',
+    'custom': 'Custom (specify below)',
   };
 
-  final Map<String, (double, double)> _locationCoords = {
-    'Thamel, Kathmandu': (27.7152, 85.3123),
-    'Naxal, Kathmandu': (27.7192, 85.3229),
-    'New Baneshwor, Kathmandu': (27.6858, 85.3431),
-    'Patan Dhoka, Lalitpur': (27.6766, 85.3184),
-    'Pulchowk, Lalitpur': (27.6780, 85.3188),
-    'Durbar Square, Bhaktapur': (27.6710, 85.4298),
-    'Suryabinayak, Bhaktapur': (27.6700, 85.4510),
-  };
+  // Salary type options
+  static const List<Map<String, String>> _salaryTypes = [
+    {'value': 'hourly', 'label': '/hour', 'full': 'Per Hour'},
+    {'value': 'daily', 'label': '/day', 'full': 'Per Day'},
+    {'value': 'weekly', 'label': '/week', 'full': 'Per Week'},
+    {'value': 'monthly', 'label': '/month', 'full': 'Per Month'},
+    {'value': 'fixed', 'label': 'Fixed', 'full': 'Fixed Rate'},
+  ];
 
   @override
   void dispose() {
@@ -82,6 +136,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     _descriptionController.dispose();
     _requirementsController.dispose();
     _workersNeededController.dispose();
+    _customCategoryController.dispose();
     super.dispose();
   }
 
@@ -103,13 +158,43 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
+  Future<void> _openLocationPicker() async {
+    final result = await LocationPickerSheet.show(
+      context,
+      initial: _selectedLocation.isEmpty
+          ? null
+          : LatLng(_locationLat, _locationLng),
+      initialLabel: _selectedLocation.isEmpty ? null : _selectedLocation,
+    );
+    if (result != null) {
+      setState(() {
+        _selectedLocation = result.label;
+        _locationLat = result.latLng.latitude;
+        _locationLng = result.latLng.longitude;
+      });
+    }
+  }
+
   Future<void> _submitJob() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedLocation.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please select a job location on the map'),
+          backgroundColor: Colors.orange.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
-    final coords = _locationCoords[_selectedLocation] ??
-        (27.7172, 85.3240); // Default Kathmandu
+    final categoryToSave = _isCustomCategory
+        ? (_customCategoryController.text.trim().toLowerCase().replaceAll(' ', '_'))
+        : _selectedCategory;
+
     final salary = double.tryParse(_salaryController.text.trim()) ?? 700.0;
     final workersNeeded = int.tryParse(_workersNeededController.text.trim()) ?? 1;
 
@@ -121,12 +206,12 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
     final success = await SupabaseJobsService.postJob(
       title: _titleController.text.trim(),
-      category: _selectedCategory,
+      category: categoryToSave,
       salary: salary,
       salaryType: _selectedSalaryType,
       address: _selectedLocation,
-      latitude: coords.$1,
-      longitude: coords.$2,
+      latitude: _locationLat,
+      longitude: _locationLng,
       jobStartDate: _selectedDate,
       shiftStartTime: _shiftStart,
       shiftEndTime: _shiftEnd,
@@ -144,16 +229,13 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Refresh the jobs list
       ref.read(allJobsProvider.notifier).refresh();
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Job posted successfully!'),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       context.pop();
@@ -163,8 +245,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
           content: const Text('Failed to post job. Please try again.'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     }
@@ -175,19 +256,25 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(
-          widget.type == JobType.instant
-              ? 'Post Instant Job'
-              : widget.type == JobType.skilled
-                  ? 'Post Skilled Job'
-                  : 'Post Scheduled Job',
-        ),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Post $_jobTypeName',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
         actions: [
           if (_isLoading)
@@ -202,16 +289,27 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
           else
             Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: ElevatedButton(
-                onPressed: _submitJob,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: _jobTypeGradient),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: ElevatedButton(
+                  onPressed: _submitJob,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    'Post',
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
-                child: const Text('Post'),
               ),
             ),
         ],
@@ -223,44 +321,77 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Instant Job Info Banner ───────────────────────────
-              if (widget.type == JobType.instant) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF3ED),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFFF6B35).withValues(alpha: 0.3)),
+              // ── Job Type Banner ─────────────────────────────────
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _jobTypeGradient.map((c) => c.withValues(alpha: 0.12)).toList(),
                   ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.bolt_rounded, color: Color(0xFFFF6B35), size: 24),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Instant jobs expire in 4 hours. The first qualified worker to accept gets the job immediately.',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFC2410C),
-                            height: 1.3,
-                          ),
-                        ),
-                      ),
-                    ],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _jobTypeGradient.first.withValues(alpha: 0.35),
                   ),
                 ),
-              ],
-              // ── Urgent Banner Toggle ──────────────────────────────
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: _jobTypeGradient),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(_jobTypeIcon, color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _jobTypeName,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: _jobTypeGradient.first,
+                            ),
+                          ),
+                          Text(
+                            _jobTypeDescription,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: _jobTypeGradient.first.withValues(alpha: 0.8),
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Urgent Banner Toggle ────────────────────────────
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: _isUrgent
-                      ? AppColors.accentContainer
-                      : AppColors.surfaceVariant,
+                  gradient: _isUrgent
+                      ? const LinearGradient(
+                          colors: [Color(0xFFFFF3ED), Color(0xFFFFE8D6)],
+                        )
+                      : LinearGradient(
+                          colors: [Colors.grey.shade50, Colors.grey.shade100],
+                        ),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _isUrgent
+                        ? const Color(0xFFFF6B35).withValues(alpha: 0.4)
+                        : AppColors.border,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -304,7 +435,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ── Job Title ──────────────────────────────────────────
+              // ── Job Title ──────────────────────────────────────
               _SectionLabel(label: 'Job Title'),
               _StyledField(
                 controller: _titleController,
@@ -314,7 +445,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Business Name ──────────────────────────────────────
+              // ── Business Name ──────────────────────────────────
               _SectionLabel(label: 'Business Name'),
               _StyledField(
                 controller: _businessNameController,
@@ -324,7 +455,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Category ──────────────────────────────────────────
+              // ── Category ───────────────────────────────────────
               _SectionLabel(label: 'Category'),
               _StyledDropdown<String>(
                 value: _selectedCategory,
@@ -334,14 +465,29 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                           child: Text(e.value),
                         ))
                     .toList(),
-                onChanged: (v) => setState(() => _selectedCategory = v!),
+                onChanged: (v) => setState(() {
+                  _selectedCategory = v!;
+                  _isCustomCategory = v == 'custom';
+                }),
                 icon: Icons.category_rounded,
               ),
+              if (_isCustomCategory) ...[
+                const SizedBox(height: 10),
+                _StyledField(
+                  controller: _customCategoryController,
+                  hint: 'e.g. Flower Arrangement, Pottery, Pet Grooming...',
+                  validator: (v) => _isCustomCategory && v!.trim().isEmpty
+                      ? 'Enter your custom category'
+                      : null,
+                  icon: Icons.edit_rounded,
+                ),
+              ],
               const SizedBox(height: 16),
 
-              // ── Pay Rate ───────────────────────────────────────────
+              // ── Pay Rate ───────────────────────────────────────
               _SectionLabel(label: 'Pay Rate (Rs.)'),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     flex: 2,
@@ -357,41 +503,131 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _StyledDropdown<String>(
-                      value: _selectedSalaryType,
-                      items: const [
-                        DropdownMenuItem(value: 'hourly', child: Text('/hour')),
-                        DropdownMenuItem(value: 'daily', child: Text('/day')),
-                        DropdownMenuItem(value: 'fixed', child: Text('Fixed')),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => _selectedSalaryType = v!),
-                      icon: Icons.schedule_rounded,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        children: _salaryTypes.map((t) {
+                          final isSelected = _selectedSalaryType == t['value'];
+                          return GestureDetector(
+                            onTap: () =>
+                                setState(() => _selectedSalaryType = t['value']!),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 9),
+                              decoration: BoxDecoration(
+                                gradient: isSelected
+                                    ? const LinearGradient(
+                                        colors: [
+                                          Color(0xFF0D9488),
+                                          Color(0xFF0F766E)
+                                        ],
+                                      )
+                                    : null,
+                                borderRadius: BorderRadius.circular(
+                                    _salaryTypes.indexOf(t) == 0
+                                        ? 13
+                                        : _salaryTypes.indexOf(t) ==
+                                                _salaryTypes.length - 1
+                                            ? 13
+                                            : 0),
+                              ),
+                              child: Text(
+                                t['label']!,
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppColors.textPrimary,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
 
-              // ── Location ───────────────────────────────────────────
-              _SectionLabel(label: 'Location'),
-              _StyledDropdown<String>(
-                value: _selectedLocation,
-                items: _locationCoords.keys
-                    .map((loc) =>
-                        DropdownMenuItem(value: loc, child: Text(loc)))
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedLocation = v!),
-                icon: Icons.location_on_rounded,
+              // ── Location ───────────────────────────────────────
+              _SectionLabel(label: 'Job Location'),
+              GestureDetector(
+                onTap: _openLocationPicker,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _selectedLocation.isEmpty
+                          ? AppColors.border
+                          : AppColors.primary,
+                      width: _selectedLocation.isEmpty ? 1.0 : 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _selectedLocation.isEmpty
+                            ? Icons.add_location_alt_rounded
+                            : Icons.location_on_rounded,
+                        color: _selectedLocation.isEmpty
+                            ? AppColors.textSecondary
+                            : AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _selectedLocation.isEmpty
+                              ? 'Tap to choose location on map'
+                              : _selectedLocation,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontWeight: _selectedLocation.isEmpty
+                                ? FontWeight.w400
+                                : FontWeight.w600,
+                            fontSize: 14,
+                            color: _selectedLocation.isEmpty
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Icon(
+                        Icons.map_rounded,
+                        color: _selectedLocation.isEmpty
+                            ? AppColors.textSecondary
+                            : AppColors.primary,
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
 
-              // ── Shift Date & Times ─────────────────────────────────
+              // ── Shift Date & Times ─────────────────────────────
               _SectionLabel(label: 'Shift Date & Time'),
               GestureDetector(
                 onTap: _selectDate,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 14),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
@@ -448,7 +684,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Workers Needed ─────────────────────────────────────
+              // ── Workers Needed ─────────────────────────────────
               _SectionLabel(label: 'Workers Needed'),
               _StyledField(
                 controller: _workersNeededController,
@@ -461,7 +697,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Deadline Selector (Scheduled & Skilled Jobs Only) ───────
+              // ── Deadline Selector (Scheduled & Skilled Only) ───
               if (widget.type != JobType.instant) ...[
                 _SectionLabel(label: 'Application Deadline'),
                 Row(
@@ -469,20 +705,26 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                     final isSelected = _selectedDeadlineDays == days;
                     return Expanded(
                       child: GestureDetector(
-                        onTap: () => setState(() => _selectedDeadlineDays = days),
+                        onTap: () =>
+                            setState(() => _selectedDeadlineDays = days),
                         child: Container(
                           margin: const EdgeInsets.only(right: 6),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
                             gradient: isSelected
                                 ? const LinearGradient(
-                                    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                                    colors: [
+                                      Color(0xFF0D9488),
+                                      Color(0xFF0F766E)
+                                    ],
                                   )
                                 : null,
                             color: isSelected ? null : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? AppColors.primary : AppColors.border,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
                             ),
                           ),
                           child: Center(
@@ -491,8 +733,12 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                               style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                color: isSelected ? Colors.white : AppColors.textPrimary,
+                                fontWeight: isSelected
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
                               ),
                             ),
                           ),
@@ -504,7 +750,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // ── Description ────────────────────────────────────────
+              // ── Description ────────────────────────────────────
               _SectionLabel(label: 'Job Description'),
               _StyledField(
                 controller: _descriptionController,
@@ -514,8 +760,9 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Requirements (Skilled Jobs emphasis / optional for others) ───
-              if (widget.type == JobType.skilled || widget.type == JobType.scheduled) ...[
+              // ── Requirements (Skilled & Scheduled) ────────────
+              if (widget.type == JobType.skilled ||
+                  widget.type == JobType.scheduled) ...[
                 _SectionLabel(
                   label: widget.type == JobType.skilled
                       ? 'Required Qualifications & Experience (one per line)'
@@ -532,31 +779,38 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                 const SizedBox(height: 32),
               ],
 
-              // ── Submit Button ──────────────────────────────────────
+              // ── Submit Button ──────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _submitJob,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2.5, color: Colors.white))
-                      : const Icon(Icons.send_rounded),
-                  label:
-                      Text(_isLoading ? 'Posting...' : 'Post Job Now'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    textStyle: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: _jobTypeGradient),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _submitJob,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2.5, color: Colors.white))
+                        : const Icon(Icons.send_rounded),
+                    label: Text(_isLoading ? 'Posting...' : 'Post Job Now'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      elevation: 0,
+                      textStyle: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
                 ),

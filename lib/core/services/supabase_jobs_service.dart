@@ -222,10 +222,10 @@ class SupabaseJobsService {
   static SalaryType _parseSalaryType(String s) {
     switch (s) {
       case 'hourly':  return SalaryType.hourly;
+      case 'weekly':  return SalaryType.weekly;
+      case 'monthly': return SalaryType.monthly;
       case 'fixed':
-      case 'project':
-      case 'weekly':
-      case 'monthly': return SalaryType.fixed;
+      case 'project': return SalaryType.fixed;
       default:        return SalaryType.daily;
     }
   }

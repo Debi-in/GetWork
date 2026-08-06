@@ -15,7 +15,7 @@ enum JobCategory {
   events,
 }
 
-enum SalaryType { hourly, daily, fixed }
+enum SalaryType { hourly, daily, weekly, monthly, fixed }
 
 // Legacy status kept for backward compat with existing screens
 enum JobStatus { active, paused, closed, filled }
@@ -149,11 +149,13 @@ class JobModel extends Equatable {
 
   // ── Convenience Getters ───────────────────────────────────
   String get salaryDisplay {
-    final suffix = salaryType == SalaryType.hourly
-        ? '/hr'
-        : salaryType == SalaryType.daily
-            ? '/day'
-            : '';
+    final suffix = switch (salaryType) {
+      SalaryType.hourly => '/hr',
+      SalaryType.daily => '/day',
+      SalaryType.weekly => '/wk',
+      SalaryType.monthly => '/mo',
+      SalaryType.fixed => '',
+    };
     return 'Rs. ${salary.toStringAsFixed(0)}$suffix';
   }
 
