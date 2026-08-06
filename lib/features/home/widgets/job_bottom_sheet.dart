@@ -12,6 +12,7 @@ import '../../../core/services/user_profile_service.dart';
 import '../../../models/job_model.dart';
 import '../../jobs/jobs_provider.dart';
 import '../../jobs/widgets/complete_profile_sheet.dart';
+import '../../jobs/instant_accept_sheet.dart';
 import '../../business/chat_repository.dart';
 import '../../business/chat_screen.dart';
 
@@ -72,9 +73,14 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
     final appliedJobs = ref.watch(appliedJobsProvider);
     final isApplied = appliedJobs.contains(widget.job.id);
 
+    final isInstant = widget.job.type == JobType.instant;
+    final isSkilled = widget.job.type == JobType.skilled;
+
+    final maxHeight = MediaQuery.of(context).size.height * 0.88;
+
     return Container(
-      constraints: const BoxConstraints(maxHeight: 620),
-      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(28),
@@ -141,6 +147,61 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                     ),
                   ),
 
+                  // Job Type Badge (Instant / Scheduled / Skilled)
+                  Positioned(
+                    top: 14,
+                    left: 54,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isInstant
+                              ? const [Color(0xFFFF6B35), Color(0xFFE53935)]
+                              : isSkilled
+                                  ? const [Color(0xFF0D9488), Color(0xFF0F766E)]
+                                  : const [Color(0xFF059669), Color(0xFF047857)],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isInstant
+                                ? Icons.bolt_rounded
+                                : isSkilled
+                                    ? Icons.verified_rounded
+                                    : Icons.work_rounded,
+                            size: 13,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isInstant
+                                ? 'INSTANT'
+                                : isSkilled
+                                    ? 'SKILLED'
+                                    : 'SCHEDULED',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                   // Close button (Left)
                   Positioned(
                     top: 14,
@@ -185,9 +246,7 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                           backgroundColor: Colors.white,
                           child: IconButton(
                             icon: const Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
-                            onPressed: () {
-                              // Share job link
-                            },
+                            onPressed: () {},
                             padding: EdgeInsets.zero,
                           ),
                         ),
@@ -215,7 +274,9 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                           ),
                           child: Center(
                             child: Text(
-                              widget.job.businessName[0].toUpperCase(),
+                              widget.job.businessName.isNotEmpty
+                                  ? widget.job.businessName[0].toUpperCase()
+                                  : 'B',
                               style: const TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 16,
@@ -331,9 +392,9 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                           bgColor: AppColors.primaryContainer,
                           textColor: AppColors.primaryDark,
                         ),
-                        const _BadgeTag(
-                          icon: Icons.bolt_rounded,
-                          label: 'One Day',
+                        _BadgeTag(
+                          icon: isInstant ? Icons.bolt_rounded : Icons.schedule_rounded,
+                          label: isInstant ? 'Immediate Shift' : 'One Day',
                           bgColor: AppColors.accentContainer,
                           textColor: AppColors.accentDark,
                         ),
@@ -348,7 +409,7 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                         const SizedBox(width: 6),
                         const _ChipBadge(label: '18+ Years'),
                         const SizedBox(width: 6),
-                        const _ChipBadge(label: 'No experience'),
+                        _ChipBadge(label: isSkilled ? 'Skilled Role' : 'Entry Level'),
                       ],
                     ),
                     const SizedBox(height: 14),
@@ -362,46 +423,48 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                         color: AppColors.textSecondary,
                         height: 1.4,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 14),
 
-                    // Requirements List
-                    const Text(
-                      'Requirements',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    ...widget.job.requirements.map(
-                      (req) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.check_circle_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              req,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 13,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
+                    // Requirements List (Highlighted for Skilled / Available for all)
+                    if (widget.job.requirements.isNotEmpty) ...[
+                      Text(
+                        isSkilled ? 'Required Qualifications' : 'Requirements',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: isSkilled ? AppColors.primaryDark : AppColors.textPrimary,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 6),
+                      ...widget.job.requirements.map(
+                        (req) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle_rounded,
+                                size: 16,
+                                color: isSkilled ? const Color(0xFF0D9488) : AppColors.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  req,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Action Buttons Row
                     Row(
@@ -430,49 +493,111 @@ class _JobBottomSheetState extends ConsumerState<JobBottomSheet> {
                         ),
                         const SizedBox(width: 12),
 
-                        // Apply Button
+                        // Primary CTA: Accept Job (Instant) vs Apply Now (Scheduled/Skilled)
                         Expanded(
                           flex: 3,
-                          child: ElevatedButton.icon(
-                            onPressed: isApplied
-                                ? null
-                                : () async {
-                                    final profile = await UserProfileService.getProfile();
-                                    if (profile == null || !profile.isFullProfileComplete) {
-                                      if (!context.mounted) return;
-                                      showModalBottomSheet(
-                                        context: context,
-                                        isScrollControlled: true,
-                                        backgroundColor: Colors.transparent,
-                                        builder: (_) => CompleteProfileSheet(
-                                          onProfileCompleted: () {
-                                            if (context.mounted) {
+                          child: isInstant
+                              ? Container(
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFFF6B35), Color(0xFFE53935)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFE53935).withValues(alpha: 0.3),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      InstantAcceptSheet.show(context, widget.job);
+                                    },
+                                    icon: const Icon(Icons.bolt_rounded, size: 20, color: Colors.white),
+                                    label: const Text(
+                                      'Accept Job',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    gradient: isApplied
+                                        ? null
+                                        : const LinearGradient(
+                                            colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                                          ),
+                                    color: isApplied ? AppColors.textHint : null,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: isApplied
+                                        ? null
+                                        : [
+                                            BoxShadow(
+                                              color: const Color(0xFF0D9488).withValues(alpha: 0.3),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                  ),
+                                  child: ElevatedButton.icon(
+                                    onPressed: isApplied
+                                        ? null
+                                        : () async {
+                                            final profile = await UserProfileService.getProfile();
+                                            if (profile == null || !profile.isFullProfileComplete) {
+                                              if (!context.mounted) return;
+                                              showModalBottomSheet(
+                                                context: context,
+                                                isScrollControlled: true,
+                                                backgroundColor: Colors.transparent,
+                                                builder: (_) => CompleteProfileSheet(
+                                                  onProfileCompleted: () {
+                                                    if (context.mounted) {
+                                                      context.push('/job/${widget.job.id}/apply');
+                                                    }
+                                                  },
+                                                ),
+                                              );
+                                            } else {
+                                              if (!context.mounted) return;
                                               context.push('/job/${widget.job.id}/apply');
                                             }
                                           },
-                                        ),
-                                      );
-                                    } else {
-                                      if (!context.mounted) return;
-                                      context.push('/job/${widget.job.id}/apply');
-                                    }
-                                  },
-                            icon: isApplied
-                                ? const Icon(Icons.check_circle_rounded, size: 20)
-                                : const Icon(Icons.bolt_rounded, size: 20),
-                            label: Text(isApplied ? 'Applied' : 'Apply Now'),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(0, 50),
-                              backgroundColor: isApplied
-                                  ? AppColors.textHint
-                                  : AppColors.primary,
-                              foregroundColor: Colors.white,
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
+                                    icon: isApplied
+                                        ? const Icon(Icons.check_circle_rounded, size: 20, color: Colors.white)
+                                        : const Icon(Icons.work_rounded, size: 20, color: Colors.white),
+                                    label: Text(
+                                      isApplied ? 'Applied' : 'Apply Now',
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                         ),
                       ],
                     ),

@@ -9,10 +9,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/supabase_jobs_service.dart';
+import '../../models/job_model.dart';
 import '../jobs/jobs_provider.dart';
 
 class PostJobScreen extends ConsumerStatefulWidget {
-  const PostJobScreen({super.key});
+  final JobType type;
+
+  const PostJobScreen({
+    super.key,
+    this.type = JobType.scheduled,
+  });
 
   @override
   ConsumerState<PostJobScreen> createState() => _PostJobScreenState();
@@ -38,6 +44,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   String _shiftStart = '09:00 AM';
   String _shiftEnd = '05:00 PM';
   bool _isUrgent = false;
+  int _selectedDeadlineDays = 3;
 
   final Map<String, String> _categoryLabels = {
     'delivery': 'Delivery',
@@ -408,6 +415,49 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               ),
               const SizedBox(height: 16),
 
+              // ── Deadline Selector (Scheduled & Skilled Jobs Only) ───────
+              if (widget.type != JobType.instant) ...[
+                _SectionLabel(label: 'Application Deadline'),
+                Row(
+                  children: [1, 3, 5, 7].map((days) {
+                    final isSelected = _selectedDeadlineDays == days;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedDeadlineDays = days),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? const LinearGradient(
+                                    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                                  )
+                                : null,
+                            color: isSelected ? null : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected ? AppColors.primary : AppColors.border,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$days ${days == 1 ? 'Day' : 'Days'}',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // ── Description ────────────────────────────────────────
               _SectionLabel(label: 'Job Description'),
               _StyledField(
@@ -418,15 +468,23 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Requirements ───────────────────────────────────────
-              _SectionLabel(label: 'Requirements (one per line)'),
-              _StyledField(
-                controller: _requirementsController,
-                hint: 'e.g.\nOwn motorcycle\nValid driving license',
-                maxLines: 3,
-                icon: Icons.checklist_rounded,
-              ),
-              const SizedBox(height: 32),
+              // ── Requirements (Skilled Jobs emphasis / optional for others) ───
+              if (widget.type == JobType.skilled || widget.type == JobType.scheduled) ...[
+                _SectionLabel(
+                  label: widget.type == JobType.skilled
+                      ? 'Required Qualifications & Experience (one per line)'
+                      : 'Requirements (optional, one per line)',
+                ),
+                _StyledField(
+                  controller: _requirementsController,
+                  hint: widget.type == JobType.skilled
+                      ? 'e.g.\n2+ years barista experience\nFood hygiene certificate\nGood communication'
+                      : 'e.g.\nOwn motorcycle\nValid driving license',
+                  maxLines: 3,
+                  icon: Icons.checklist_rounded,
+                ),
+                const SizedBox(height: 32),
+              ],
 
               // ── Submit Button ──────────────────────────────────────
               SizedBox(

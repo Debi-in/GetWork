@@ -47,8 +47,15 @@ class SupabaseJobsService {
     String description = '',
     List<String> requirements = const [],
     bool isUrgent = false,
+    JobType type = JobType.scheduled,
+    int deadlineDays = 3,
   }) async {
     try {
+      final now = DateTime.now();
+      final expiresAt = type == JobType.instant
+          ? now.add(const Duration(hours: 4))
+          : now.add(Duration(days: deadlineDays.clamp(1, 7)));
+
       await _db.from('jobs').insert({
         'title': title,
         'category': category.toLowerCase(),
@@ -67,6 +74,9 @@ class SupabaseJobsService {
         'requirements_text': requirements,
         'is_urgent': isUrgent,
         'status': 'active',
+        'type': type.name,
+        'job_status_v2': 'open',
+        'expires_at': expiresAt.toIso8601String(),
       });
       return true;
     } catch (e) {
@@ -147,6 +157,19 @@ class SupabaseJobsService {
         (row['hourly_rate'] as num?)?.toDouble() ??
         0.0;
 
+    final typeStr = (row['type'] as String? ?? 'scheduled').toLowerCase();
+    final type = _parseJobType(typeStr);
+
+    final statusV2Str = (row['job_status_v2'] as String? ?? 'open').toLowerCase();
+    final jobStatusV2 = _parseJobStatusV2(statusV2Str);
+
+    DateTime? expiresAt;
+    if (row['expires_at'] != null) {
+      try {
+        expiresAt = DateTime.parse(row['expires_at'].toString());
+      } catch (_) {}
+    }
+
     return JobModel(
       id: row['id']?.toString() ?? '',
       title: row['title']?.toString() ?? '',
@@ -171,10 +194,31 @@ class SupabaseJobsService {
       createdAt: row['created_at'] != null
           ? DateTime.parse(row['created_at'].toString())
           : DateTime.now(),
+      type: type,
+      jobStatusV2: jobStatusV2,
+      expiresAt: expiresAt,
     );
   }
 
   // ── Enum parsers ──────────────────────────────────────────
+  static JobType _parseJobType(String s) {
+    switch (s) {
+      case 'instant': return JobType.instant;
+      case 'skilled': return JobType.skilled;
+      default:        return JobType.scheduled;
+    }
+  }
+
+  static JobStatusV2 _parseJobStatusV2(String s) {
+    switch (s) {
+      case 'accepted':  return JobStatusV2.accepted;
+      case 'filled':    return JobStatusV2.filled;
+      case 'expired':   return JobStatusV2.expired;
+      case 'cancelled': return JobStatusV2.cancelled;
+      default:          return JobStatusV2.open;
+    }
+  }
+
   static SalaryType _parseSalaryType(String s) {
     switch (s) {
       case 'hourly':  return SalaryType.hourly;

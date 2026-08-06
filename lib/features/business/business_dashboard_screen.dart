@@ -329,10 +329,10 @@ class _BusinessDashboardScreenState
                     child: _SpeedDial(
                       actions: [
                         _SpeedDialAction(
-                          icon: Icons.edit_rounded,
+                          icon: Icons.add_rounded,
                           color: AppColors.primary,
                           bgColor: AppColors.primaryContainer,
-                          onTap: () => context.push(AppRoutes.postJob),
+                          onTap: () => context.push(AppRoutes.postJobType),
                         ),
                         _SpeedDialAction(
                           icon: Icons.bookmark_outline_rounded,

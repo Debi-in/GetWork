@@ -16,7 +16,10 @@ import 'features/profile/profile_screen.dart';
 import 'features/profile/manage_profile_screen.dart';
 import 'features/business/business_dashboard_screen.dart';
 import 'features/business/post_job_screen.dart';
+import 'features/business/job_type_selector_screen.dart';
 import 'features/business/applicants_screen.dart';
+import 'features/jobs/instant_accept_success_screen.dart';
+import 'models/job_model.dart';
 import 'features/notifications/notifications_screen.dart';
 import 'features/settings/settings_screen.dart';
 
@@ -31,8 +34,10 @@ class AppRoutes {
   static const String jobDetail = '/job/:jobId';
   static const String apply = '/job/:jobId/apply';
   static const String applySuccess = '/apply-success';
+  static const String acceptSuccess = '/job/:jobId/accept-success';
   static const String profile = '/profile';
   static const String businessDashboard = '/business';
+  static const String postJobType = '/business/post-job/type';
   static const String postJob = '/business/post-job';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
@@ -87,6 +92,14 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const ApplySuccessScreen(),
     ),
     GoRoute(
+      path: AppRoutes.acceptSuccess,
+      name: 'acceptSuccess',
+      builder: (context, state) {
+        final jobId = state.pathParameters['jobId'] ?? '';
+        return InstantAcceptSuccessScreen(jobId: jobId);
+      },
+    ),
+    GoRoute(
       path: AppRoutes.profile,
       name: 'profile',
       builder: (context, state) => const ProfileScreen(),
@@ -97,9 +110,22 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const BusinessDashboardScreen(),
     ),
     GoRoute(
+      path: AppRoutes.postJobType,
+      name: 'postJobType',
+      builder: (context, state) => const JobTypeSelectorScreen(),
+    ),
+    GoRoute(
       path: AppRoutes.postJob,
       name: 'postJob',
-      builder: (context, state) => const PostJobScreen(),
+      builder: (context, state) {
+        final typeStr = state.uri.queryParameters['type'] ?? 'scheduled';
+        final type = typeStr == 'instant'
+            ? JobType.instant
+            : typeStr == 'skilled'
+                ? JobType.skilled
+                : JobType.scheduled;
+        return PostJobScreen(type: type);
+      },
     ),
     GoRoute(
       path: AppRoutes.notifications,

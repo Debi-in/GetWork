@@ -2,6 +2,7 @@
 // MORPHIC JOB SHEET WRAPPER — GetWork App
 // Handles PowerPoint-like Morph expand/collapse transition
 // Synchronized with map camera glide (staggered entrance)
+// Gate: sheet only expands AFTER map has centered on the pin
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -12,10 +13,15 @@ class MorphicJobBottomSheetWrapper extends StatefulWidget {
   final JobModel? job;
   final VoidCallback onClose;
 
+  /// True once the map camera has finished flying to the job location.
+  /// The sheet will NOT animate open until this is true.
+  final bool mapCentered;
+
   const MorphicJobBottomSheetWrapper({
     super.key,
     required this.job,
     required this.onClose,
+    this.mapCentered = false,
   });
 
   @override
@@ -38,10 +44,10 @@ class _MorphicJobBottomSheetWrapperState
     _cachedJob = widget.job;
     _anim = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 420),
     );
 
-    // Staggered morph scale expansion
+    // Staggered morph scale expansion — starts from pin center
     _scale = Tween<double>(begin: 0.45, end: 1.0).animate(
       CurvedAnimation(
         parent: _anim,
@@ -49,7 +55,7 @@ class _MorphicJobBottomSheetWrapperState
       ),
     );
 
-    // Slide up curve synchronized with map glide
+    // Slide up synchronized with map glide
     _slide = Tween<Offset>(
       begin: const Offset(0.0, 0.45),
       end: Offset.zero,
@@ -68,7 +74,8 @@ class _MorphicJobBottomSheetWrapperState
       ),
     );
 
-    if (widget.job != null) {
+    // Only start if map is already centered (edge case: pre-centered)
+    if (widget.job != null && widget.mapCentered) {
       _anim.forward();
     }
   }
@@ -76,9 +83,15 @@ class _MorphicJobBottomSheetWrapperState
   @override
   void didUpdateWidget(covariant MorphicJobBottomSheetWrapper oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (widget.job != null) {
       _cachedJob = widget.job;
-      _anim.forward();
+      // Fire open animation only when map finishes centering
+      if (widget.mapCentered && !oldWidget.mapCentered) {
+        _anim.forward(from: 0.0);
+      } else if (widget.mapCentered && oldWidget.job == null && widget.job != null) {
+        _anim.forward(from: 0.0);
+      }
     } else {
       _anim.reverse();
     }

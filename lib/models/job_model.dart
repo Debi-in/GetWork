@@ -17,7 +17,66 @@ enum JobCategory {
 
 enum SalaryType { hourly, daily, fixed }
 
+// Legacy status kept for backward compat with existing screens
 enum JobStatus { active, paused, closed, filled }
+
+/// The new job-type system (Instant / Scheduled / Skilled)
+enum JobType {
+  instant,    // first-come, race-safe Accept
+  scheduled,  // Apply then employer picks one applicant
+  skilled,    // Apply + requirements shown, employer picks
+}
+
+/// Status for the new multi-type job lifecycle
+enum JobStatusV2 {
+  open,        // visible on map
+  accepted,    // instant job taken by a worker
+  filled,      // scheduled/skilled job applicant confirmed
+  expired,     // past expiresAt without activity
+  cancelled,   // removed by business
+}
+
+/// An entry in the applicants array (Scheduled / Skilled jobs)
+class JobApplicant extends Equatable {
+  final String uid;
+  final DateTime appliedAt;
+  final String status; // "pending" | "accepted" | "rejected"
+
+  const JobApplicant({
+    required this.uid,
+    required this.appliedAt,
+    this.status = 'pending',
+  });
+
+  JobApplicant copyWith({
+    String? uid,
+    DateTime? appliedAt,
+    String? status,
+  }) {
+    return JobApplicant(
+      uid: uid ?? this.uid,
+      appliedAt: appliedAt ?? this.appliedAt,
+      status: status ?? this.status,
+    );
+  }
+
+  factory JobApplicant.fromMap(Map<String, dynamic> map) {
+    return JobApplicant(
+      uid: map['uid'] as String,
+      appliedAt: DateTime.parse(map['appliedAt'] as String),
+      status: map['status'] as String? ?? 'pending',
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'uid': uid,
+        'appliedAt': appliedAt.toIso8601String(),
+        'status': status,
+      };
+
+  @override
+  List<Object?> get props => [uid, appliedAt, status];
+}
 
 class JobModel extends Equatable {
   final String id;
@@ -41,7 +100,20 @@ class JobModel extends Equatable {
   final bool isUrgent;
   final JobStatus status;
   final DateTime createdAt;
-  final double? distanceKm; // Computed from user location
+  final double? distanceKm;
+
+  // ── New multi-type fields ─────────────────────────────────
+  final JobType type;
+  final JobStatusV2 jobStatusV2;
+  final DateTime? expiresAt;
+
+  // Instant-only
+  final String? acceptedBy;
+  final DateTime? acceptedAt;
+
+  // Scheduled / Skilled
+  final List<JobApplicant> applicants;
+  final String? filledBy;
 
   const JobModel({
     required this.id,
@@ -66,8 +138,16 @@ class JobModel extends Equatable {
     this.status = JobStatus.active,
     required this.createdAt,
     this.distanceKm,
+    this.type = JobType.scheduled,
+    this.jobStatusV2 = JobStatusV2.open,
+    this.expiresAt,
+    this.acceptedBy,
+    this.acceptedAt,
+    this.applicants = const [],
+    this.filledBy,
   });
 
+  // ── Convenience Getters ───────────────────────────────────
   String get salaryDisplay {
     final suffix = salaryType == SalaryType.hourly
         ? '/hr'
@@ -82,6 +162,11 @@ class JobModel extends Equatable {
       shiftDate.year == DateTime.now().year &&
       shiftDate.month == DateTime.now().month &&
       shiftDate.day == DateTime.now().day;
+
+  bool get isOpen => jobStatusV2 == JobStatusV2.open;
+  bool get isInstant => type == JobType.instant;
+  bool get isScheduled => type == JobType.scheduled;
+  bool get isSkilled => type == JobType.skilled;
 
   JobModel copyWith({
     String? id,
@@ -106,6 +191,13 @@ class JobModel extends Equatable {
     JobStatus? status,
     DateTime? createdAt,
     double? distanceKm,
+    JobType? type,
+    JobStatusV2? jobStatusV2,
+    DateTime? expiresAt,
+    String? acceptedBy,
+    DateTime? acceptedAt,
+    List<JobApplicant>? applicants,
+    String? filledBy,
   }) {
     return JobModel(
       id: id ?? this.id,
@@ -130,6 +222,13 @@ class JobModel extends Equatable {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       distanceKm: distanceKm ?? this.distanceKm,
+      type: type ?? this.type,
+      jobStatusV2: jobStatusV2 ?? this.jobStatusV2,
+      expiresAt: expiresAt ?? this.expiresAt,
+      acceptedBy: acceptedBy ?? this.acceptedBy,
+      acceptedAt: acceptedAt ?? this.acceptedAt,
+      applicants: applicants ?? this.applicants,
+      filledBy: filledBy ?? this.filledBy,
     );
   }
 
@@ -140,5 +239,8 @@ class JobModel extends Equatable {
         description, requirements, shiftDate, shiftStartTime,
         shiftEndTime, workersNeeded, workersApplied, isUrgent,
         status, createdAt, distanceKm,
+        type, jobStatusV2, expiresAt, acceptedBy, acceptedAt,
+        applicants, filledBy,
       ];
 }
+

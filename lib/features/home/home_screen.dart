@@ -81,8 +81,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
+  bool _mapCentered = false;
+
   void _animatedMapMoveTo(LatLng destLocation, double destZoom) {
     _mapFlyController?.dispose();
+    setState(() => _mapCentered = false);
 
     final camera = _mapController.camera;
     final latTween =
@@ -112,6 +115,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     animation.addStatusListener((status) {
       if (status == AnimationStatus.completed ||
           status == AnimationStatus.dismissed) {
+        if (mounted) {
+          setState(() => _mapCentered = true);
+        }
         controller.dispose();
         if (_mapFlyController == controller) {
           _mapFlyController = null;
@@ -541,9 +547,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     right: 0,
                     child: MorphicJobBottomSheetWrapper(
                       job: selectedJob,
-                      onClose: () => ref
-                          .read(selectedJobProvider.notifier)
-                          .selectJob(null),
+                      mapCentered: _mapCentered,
+                      onClose: () {
+                        setState(() => _mapCentered = false);
+                        ref
+                            .read(selectedJobProvider.notifier)
+                            .selectJob(null);
+                      },
                     ),
                   ),
 
