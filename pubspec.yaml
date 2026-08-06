@@ -28,6 +28,9 @@ dependencies:
   # ── Backend: Supabase (Phase 2) ───────────────────────────────
   supabase_flutter: ^2.8.4
 
+  # ── HTTP Client ───────────────────────────────────────────────
+  http: ^1.2.1
+
   # ── Firebase (Phase 3) ────────────────────────────────────────
   firebase_core: ^4.12.1
   firebase_auth: ^6.1.0

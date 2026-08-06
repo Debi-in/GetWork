@@ -1,6 +1,14 @@
 // ============================================================
 // POST JOB SCREEN — GetWork App
 // Business users post new shift jobs directly to Supabase
+// Includes:
+// - Salary dropdown (/hour, /day, /week, /month, Fixed)
+// - Rs. currency display
+// - Reverse-geocoded location picker (map + place name)
+// - Custom slot-machine time picker wheel
+// - Draft auto-save & explicit save-to-draft dialog on back navigation
+// - Optional Contact Phone & Email fields
+// - Bottom bar with Cancel & Confirm Post buttons
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -9,17 +17,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/draft_service.dart';
 import '../../core/services/supabase_jobs_service.dart';
 import '../../models/job_model.dart';
 import '../jobs/jobs_provider.dart';
 import 'location_picker_sheet.dart';
+import 'time_picker_sheet.dart';
 
 class PostJobScreen extends ConsumerStatefulWidget {
   final JobType type;
+  final Map<String, dynamic>? initialDraft;
 
   const PostJobScreen({
     super.key,
     this.type = JobType.scheduled,
+    this.initialDraft,
   });
 
   @override
@@ -29,15 +41,21 @@ class PostJobScreen extends ConsumerStatefulWidget {
 class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _isSubmitted = false;
+
+  // Draft ID if resuming
+  String? _draftId;
 
   // ── Form Controllers ────────────────────────────────────────
-  final _titleController = TextEditingController();
-  final _businessNameController = TextEditingController(text: 'Himalayan Mart');
-  final _salaryController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _requirementsController = TextEditingController();
-  final _workersNeededController = TextEditingController(text: '1');
-  final _customCategoryController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _businessNameController;
+  late final TextEditingController _salaryController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _requirementsController;
+  late final TextEditingController _workersNeededController;
+  late final TextEditingController _customCategoryController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
 
   // ── Form State ──────────────────────────────────────────────
   String _selectedCategory = 'retail';
@@ -55,7 +73,39 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.type == JobType.instant) {
+    final d = widget.initialDraft;
+    _draftId = d?['id'] as String?;
+
+    _titleController = TextEditingController(text: d?['title'] as String? ?? '');
+    _businessNameController =
+        TextEditingController(text: d?['businessName'] as String? ?? 'Himalayan Mart');
+    _salaryController =
+        TextEditingController(text: d?['salary'] as String? ?? '');
+    _descriptionController =
+        TextEditingController(text: d?['description'] as String? ?? '');
+    _requirementsController =
+        TextEditingController(text: d?['requirements'] as String? ?? '');
+    _workersNeededController =
+        TextEditingController(text: d?['workersNeeded'] as String? ?? '1');
+    _customCategoryController =
+        TextEditingController(text: d?['customCategory'] as String? ?? '');
+    _phoneController =
+        TextEditingController(text: d?['phone'] as String? ?? '');
+    _emailController =
+        TextEditingController(text: d?['email'] as String? ?? '');
+
+    if (d != null) {
+      _selectedCategory = d['category'] as String? ?? 'retail';
+      _isCustomCategory = _selectedCategory == 'custom';
+      _selectedSalaryType = d['salaryType'] as String? ?? 'daily';
+      _selectedLocation = d['location'] as String? ?? '';
+      _locationLat = (d['lat'] as num?)?.toDouble() ?? 27.7172;
+      _locationLng = (d['lng'] as num?)?.toDouble() ?? 85.3240;
+      _shiftStart = d['shiftStart'] as String? ?? '09:00 AM';
+      _shiftEnd = d['shiftEnd'] as String? ?? '05:00 PM';
+      _isUrgent = d['isUrgent'] as bool? ?? false;
+      _selectedDeadlineDays = d['deadlineDays'] as int? ?? 3;
+    } else if (widget.type == JobType.instant) {
       _isUrgent = true;
     }
   }
@@ -79,7 +129,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       case JobType.scheduled:
         return 'Post now — review applicants and confirm one';
       case JobType.skilled:
-        return 'Requires qualifications — you review and select the best fit';
+        return 'Requires qualifications — review and select the best candidate';
     }
   }
 
@@ -119,17 +169,17 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     'custom': 'Custom (specify below)',
   };
 
-  // Salary type options
-  static const List<Map<String, String>> _salaryTypes = [
-    {'value': 'hourly', 'label': '/hour', 'full': 'Per Hour'},
-    {'value': 'daily', 'label': '/day', 'full': 'Per Day'},
-    {'value': 'weekly', 'label': '/week', 'full': 'Per Week'},
-    {'value': 'monthly', 'label': '/month', 'full': 'Per Month'},
-    {'value': 'fixed', 'label': 'Fixed', 'full': 'Fixed Rate'},
-  ];
+  final Map<String, String> _salaryTypeLabels = {
+    'hourly': '/hour (Hourly)',
+    'daily': '/day (Daily)',
+    'weekly': '/week (Weekly)',
+    'monthly': '/month (Monthly)',
+    'fixed': 'Fixed Rate',
+  };
 
   @override
   void dispose() {
+    _autoSaveDraft();
     _titleController.dispose();
     _businessNameController.dispose();
     _salaryController.dispose();
@@ -137,7 +187,46 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     _requirementsController.dispose();
     _workersNeededController.dispose();
     _customCategoryController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
     super.dispose();
+  }
+
+  Map<String, dynamic> _buildDraftMap() {
+    return {
+      if (_draftId != null) 'id': _draftId,
+      'title': _titleController.text.trim(),
+      'businessName': _businessNameController.text.trim(),
+      'salary': _salaryController.text.trim(),
+      'salaryType': _selectedSalaryType,
+      'category': _selectedCategory,
+      'customCategory': _customCategoryController.text.trim(),
+      'location': _selectedLocation,
+      'lat': _locationLat,
+      'lng': _locationLng,
+      'description': _descriptionController.text.trim(),
+      'requirements': _requirementsController.text.trim(),
+      'workersNeeded': _workersNeededController.text.trim(),
+      'shiftStart': _shiftStart,
+      'shiftEnd': _shiftEnd,
+      'isUrgent': _isUrgent,
+      'deadlineDays': _selectedDeadlineDays,
+      'type': widget.type.name,
+      'phone': _phoneController.text.trim(),
+      'email': _emailController.text.trim(),
+    };
+  }
+
+  bool get _hasAnyData {
+    return _titleController.text.trim().isNotEmpty ||
+        _salaryController.text.trim().isNotEmpty ||
+        _selectedLocation.isNotEmpty ||
+        _descriptionController.text.trim().isNotEmpty;
+  }
+
+  Future<void> _autoSaveDraft() async {
+    if (_isSubmitted || !_hasAnyData) return;
+    await DraftService.saveDraft(_buildDraftMap());
   }
 
   Future<void> _selectDate() async {
@@ -175,12 +264,124 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     }
   }
 
+  Future<void> _pickStartTime() async {
+    final res = await TimePickerSheet.show(context, _shiftStart);
+    if (res != null) setState(() => _shiftStart = res);
+  }
+
+  Future<void> _pickEndTime() async {
+    final res = await TimePickerSheet.show(context, _shiftEnd);
+    if (res != null) setState(() => _shiftEnd = res);
+  }
+
+  /// Dialog shown when user taps top back arrow or system back gesture
+  Future<bool> _onWillPop() async {
+    if (_isSubmitted || !_hasAnyData) return true;
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.bookmark_add_rounded, color: AppColors.primary),
+            SizedBox(width: 10),
+            Text(
+              'Save Job Draft?',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Do you want to save this job post as a draft for later editing, or discard your changes?',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            color: AppColors.textSecondary,
+            height: 1.4,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(ctx).pop('discard'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red,
+                  ),
+                  child: const Text('Discard'),
+                ),
+              ),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(ctx).pop('cancel'),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.border),
+                  ),
+                  child: const Text('Continue'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop('save'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      elevation: 0,
+                    ),
+                    child: const Text('Save Draft'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (action == 'save') {
+      await _autoSaveDraft();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Job draft saved for 4 days!'),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+      return true;
+    } else if (action == 'discard') {
+      if (_draftId != null) {
+        await DraftService.deleteDraft(_draftId!);
+      }
+      return true;
+    }
+    return false;
+  }
+
   Future<void> _submitJob() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedLocation.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please select a job location on the map'),
+          content: const Text('Please tap and select a job location on the map'),
           backgroundColor: Colors.orange.shade700,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -204,6 +405,14 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
         .where((s) => s.isNotEmpty)
         .toList();
 
+    // Append contact info to description if provided
+    var desc = _descriptionController.text.trim();
+    final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim();
+    if (phone.isNotEmpty || email.isNotEmpty) {
+      desc += '\n\nContact: ${phone.isNotEmpty ? 'Phone: $phone' : ''} ${email.isNotEmpty ? 'Email: $email' : ''}';
+    }
+
     final success = await SupabaseJobsService.postJob(
       title: _titleController.text.trim(),
       category: categoryToSave,
@@ -217,7 +426,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       shiftEndTime: _shiftEnd,
       workersNeeded: workersNeeded,
       businessName: _businessNameController.text.trim(),
-      description: _descriptionController.text.trim(),
+      description: desc,
       requirements: requirements,
       isUrgent: _isUrgent,
       type: widget.type,
@@ -229,6 +438,12 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     if (!mounted) return;
 
     if (success) {
+      _isSubmitted = true;
+      // Delete draft if it was saved before
+      if (_draftId != null) {
+        await DraftService.deleteDraft(_draftId!);
+      }
+
       ref.read(allJobsProvider.notifier).refresh();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -253,573 +468,635 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Post $_jobTypeName',
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-              ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () async {
+              final shouldPop = await _onWillPop();
+              if (shouldPop && context.mounted) {
+                context.pop();
+              }
+            },
+          ),
+          title: Text(
+            'Post $_jobTypeName',
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
             ),
-          ],
+          ),
         ),
-        actions: [
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: _jobTypeGradient),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: ElevatedButton(
-                  onPressed: _submitJob,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    foregroundColor: Colors.white,
-                    shadowColor: Colors.transparent,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+        body: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Job Type Banner ─────────────────────────────────
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _jobTypeGradient.map((c) => c.withValues(alpha: 0.12)).toList(),
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _jobTypeGradient.first.withValues(alpha: 0.35),
                     ),
                   ),
-                  child: const Text(
-                    'Post',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Job Type Banner ─────────────────────────────────
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: _jobTypeGradient.map((c) => c.withValues(alpha: 0.12)).toList(),
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _jobTypeGradient.first.withValues(alpha: 0.35),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: _jobTypeGradient),
-                        borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: _jobTypeGradient),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(_jobTypeIcon, color: Colors.white, size: 22),
                       ),
-                      child: Icon(_jobTypeIcon, color: Colors.white, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _jobTypeName,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: _jobTypeGradient.first,
+                              ),
+                            ),
+                            Text(
+                              _jobTypeDescription,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                color: _jobTypeGradient.first.withValues(alpha: 0.8),
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Urgent Banner Toggle ────────────────────────────
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: _isUrgent
+                        ? const LinearGradient(
+                            colors: [Color(0xFFFFF3ED), Color(0xFFFFE8D6)],
+                          )
+                        : LinearGradient(
+                            colors: [Colors.grey.shade50, Colors.grey.shade100],
+                          ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _isUrgent
+                          ? const Color(0xFFFF6B35).withValues(alpha: 0.4)
+                          : AppColors.border,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.bolt_rounded,
+                        color: _isUrgent ? AppColors.accent : AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Mark as Urgent',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w700,
+                                color: _isUrgent
+                                    ? AppColors.accentDark
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                            const Text(
+                              'Urgent jobs appear highlighted and first',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _isUrgent,
+                        onChanged: (v) => setState(() => _isUrgent = v),
+                        activeThumbColor: AppColors.accent,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // ── Job Title ──────────────────────────────────────
+                const _SectionLabel(label: 'Job Title'),
+                _StyledField(
+                  controller: _titleController,
+                  hint: 'e.g. Supermarket Cashier',
+                  validator: (v) => v!.trim().isEmpty ? 'Enter a job title' : null,
+                  icon: Icons.work_rounded,
+                ),
+                const SizedBox(height: 16),
+
+                // ── Business Name ──────────────────────────────────
+                const _SectionLabel(label: 'Business Name'),
+                _StyledField(
+                  controller: _businessNameController,
+                  hint: 'Your business name',
+                  validator: (v) => v!.trim().isEmpty ? 'Enter business name' : null,
+                  icon: Icons.business_rounded,
+                ),
+                const SizedBox(height: 16),
+
+                // ── Category ───────────────────────────────────────
+                const _SectionLabel(label: 'Category'),
+                _StyledDropdown<String>(
+                  value: _selectedCategory,
+                  items: _categoryLabels.entries
+                      .map((e) => DropdownMenuItem(
+                            value: e.key,
+                            child: Text(e.value),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() {
+                    _selectedCategory = v!;
+                    _isCustomCategory = v == 'custom';
+                  }),
+                  icon: Icons.category_rounded,
+                ),
+                if (_isCustomCategory) ...[
+                  const SizedBox(height: 10),
+                  _StyledField(
+                    controller: _customCategoryController,
+                    hint: 'e.g. Pet Grooming, Florist, Event Photography...',
+                    validator: (v) => _isCustomCategory && v!.trim().isEmpty
+                        ? 'Enter your custom category'
+                        : null,
+                    icon: Icons.edit_rounded,
+                  ),
+                ],
+                const SizedBox(height: 16),
+
+                // ── Pay Rate (Rs.) & Salary Dropdown ─────────────────
+                const _SectionLabel(label: 'Pay Rate (Rs.)'),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 6,
+                      child: _StyledField(
+                        controller: _salaryController,
+                        hint: 'e.g. 700',
+                        prefixText: 'Rs. ',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        validator: (v) =>
+                            v!.trim().isEmpty ? 'Enter pay rate' : null,
+                        icon: Icons.payments_rounded,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _jobTypeName,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: _jobTypeGradient.first,
-                            ),
-                          ),
-                          Text(
-                            _jobTypeDescription,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              color: _jobTypeGradient.first.withValues(alpha: 0.8),
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
+                      flex: 5,
+                      child: _StyledDropdown<String>(
+                        value: _selectedSalaryType,
+                        items: _salaryTypeLabels.entries
+                            .map((e) => DropdownMenuItem(
+                                  value: e.key,
+                                  child: Text(e.value),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _selectedSalaryType = v!),
+                        icon: Icons.schedule_rounded,
                       ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 16),
 
-              // ── Urgent Banner Toggle ────────────────────────────
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: _isUrgent
-                      ? const LinearGradient(
-                          colors: [Color(0xFFFFF3ED), Color(0xFFFFE8D6)],
-                        )
-                      : LinearGradient(
-                          colors: [Colors.grey.shade50, Colors.grey.shade100],
-                        ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _isUrgent
-                        ? const Color(0xFFFF6B35).withValues(alpha: 0.4)
-                        : AppColors.border,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.bolt_rounded,
-                      color: _isUrgent ? AppColors.accent : AppColors.textSecondary,
+                // ── Job Location Picker ─────────────────────────────
+                const _SectionLabel(label: 'Job Location'),
+                GestureDetector(
+                  onTap: _openLocationPicker,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _selectedLocation.isEmpty
+                            ? AppColors.border
+                            : AppColors.primary,
+                        width: _selectedLocation.isEmpty ? 1.0 : 1.5,
+                      ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Mark as Urgent',
+                    child: Row(
+                      children: [
+                        Icon(
+                          _selectedLocation.isEmpty
+                              ? Icons.add_location_alt_rounded
+                              : Icons.location_on_rounded,
+                          color: _selectedLocation.isEmpty
+                              ? AppColors.textSecondary
+                              : AppColors.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _selectedLocation.isEmpty
+                                ? 'Tap to choose location on map'
+                                : _selectedLocation,
                             style: TextStyle(
                               fontFamily: 'Inter',
-                              fontWeight: FontWeight.w700,
-                              color: _isUrgent
-                                  ? AppColors.accentDark
+                              fontWeight: _selectedLocation.isEmpty
+                                  ? FontWeight.w400
+                                  : FontWeight.w700,
+                              fontSize: 14,
+                              color: _selectedLocation.isEmpty
+                                  ? AppColors.textSecondary
                                   : AppColors.textPrimary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
-                            'Urgent jobs appear highlighted and first',
-                            style: TextStyle(
+                        ),
+                        Icon(
+                          Icons.map_rounded,
+                          color: _selectedLocation.isEmpty
+                              ? AppColors.textSecondary
+                              : AppColors.primary,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── Shift Date & Times ─────────────────────────────
+                const _SectionLabel(label: 'Shift Date & Time'),
+                GestureDetector(
+                  onTap: _selectDate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today_rounded,
+                            color: AppColors.primary, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                            style: const TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                        ],
+                        ),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: AppColors.textSecondary),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _TimePickerButton(
+                        label: 'Start Time',
+                        time: _shiftStart,
+                        onTap: _pickStartTime,
                       ),
                     ),
-                    Switch(
-                      value: _isUrgent,
-                      onChanged: (v) => setState(() => _isUrgent = v),
-                      activeThumbColor: AppColors.accent,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _TimePickerButton(
+                        label: 'End Time',
+                        time: _shiftEnd,
+                        onTap: _pickEndTime,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
-              // ── Job Title ──────────────────────────────────────
-              _SectionLabel(label: 'Job Title'),
-              _StyledField(
-                controller: _titleController,
-                hint: 'e.g. Supermarket Cashier',
-                validator: (v) => v!.trim().isEmpty ? 'Enter a job title' : null,
-                icon: Icons.work_rounded,
-              ),
-              const SizedBox(height: 16),
-
-              // ── Business Name ──────────────────────────────────
-              _SectionLabel(label: 'Business Name'),
-              _StyledField(
-                controller: _businessNameController,
-                hint: 'Your business name',
-                validator: (v) => v!.trim().isEmpty ? 'Enter business name' : null,
-                icon: Icons.business_rounded,
-              ),
-              const SizedBox(height: 16),
-
-              // ── Category ───────────────────────────────────────
-              _SectionLabel(label: 'Category'),
-              _StyledDropdown<String>(
-                value: _selectedCategory,
-                items: _categoryLabels.entries
-                    .map((e) => DropdownMenuItem(
-                          value: e.key,
-                          child: Text(e.value),
-                        ))
-                    .toList(),
-                onChanged: (v) => setState(() {
-                  _selectedCategory = v!;
-                  _isCustomCategory = v == 'custom';
-                }),
-                icon: Icons.category_rounded,
-              ),
-              if (_isCustomCategory) ...[
-                const SizedBox(height: 10),
+                // ── Workers Needed ─────────────────────────────────
+                const _SectionLabel(label: 'Workers Needed'),
                 _StyledField(
-                  controller: _customCategoryController,
-                  hint: 'e.g. Flower Arrangement, Pottery, Pet Grooming...',
-                  validator: (v) => _isCustomCategory && v!.trim().isEmpty
-                      ? 'Enter your custom category'
-                      : null,
-                  icon: Icons.edit_rounded,
+                  controller: _workersNeededController,
+                  hint: '1',
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (v) =>
+                      v!.trim().isEmpty ? 'Enter number of workers' : null,
+                  icon: Icons.people_rounded,
                 ),
-              ],
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // ── Pay Rate ───────────────────────────────────────
-              _SectionLabel(label: 'Pay Rate (Rs.)'),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: _StyledField(
-                      controller: _salaryController,
-                      hint: 'e.g. 700',
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (v) =>
-                          v!.trim().isEmpty ? 'Enter pay rate' : null,
-                      icon: Icons.attach_money_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                // ── Optional Contact Info (Phone & Email) ───────────
+                const _SectionLabel(label: 'Contact Information (Optional)'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StyledField(
+                        controller: _phoneController,
+                        hint: 'Phone No.',
+                        keyboardType: TextInputType.phone,
+                        icon: Icons.phone_rounded,
                       ),
-                      child: Column(
-                        children: _salaryTypes.map((t) {
-                          final isSelected = _selectedSalaryType == t['value'];
-                          return GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedSalaryType = t['value']!),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 9),
-                              decoration: BoxDecoration(
-                                gradient: isSelected
-                                    ? const LinearGradient(
-                                        colors: [
-                                          Color(0xFF0D9488),
-                                          Color(0xFF0F766E)
-                                        ],
-                                      )
-                                    : null,
-                                borderRadius: BorderRadius.circular(
-                                    _salaryTypes.indexOf(t) == 0
-                                        ? 13
-                                        : _salaryTypes.indexOf(t) ==
-                                                _salaryTypes.length - 1
-                                            ? 13
-                                            : 0),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StyledField(
+                        controller: _emailController,
+                        hint: 'Email Address',
+                        keyboardType: TextInputType.emailAddress,
+                        icon: Icons.email_rounded,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // ── Deadline Selector (Scheduled & Skilled Only) ───
+                if (widget.type != JobType.instant) ...[
+                  const _SectionLabel(label: 'Application Deadline'),
+                  Row(
+                    children: [1, 3, 5, 7].map((days) {
+                      final isSelected = _selectedDeadlineDays == days;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () =>
+                              setState(() => _selectedDeadlineDays = days),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              gradient: isSelected
+                                  ? const LinearGradient(
+                                      colors: [
+                                        Color(0xFF0D9488),
+                                        Color(0xFF0F766E)
+                                      ],
+                                    )
+                                  : null,
+                              color: isSelected ? null : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.border,
                               ),
+                            ),
+                            child: Center(
                               child: Text(
-                                t['label']!,
+                                '$days ${days == 1 ? 'Day' : 'Days'}',
                                 style: TextStyle(
                                   fontFamily: 'Inter',
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   fontWeight: isSelected
                                       ? FontWeight.w800
-                                      : FontWeight.w500,
+                                      : FontWeight.w600,
                                   color: isSelected
                                       ? Colors.white
                                       : AppColors.textPrimary,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // ── Location ───────────────────────────────────────
-              _SectionLabel(label: 'Job Location'),
-              GestureDetector(
-                onTap: _openLocationPicker,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: _selectedLocation.isEmpty
-                          ? AppColors.border
-                          : AppColors.primary,
-                      width: _selectedLocation.isEmpty ? 1.0 : 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _selectedLocation.isEmpty
-                            ? Icons.add_location_alt_rounded
-                            : Icons.location_on_rounded,
-                        color: _selectedLocation.isEmpty
-                            ? AppColors.textSecondary
-                            : AppColors.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _selectedLocation.isEmpty
-                              ? 'Tap to choose location on map'
-                              : _selectedLocation,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontWeight: _selectedLocation.isEmpty
-                                ? FontWeight.w400
-                                : FontWeight.w600,
-                            fontSize: 14,
-                            color: _selectedLocation.isEmpty
-                                ? AppColors.textSecondary
-                                : AppColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Icon(
-                        Icons.map_rounded,
-                        color: _selectedLocation.isEmpty
-                            ? AppColors.textSecondary
-                            : AppColors.primary,
-                        size: 18,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // ── Shift Date & Times ─────────────────────────────
-              _SectionLabel(label: 'Shift Date & Time'),
-              GestureDetector(
-                onTap: _selectDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today_rounded,
-                          color: AppColors.primary, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right_rounded,
-                          color: AppColors.textSecondary),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _TimeSelector(
-                      label: 'Start Time',
-                      value: _shiftStart,
-                      times: const [
-                        '06:00 AM', '07:00 AM', '08:00 AM', '09:00 AM',
-                        '10:00 AM', '11:00 AM', '12:00 PM',
-                      ],
-                      onChanged: (v) => setState(() => _shiftStart = v),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _TimeSelector(
-                      label: 'End Time',
-                      value: _shiftEnd,
-                      times: const [
-                        '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM',
-                        '04:00 PM', '05:00 PM', '06:00 PM', '08:00 PM',
-                      ],
-                      onChanged: (v) => setState(() => _shiftEnd = v),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // ── Workers Needed ─────────────────────────────────
-              _SectionLabel(label: 'Workers Needed'),
-              _StyledField(
-                controller: _workersNeededController,
-                hint: '1',
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (v) =>
-                    v!.trim().isEmpty ? 'Enter number of workers' : null,
-                icon: Icons.people_rounded,
-              ),
-              const SizedBox(height: 16),
-
-              // ── Deadline Selector (Scheduled & Skilled Only) ───
-              if (widget.type != JobType.instant) ...[
-                _SectionLabel(label: 'Application Deadline'),
-                Row(
-                  children: [1, 3, 5, 7].map((days) {
-                    final isSelected = _selectedDeadlineDays == days;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () =>
-                            setState(() => _selectedDeadlineDays = days),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            gradient: isSelected
-                                ? const LinearGradient(
-                                    colors: [
-                                      Color(0xFF0D9488),
-                                      Color(0xFF0F766E)
-                                    ],
-                                  )
-                                : null,
-                            color: isSelected ? null : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.border,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '$days ${days == 1 ? 'Day' : 'Days'}',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                fontWeight: isSelected
-                                    ? FontWeight.w800
-                                    : FontWeight.w600,
-                                color: isSelected
-                                    ? Colors.white
-                                    : AppColors.textPrimary,
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // ── Description ────────────────────────────────────
+                const _SectionLabel(label: 'Job Description'),
+                _StyledField(
+                  controller: _descriptionController,
+                  hint: 'Describe the job role and what workers will do...',
+                  maxLines: 3,
+                  icon: Icons.description_rounded,
                 ),
                 const SizedBox(height: 16),
-              ],
 
-              // ── Description ────────────────────────────────────
-              _SectionLabel(label: 'Job Description'),
-              _StyledField(
-                controller: _descriptionController,
-                hint: 'Describe the job role and what workers will do...',
-                maxLines: 3,
-                icon: Icons.description_rounded,
-              ),
-              const SizedBox(height: 16),
-
-              // ── Requirements (Skilled & Scheduled) ────────────
-              if (widget.type == JobType.skilled ||
-                  widget.type == JobType.scheduled) ...[
-                _SectionLabel(
-                  label: widget.type == JobType.skilled
-                      ? 'Required Qualifications & Experience (one per line)'
-                      : 'Requirements (optional, one per line)',
-                ),
-                _StyledField(
-                  controller: _requirementsController,
-                  hint: widget.type == JobType.skilled
-                      ? 'e.g.\n2+ years barista experience\nFood hygiene certificate\nGood communication'
-                      : 'e.g.\nOwn motorcycle\nValid driving license',
-                  maxLines: 3,
-                  icon: Icons.checklist_rounded,
-                ),
-                const SizedBox(height: 32),
-              ],
-
-              // ── Submit Button ──────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: _jobTypeGradient),
-                    borderRadius: BorderRadius.circular(16),
+                // ── Requirements (Skilled & Scheduled) ────────────
+                if (widget.type == JobType.skilled ||
+                    widget.type == JobType.scheduled) ...[
+                  _SectionLabel(
+                    label: widget.type == JobType.skilled
+                        ? 'Required Qualifications & Experience (one per line)'
+                        : 'Requirements (optional, one per line)',
                   ),
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _submitJob,
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2.5, color: Colors.white))
-                        : const Icon(Icons.send_rounded),
-                    label: Text(_isLoading ? 'Posting...' : 'Post Job Now'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      shadowColor: Colors.transparent,
-                      elevation: 0,
+                  _StyledField(
+                    controller: _requirementsController,
+                    hint: widget.type == JobType.skilled
+                        ? 'e.g.\n2+ years barista experience\nFood hygiene certificate\nGood communication'
+                        : 'e.g.\nOwn motorcycle\nValid driving license',
+                    maxLines: 3,
+                    icon: Icons.checklist_rounded,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ],
+            ),
+          ),
+        ),
+
+        // ── Bottom Action Bar with Cancel & Confirm Post Buttons ─────
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: SafeArea(
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final shouldPop = await _onWillPop();
+                      if (shouldPop && context.mounted) {
+                        context.pop();
+                      }
+                    },
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    label: const Text('Cancel'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      side: const BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       textStyle: const TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: _jobTypeGradient),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _submitJob,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.send_rounded, size: 18),
+                      label: Text(
+                        _isLoading ? 'Posting...' : 'Confirm & Post Job',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        textStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Time Picker Button Widget ──────────────────────────────────
+class _TimePickerButton extends StatelessWidget {
+  final String label;
+  final String time;
+  final VoidCallback onTap;
+
+  const _TimePickerButton({
+    required this.label,
+    required this.time,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.access_time_filled_rounded,
+                    color: AppColors.primary, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    time,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.unfold_more_rounded,
+                    color: AppColors.textSecondary, size: 16),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -852,6 +1129,7 @@ class _StyledField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final IconData icon;
+  final String? prefixText;
   final int maxLines;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
@@ -861,6 +1139,7 @@ class _StyledField extends StatelessWidget {
     required this.controller,
     required this.hint,
     required this.icon,
+    this.prefixText,
     this.maxLines = 1,
     this.keyboardType,
     this.inputFormatters,
@@ -877,6 +1156,13 @@ class _StyledField extends StatelessWidget {
       validator: validator,
       decoration: InputDecoration(
         hintText: hint,
+        prefixText: prefixText,
+        prefixStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w800,
+          color: AppColors.primary,
+          fontSize: 15,
+        ),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
         filled: true,
         fillColor: Colors.white,
@@ -940,7 +1226,7 @@ class _StyledDropdown<T> extends StatelessWidget {
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
               ),
@@ -948,64 +1234,6 @@ class _StyledDropdown<T> extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── Time Selector ─────────────────────────────────────────────
-class _TimeSelector extends StatelessWidget {
-  final String label;
-  final String value;
-  final List<String> times;
-  final void Function(String) onChanged;
-
-  const _TimeSelector({
-    required this.label,
-    required this.value,
-    required this.times,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: times.contains(value) ? value : times.first,
-              items: times
-                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                  .toList(),
-              onChanged: (v) => onChanged(v!),
-              isExpanded: true,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -1,11 +1,15 @@
 // ============================================================
 // LOCATION PICKER SHEET — GetWork App
-// Lets user tap on a map to pin a location or use current
+// Lets user tap on a map to pin a location or use current GPS.
+// Uses Nominatim reverse geocoding to retrieve readable place names
+// (e.g. "Balaju, Kathmandu") instead of raw coordinates.
 // ============================================================
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
 
@@ -48,13 +52,14 @@ class LocationPickResult {
 }
 
 class _LocationPickerSheetState extends State<LocationPickerSheet> {
-  // Default: Kathmandu
+  // Default: Kathmandu Center
   static const LatLng _defaultCenter = LatLng(27.7172, 85.3240);
 
   late final MapController _mapController;
   LatLng? _pickedLocation;
   String _locationLabel = '';
-  bool _isLoadingLocation = false;
+  bool _isGeocoding = false;
+  bool _isLoadingGps = false;
 
   @override
   void initState() {
@@ -62,7 +67,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
     _mapController = MapController();
     if (widget.initialLocation != null) {
       _pickedLocation = widget.initialLocation;
-      _locationLabel = widget.initialLabel ?? _coordsToLabel(widget.initialLocation!);
+      _locationLabel = widget.initialLabel ?? 'Selected Location';
     }
   }
 
@@ -72,21 +77,77 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
     super.dispose();
   }
 
-  String _coordsToLabel(LatLng ll) {
+  /// Reverse geocodes coordinates to a human-readable address string using OpenStreetMap Nominatim
+  Future<String> _reverseGeocode(LatLng ll) async {
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${ll.latitude}&lon=${ll.longitude}&accept-language=en',
+      );
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'GetWorkApp/1.0 (contact@getwork.app)'},
+      ).timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final address = data['address'] as Map<String, dynamic>?;
+        if (address != null) {
+          final suburb = address['suburb'] ??
+              address['neighbourhood'] ??
+              address['residential'] ??
+              address['quarter'] ??
+              address['village'] ??
+              address['road'] ??
+              address['commercial'] ??
+              '';
+          final city = address['city'] ??
+              address['town'] ??
+              address['county'] ??
+              address['state_district'] ??
+              'Kathmandu';
+          
+          if (suburb.toString().isNotEmpty) {
+            return '$suburb, $city';
+          } else if (data['name'] != null && data['name'].toString().isNotEmpty) {
+            return '${data['name']}, $city';
+          } else {
+            return '$city';
+          }
+        }
+      }
+    } catch (_) {
+      // Fallback on error/timeout
+    }
     return '${ll.latitude.toStringAsFixed(4)}, ${ll.longitude.toStringAsFixed(4)}';
   }
 
+  Future<void> _updateLocation(LatLng ll) async {
+    setState(() {
+      _pickedLocation = ll;
+      _isGeocoding = true;
+      _locationLabel = 'Finding place name...';
+    });
+
+    final name = await _reverseGeocode(ll);
+    if (!mounted) return;
+
+    setState(() {
+      _locationLabel = name;
+      _isGeocoding = false;
+    });
+  }
+
   Future<void> _useCurrentLocation() async {
-    setState(() => _isLoadingLocation = true);
+    setState(() => _isLoadingGps = true);
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location services are disabled.')),
+            const SnackBar(content: Text('Location services are disabled on device.')),
           );
         }
-        setState(() => _isLoadingLocation = false);
+        setState(() => _isLoadingGps = false);
         return;
       }
 
@@ -99,7 +160,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
               const SnackBar(content: Text('Location permission denied.')),
             );
           }
-          setState(() => _isLoadingLocation = false);
+          setState(() => _isLoadingGps = false);
           return;
         }
       }
@@ -107,32 +168,22 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
+          timeLimit: Duration(seconds: 8),
         ),
       );
 
       final ll = LatLng(pos.latitude, pos.longitude);
-      setState(() {
-        _pickedLocation = ll;
-        _locationLabel = 'Current Location (${ll.latitude.toStringAsFixed(4)}, ${ll.longitude.toStringAsFixed(4)})';
-        _isLoadingLocation = false;
-      });
       _mapController.move(ll, 15);
+      await _updateLocation(ll);
     } catch (e) {
-      setState(() => _isLoadingLocation = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not get location: $e')),
+          SnackBar(content: Text('Could not get GPS position: $e')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isLoadingGps = false);
     }
-  }
-
-  void _onMapTap(TapPosition _, LatLng ll) {
-    setState(() {
-      _pickedLocation = ll;
-      _locationLabel = _coordsToLabel(ll);
-    });
   }
 
   @override
@@ -146,7 +197,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
       ),
       child: Column(
         children: [
-          // ── Handle ─────────────────────────────────────────
+          // ── Handle Bar ─────────────────────────────────────
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 4),
             width: 40,
@@ -167,7 +218,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Choose Location',
+                        'Choose Job Location',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 18,
@@ -176,7 +227,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                         ),
                       ),
                       Text(
-                        'Tap anywhere on the map to pin the job location',
+                        'Tap on the map to pin a location or use GPS',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 12,
@@ -203,16 +254,16 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
             child: SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: _isLoadingLocation ? null : _useCurrentLocation,
-                icon: _isLoadingLocation
+                onPressed: _isLoadingGps ? null : _useCurrentLocation,
+                icon: _isLoadingGps
                     ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.my_location_rounded, size: 18),
-                label: Text(_isLoadingLocation
-                    ? 'Getting location...'
+                label: Text(_isLoadingGps
+                    ? 'Locating via GPS...'
                     : 'Use Current Location'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
@@ -227,16 +278,15 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
           ),
           const SizedBox(height: 10),
 
-          // ── Map ────────────────────────────────────────────
+          // ── Interactive Map ────────────────────────────────
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(0),
               child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: widget.initialLocation ?? _defaultCenter,
-                  initialZoom: 13,
-                  onTap: _onMapTap,
+                  initialZoom: 13.5,
+                  onTap: (_, ll) => _updateLocation(ll),
                 ),
                 children: [
                   TileLayer(
@@ -249,8 +299,8 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                       markers: [
                         Marker(
                           point: _pickedLocation!,
-                          width: 50,
-                          height: 60,
+                          width: 48,
+                          height: 58,
                           child: Column(
                             children: [
                               Container(
@@ -277,7 +327,6 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                                   size: 20,
                                 ),
                               ),
-                              // Stem
                               Container(
                                 width: 2,
                                 height: 10,
@@ -293,7 +342,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
             ),
           ),
 
-          // ── Picked Address Display + Confirm ───────────────
+          // ── Pinned Place Name + Confirm Bar ────────────────
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -313,27 +362,33 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                   Row(
                     children: [
                       Container(
-                        width: 32,
-                        height: 32,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
                           ),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
-                          Icons.location_on_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
+                        child: _isGeocoding
+                            ? const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(
+                                Icons.place_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Pinned Location',
+                              'Pinned Location Name',
                               style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 11,
@@ -345,8 +400,8 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                               _locationLabel,
                               style: const TextStyle(
                                 fontFamily: 'Inter',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
                                 color: AppColors.textPrimary,
                               ),
                               maxLines: 1,
@@ -357,12 +412,12 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                 ] else ...[
                   const Padding(
-                    padding: EdgeInsets.only(bottom: 12),
+                    padding: EdgeInsets.only(bottom: 14),
                     child: Text(
-                      'No location selected — tap on the map to pin one',
+                      'No location pinned — tap on the map to pin a place',
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 13,
@@ -375,7 +430,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                   width: double.infinity,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      gradient: _pickedLocation != null
+                      gradient: (_pickedLocation != null && !_isGeocoding)
                           ? const LinearGradient(
                               colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
                             )
@@ -385,7 +440,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: ElevatedButton.icon(
-                      onPressed: _pickedLocation == null
+                      onPressed: (_pickedLocation == null || _isGeocoding)
                           ? null
                           : () {
                               Navigator.of(context).pop(
