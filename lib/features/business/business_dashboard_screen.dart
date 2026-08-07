@@ -98,6 +98,14 @@ class _BusinessDashboardScreenState
     extends ConsumerState<BusinessDashboardScreen> {
   int _currentNavIndex = 0; // 0:Dashboard, 1:Messages, 2:Analytics, 3:Settings
 
+  /// Derives 1-2 letter initials from a business name e.g. "Quick Express" → "QE"
+  String _initials(String name) {
+    if (name.isEmpty) return 'BZ';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length == 1) return name.substring(0, name.length.clamp(1, 2)).toUpperCase();
+    return (parts.first[0] + parts[1][0]).toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     // ── Watch live jobs from Supabase ─────────────────────────
@@ -120,7 +128,15 @@ class _BusinessDashboardScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   // ── Business Header & Role Switcher ──────────────────
-                  Row(
+                  Builder(builder: (context) {
+                    final settings = ref.watch(appSettingsProvider);
+                    final bizName = settings.businessName.isNotEmpty && settings.businessName != 'My Business'
+                        ? settings.businessName
+                        : 'My Business';
+                    final bizLocation = settings.businessLocation.isNotEmpty
+                        ? settings.businessLocation
+                        : 'Location not set';
+                    return Row(
                     children: [
                       Container(
                         width: 46,
@@ -129,10 +145,10 @@ class _BusinessDashboardScreenState
                           color: AppColors.accentContainer,
                           shape: BoxShape.circle,
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
-                            'HM',
-                            style: TextStyle(
+                            _initials(bizName),
+                            style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -148,13 +164,17 @@ class _BusinessDashboardScreenState
                           children: [
                             Row(
                               children: [
-                                const Text(
-                                  'Himalayan Mart',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary,
+                                Flexible(
+                                  child: Text(
+                                    bizName,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textPrimary,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 4),
@@ -165,9 +185,11 @@ class _BusinessDashboardScreenState
                                 ),
                               ],
                             ),
-                            const Text(
-                              'Patan Dhoka, Lalitpur',
-                              style: TextStyle(
+                            Text(
+                              bizLocation,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: const TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 12,
                                 color: AppColors.textSecondary,
@@ -203,7 +225,8 @@ class _BusinessDashboardScreenState
                         ),
                       ),
                     ],
-                  ),
+                  );
+                  }),
                   const SizedBox(height: 20),
 
                   // ── Business Metrics Cards Grid ──────────────────────

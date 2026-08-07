@@ -80,7 +80,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
     _titleController = TextEditingController(text: d?['title'] as String? ?? '');
     _businessNameController =
-        TextEditingController(text: d?['businessName'] as String? ?? 'Himalayan Mart');
+        TextEditingController(text: d?['businessName'] as String? ?? '');
     _salaryController =
         TextEditingController(text: d?['salary'] as String? ?? '');
     _descriptionController =

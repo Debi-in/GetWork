@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/app_settings_service.dart';
 import 'chat_provider.dart';
 import 'chat_repository.dart';
 
@@ -63,9 +64,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
     _input.clear();
+    final settings = ref.read(appSettingsProvider);
+    final senderName = settings.businessName.isNotEmpty && settings.businessName != 'My Business'
+        ? settings.businessName
+        : 'Business';
     await ref
         .read(messagesProvider.notifier)
-        .sendMessage(text, 'Himalayan Mart');
+        .sendMessage(text, senderName);
     setState(() => _sending = false);
     _scrollToBottom();
     // Refresh conversations list so last_message updates
